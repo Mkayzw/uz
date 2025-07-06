@@ -21,6 +21,65 @@ export type Database = {
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
         }
       }
+      properties: {
+        Row: {
+          id: string
+          owner_id: string
+          title: string
+          description: string | null
+          property_type: string
+          price: number
+          bedrooms: number | null
+          bathrooms: number | null
+          address: string
+          city: string
+          state: string | null
+          zip_code: string | null
+          amenities: string[] | null
+          images: string[] | null
+          status: 'published' | 'unpublished' | 'pending'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          title: string
+          description?: string | null
+          property_type: string
+          price: number
+          bedrooms?: number | null
+          bathrooms?: number | null
+          address: string
+          city: string
+          state?: string | null
+          zip_code?: string | null
+          amenities?: string[] | null
+          images?: string[] | null
+          status?: 'published' | 'unpublished' | 'pending'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          title?: string
+          description?: string | null
+          property_type?: string
+          price?: number
+          bedrooms?: number | null
+          bathrooms?: number | null
+          address?: string
+          city?: string
+          state?: string | null
+          zip_code?: string | null
+          amenities?: string[] | null
+          images?: string[] | null
+          status?: 'published' | 'unpublished' | 'pending'
+          created_at?: string
+          updated_at?: string
+        }
+      }
       pads: {
         Row: {
           id: string
@@ -134,8 +193,10 @@ export type Database = {
 export type UserRole = Database['public']['Tables']['profiles']['Row']['role']
 export type AgentStatus = Database['public']['Tables']['profiles']['Row']['agent_status']
 export type RoomType = Database['public']['Tables']['rooms']['Row']['type']
+export type PropertyStatus = Database['public']['Tables']['properties']['Row']['status']
 
 export type ProfileRow = Database['public']['Tables']['profiles']['Row']
 export type PadRow = Database['public']['Tables']['pads']['Row']
 export type RoomRow = Database['public']['Tables']['rooms']['Row']
 export type BookingRow = Database['public']['Tables']['bookings']['Row']
+export type PropertyRow = Database['public']['Tables']['properties']['Row']

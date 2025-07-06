@@ -40,6 +40,26 @@ export interface Booking {
   verified: boolean
 }
 
+export interface Property {
+  id: string
+  owner_id: string
+  title: string
+  description: string | null
+  property_type: string
+  price: number
+  bedrooms: number | null
+  bathrooms: number | null
+  address: string
+  city: string
+  state: string | null
+  zip_code: string | null
+  amenities: string[] | null
+  images: string[] | null
+  status: 'published' | 'unpublished' | 'pending'
+  created_at: string
+  updated_at: string
+}
+
 // User Profile Operations
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   const { data, error } = await supabase
@@ -180,6 +200,129 @@ export const createBooking = async (bookingData: Omit<Booking, 'id' | 'booking_t
   }
 
   return data
+}
+
+// Property Operations
+export const createProperty = async (propertyData: Omit<Property, 'id' | 'created_at' | 'updated_at'>): Promise<Property | null> => {
+  const { data, error } = await supabase
+    .from('properties')
+    .insert([propertyData])
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating property:', error)
+    throw error
+  }
+
+  return data
+}
+
+export const getPropertiesByOwner = async (ownerId: string): Promise<Property[]> => {
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching properties:', error)
+    throw error
+  }
+
+  return data || []
+}
+
+export const getPropertyById = async (propertyId: string): Promise<Property | null> => {
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('id', propertyId)
+    .single()
+
+  if (error) {
+    console.error('Error fetching property:', error)
+    return null
+  }
+
+  return data
+}
+
+export const updateProperty = async (propertyId: string, updates: Partial<Property>): Promise<Property | null> => {
+  const { data, error } = await supabase
+    .from('properties')
+    .update(updates)
+    .eq('id', propertyId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating property:', error)
+    throw error
+  }
+
+  return data
+}
+
+export const deleteProperty = async (propertyId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('properties')
+    .delete()
+    .eq('id', propertyId)
+
+  if (error) {
+    console.error('Error deleting property:', error)
+    throw error
+  }
+
+  return true
+}
+
+// Image Upload Operations
+export const uploadPropertyImage = async (file: File, ownerId: string, propertyId: string): Promise<string> => {
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${ownerId}/${propertyId}/${Math.random().toString(36).substring(2)}.${fileExt}`
+  const filePath = `properties/${fileName}`
+
+  const { error } = await supabase.storage
+    .from('property-images')
+    .upload(filePath, file)
+
+  if (error) {
+    console.error('Error uploading image:', error)
+    throw error
+  }
+
+  const { data } = supabase.storage
+    .from('property-images')
+    .getPublicUrl(filePath)
+
+  return data.publicUrl
+}
+
+export const uploadMultiplePropertyImages = async (files: File[], ownerId: string): Promise<string[]> => {
+  const uploadPromises = files.map(async (file) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${ownerId}/${Math.random().toString(36).substring(2)}.${fileExt}`
+    const filePath = `properties/${fileName}`
+
+    const { error } = await supabase.storage
+      .from('property-images')
+      .upload(filePath, file)
+
+    if (error) {
+      console.error('Error uploading image:', error)
+      throw error
+    }
+
+    const { data } = supabase.storage
+      .from('property-images')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  })
+
+  return Promise.all(uploadPromises)
 }
 
 // Statistics
