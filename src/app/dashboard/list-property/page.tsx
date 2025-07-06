@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
-import Image from "next/image";
 
 const PropertyForm = () => {
   const [step, setStep] = useState(0);
@@ -189,8 +188,12 @@ const PropertyForm = () => {
       // Success!
       router.push("/dashboard?tab=properties");
       
-    } catch (error: any) {
-      setError(error.message || "Failed to list your property");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message || "Failed to list your property");
+      } else {
+        setError("An unknown error occurred.");
+      }
       console.error("Error in property submission:", error);
     } finally {
       setLoading(false);
@@ -456,6 +459,7 @@ const PropertyForm = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {imagePreview.map((src, index) => (
                     <div key={index} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={src} 
                         alt={`Preview ${index + 1}`} 

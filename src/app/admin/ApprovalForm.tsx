@@ -2,7 +2,6 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import { approvePayment } from './actions';
-import { useEffect } from 'react';
 
 // This type must match the return value of the `approvePayment` action
 type State = { 

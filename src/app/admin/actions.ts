@@ -58,3 +58,35 @@ export async function approvePayment(prevState: State, formData: FormData): Prom
   revalidatePath('/admin');
   return { success: true };
 }
+
+export async function verifyAgentAction(agentId: string): Promise<State> {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'You must be logged in to perform this action.' };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || profile?.role !== 'admin') {
+    return { success: false, error: 'You are not authorized to perform this action.' };
+  }
+
+  const { error: agentProfileError } = await supabase
+    .from('profiles')
+    .update({ is_verified_agent: true, agent_status: 'active' })
+    .eq('id', agentId);
+
+  if (agentProfileError) {
+    return { success: false, error: `Error updating agent profile: ${agentProfileError.message}` };
+  }
+
+  revalidatePath('/admin');
+  return { success: true };
+}

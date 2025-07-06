@@ -33,8 +33,12 @@ export default function LoginPage() {
       if (error) throw error
 
       router.push('/dashboard')
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('An unknown error occurred')
+      }
     } finally {
       setLoading(false)
     }
@@ -104,7 +108,7 @@ export default function LoginPage() {
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
                 Sign Up
               </Link>

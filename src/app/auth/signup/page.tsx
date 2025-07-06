@@ -33,7 +33,7 @@ export default function SignupPage() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -48,8 +48,12 @@ export default function SignupPage() {
 
       // Redirect to dashboard after successful signup
       router.push('/dashboard')
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('An unknown error occurred')
+      }
     } finally {
       setLoading(false)
     }

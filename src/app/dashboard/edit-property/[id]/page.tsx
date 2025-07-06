@@ -65,7 +65,7 @@ export default function EditPropertyPage() {
                     image_urls: data.image_urls || [],
                 });
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             setError('Failed to fetch property details.');
             console.error(err);
         } finally {
@@ -98,7 +98,7 @@ export default function EditPropertyPage() {
             const uploadedImageUrls = [...formData.image_urls];
             for (const file of imageFiles) {
                 const fileName = `${uuidv4()}-${file.name}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('property-images')
                     .upload(fileName, file);
 
@@ -129,8 +129,12 @@ export default function EditPropertyPage() {
 
             router.push('/dashboard/manage-properties');
 
-        } catch (err: any) {
-            setError(err.message || 'Failed to update property.');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message || 'Failed to update property.');
+            } else {
+                setError('An unknown error occurred during property update.');
+            }
             console.error(err);
         } finally {
             setLoading(false);

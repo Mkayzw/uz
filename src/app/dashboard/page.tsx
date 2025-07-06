@@ -212,7 +212,7 @@ export default function DashboardPage() {
             Welcome back, {displayName}!
           </h2>
           <p className="dark:bg-gray-800 dark:text-gray-300">
-            Here's your personalized dashboard for uzoca.
+            Here&apos;s your personalized dashboard for uzoca.
           </p>
         </div>
         
@@ -406,6 +406,7 @@ export default function DashboardPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {properties.map((property) => (
                   <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={property.image_url || '/file.svg'} alt={property.title} className="w-full h-40 object-cover rounded-t-2xl" />
                     <div className="p-6 flex-grow flex flex-col">
                       <div className="flex-grow">

@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import ApprovalForm from './ApprovalForm';
+import VerifyAgentButton from './VerifyAgentButton';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Define the type for our agent profiles
 type AgentProfile = {
@@ -19,8 +22,19 @@ type PaymentSubmission = {
   email: string | null;
 };
 
+type Submission = {
+  id: string;
+  transaction_code: string;
+  created_at: string;
+  profiles: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+  } | null;
+};
+
 // This function checks if the current user is an admin
-async function checkAdminRole(supabase: any) {
+async function checkAdminRole(supabase: SupabaseClient) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
   
@@ -43,20 +57,9 @@ export default async function AdminDashboard() {
 
   const isAdmin = await checkAdminRole(supabase);
 
-  // If the user is not an admin, show a message instead of redirecting.
+  // If the user is not an admin, redirect them to the home page.
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-            Admin Access Required
-          </h1>
-          <p className="text-lg text-gray-700 dark:text-gray-300">
-            You are not authorized to view this page. Please sign in with an admin account.
-          </p>
-        </div>
-      </div>
-    );
+    redirect('/');
   }
 
   // If the user IS an admin, fetch all unverified payment submissions.
@@ -78,20 +81,53 @@ export default async function AdminDashboard() {
     return <div className="p-8 text-red-500">Error fetching payment submissions: {error.message}</div>;
   }
 
-  const paymentSubmissions: PaymentSubmission[] = submissions?.map((s: any) => ({
+  const paymentSubmissions: PaymentSubmission[] = submissions?.map((s: Submission) => ({
     payment_id: s.id,
     transaction_code: s.transaction_code,
     created_at: s.created_at,
-    agent_id: s.profiles.id,
-    full_name: s.profiles.full_name,
-    email: s.profiles.email,
+    agent_id: s.profiles?.id ?? '',
+    full_name: s.profiles?.full_name ?? null,
+    email: s.profiles?.email ?? null,
   })) || [];
 
   // Fetch all agent profiles
   const { data: agents, error: agentsError } = await supabase
     .from('profiles')
     .select('id, full_name, email, is_verified_agent')
-    .eq('role', 'agent');
+        .eq('role', 'agent');
+    
+
+
+
+
+
+
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+    
+    
 
   if (agentsError) {
     return <div className="p-8 text-red-500">Error fetching agents: {agentsError.message}</div>;
@@ -177,6 +213,9 @@ export default async function AdminDashboard() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Verification Status
                 </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -200,11 +239,16 @@ export default async function AdminDashboard() {
                         </span>
                       )}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {!agent.is_verified_agent && (
+                        <VerifyAgentButton agentId={agent.id} />
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                     No agents found.
                   </td>
                 </tr>

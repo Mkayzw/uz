@@ -50,9 +50,13 @@ export default function ManagePropertiesPage() {
         }
 
         setProperties(data || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching properties:', err);
-        setError(err.message || 'Failed to load properties');
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load properties');
+        } else {
+            setError('An unknown error occurred');
+        }
       } finally {
         setLoading(false);
       }
@@ -78,9 +82,13 @@ export default function ManagePropertiesPage() {
           ? { ...property, active: !currentStatus }
           : property
       ));
-    } catch (err: any) {
-      console.error('Error toggling property status:', err);
-      setError(err.message || 'Failed to update property status');
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error('Error toggling property status:', err);
+            setError(err.message || 'Failed to update property status');
+        } else {
+            setError('An unknown error occurred');
+        }
     } finally {
       setLoading(false);
     }
@@ -112,9 +120,13 @@ export default function ManagePropertiesPage() {
       
       // Remove from local state
       setProperties(properties.filter(property => property.id !== propertyId));
-    } catch (err: any) {
-      console.error('Error deleting property:', err);
-      setError(err.message || 'Failed to delete property');
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error('Error deleting property:', err);
+            setError(err.message || 'Failed to delete property');
+        } else {
+            setError('An unknown error occurred');
+        }
     } finally {
       setLoading(false);
     }
@@ -177,6 +189,7 @@ export default function ManagePropertiesPage() {
                 >
                   <div className="md:flex">
                     <div className="md:flex-shrink-0 w-full md:w-64 h-48">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={property.image_url || '/file.svg'} 
                         alt={property.title} 

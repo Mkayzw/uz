@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
 
 export default function PaymentPage() {
   const [transactionCode, setTransactionCode] = useState('')
@@ -46,9 +45,13 @@ export default function PaymentPage() {
 
       setSuccess(true)
       setTransactionCode('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error submitting payment:', err)
-      setError('Failed to submit payment. Please try again. If the problem persists, contact support.')
+      if (err instanceof Error) {
+        setError('Failed to submit payment. Please try again. If the problem persists, contact support.')
+      } else {
+        setError('An unknown error occurred.')
+      }
     } finally {
       setLoading(false)
     }
