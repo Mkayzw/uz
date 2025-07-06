@@ -17,8 +17,6 @@ export default function AuthGuard({
   allowedRoles,
   requiresActiveAgent = false 
 }: AuthGuardProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const router = useRouter()
@@ -33,16 +31,12 @@ export default function AuthGuard({
           return
         }
 
-        setUser(user)
-
         // Get user profile
         const userProfile = await getUserProfile(user.id)
         if (!userProfile) {
           router.push('/auth/login')
           return
         }
-
-        setProfile(userProfile)
 
         // Check role permissions
         if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
@@ -87,7 +81,7 @@ export default function AuthGuard({
             <div className="text-yellow-500 text-4xl mb-4">🔒</div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Access Restricted</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              You don't have permission to access this page.
+              You don&apos;t have permission to access this page.
             </p>
             <button 
               onClick={() => router.push('/dashboard')} 

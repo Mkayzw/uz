@@ -30,7 +30,7 @@ type Submission = {
     id: string;
     full_name: string | null;
     email: string | null;
-  } | null;
+  }[] | null;
 };
 
 // This function checks if the current user is an admin
@@ -85,9 +85,9 @@ export default async function AdminDashboard() {
     payment_id: s.id,
     transaction_code: s.transaction_code,
     created_at: s.created_at,
-    agent_id: s.profiles?.id ?? '',
-    full_name: s.profiles?.full_name ?? null,
-    email: s.profiles?.email ?? null,
+    agent_id: s.profiles?.[0]?.id ?? '',
+    full_name: s.profiles?.[0]?.full_name ?? null,
+    email: s.profiles?.[0]?.email ?? null,
   })) || [];
 
   // Fetch all agent profiles

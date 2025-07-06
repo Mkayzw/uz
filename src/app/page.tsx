@@ -53,7 +53,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">A Platform for Everyone</h2>
-            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you're a student, landlord, or agent, uzoca is built for you.</p>
+            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you&apos;re a student, landlord, or agent, uzoca is built for you.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 text-left">
             {/* Card 1: For UZ Students */}
