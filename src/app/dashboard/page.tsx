@@ -10,7 +10,7 @@ interface UserProfile {
   id: string
   full_name: string | null
   role: 'tenant' | 'landlord' | 'agent'
-  agent_status: 'not_applicable' | 'pending_payment' | 'active'
+  agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
 }
 
 interface Property {
@@ -79,7 +79,22 @@ export default function DashboardPage() {
     }
 
     getUser()
-  }, [router])
+
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user?.id}` },
+        (payload) => {
+          setProfile(payload.new as UserProfile)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [router, user?.id])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -106,15 +121,20 @@ export default function DashboardPage() {
         }
       case 'agent':
         const isActive = agentStatus === 'active'
+        const isPendingVerification = agentStatus === 'pending_verification'
         return { 
           icon: '🤝', 
           color: isActive ? 'purple' : 'yellow', 
           title: 'Agent',
           description: isActive 
             ? 'You can manage property listings for clients.' 
+            : isPendingVerification
+            ? 'Your payment is being verified. This may take up to 24 hours.'
             : 'Complete payment to activate your agent account.',
           actions: isActive 
             ? ['Manage Client Properties', 'Commission Tracking', 'Client Management']
+            : isPendingVerification
+            ? ['View Payment Status', 'Contact Support']
             : ['Complete Payment', 'View Pricing', 'Contact Support']
         }
       default:
@@ -290,9 +310,11 @@ export default function DashboardPage() {
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                         profile.agent_status === 'active' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : profile.agent_status === 'pending_verification'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                           : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                       }`}>
-                        {profile.agent_status === 'active' ? 'Active' : 'Pending Payment'}
+                        {profile.agent_status === 'active' ? 'Active' : profile.agent_status === 'pending_verification' ? 'Pending Verification' : 'Pending Payment'}
                       </span>
                     )}
                   </div>
