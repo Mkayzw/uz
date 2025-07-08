@@ -112,6 +112,9 @@ export type Database = {
           has_security_system: boolean
           view_count: number
           created_at: string
+          updated_at: string
+          active: boolean
+          price: number
         }
         Insert: {
           id?: string
@@ -144,6 +147,9 @@ export type Database = {
           has_security_system?: boolean
           view_count?: number
           created_at?: string
+          updated_at?: string
+          active?: boolean
+          price?: number
         }
         Update: {
           id?: string
@@ -176,6 +182,9 @@ export type Database = {
           has_security_system?: boolean
           view_count?: number
           created_at?: string
+          updated_at?: string
+          active?: boolean
+          price?: number
         }
       }
       rooms: {

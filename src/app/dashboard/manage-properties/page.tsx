@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import PropertyImage from '@/components/PropertyImage';
+import ImageTester from '@/components/ImageTester';
 import Link from 'next/link';
 
 interface Property {
@@ -51,6 +52,17 @@ export default function ManagePropertiesPage() {
           throw propertiesError;
         }
 
+        // Debug logging to check image data
+        console.log('Properties data:', data);
+        data?.forEach((property, index) => {
+          console.log(`Property ${index + 1}:`, {
+            id: property.id,
+            title: property.title,
+            image_url: property.image_url,
+            image_urls: property.image_urls
+          });
+        });
+
         setProperties(data || []);
       } catch (err: unknown) {
         console.error('Error fetching properties:', err);
@@ -69,14 +81,15 @@ export default function ManagePropertiesPage() {
 
   const togglePropertyStatus = async (propertyId: string, currentStatus: boolean) => {
     try {
-      setLoading(true);
-      
       const { error } = await supabase
         .from('pads')
         .update({ active: !currentStatus })
         .eq('id', propertyId);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
       
       // Update local state to reflect the change
       setProperties(properties.map(property => 
@@ -84,15 +97,17 @@ export default function ManagePropertiesPage() {
           ? { ...property, active: !currentStatus }
           : property
       ));
+      
+      // Clear any previous errors
+      setError('');
     } catch (err: unknown) {
         if (err instanceof Error) {
             console.error('Error toggling property status:', err);
-            setError(err.message || 'Failed to update property status');
+            setError(`Failed to update property status: ${err.message}`);
         } else {
-            setError('An unknown error occurred');
+            console.error('Unknown error:', err);
+            setError('An unknown error occurred while updating property status');
         }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -196,6 +211,18 @@ export default function ManagePropertiesPage() {
                         alt={property.title}
                         className="h-full w-full object-cover"
                       />
+                      {/* Debug info - remove this after debugging */}
+                      <div className="text-xs text-gray-500 p-1 bg-gray-100 dark:bg-gray-700">
+                        Image URL: {property.image_url || 'No image_url'}
+                        {property.image_urls && property.image_urls.length > 0 && (
+                          <div>Alt URLs: {property.image_urls.join(', ')}</div>
+                        )}
+                      </div>
+                      
+                      {/* Temporary image tester */}
+                      {property.image_url && (
+                        <ImageTester url={property.image_url} />
+                      )}
                     </div>
                     <div className="p-6 w-full">
                       <div className="flex justify-between">
