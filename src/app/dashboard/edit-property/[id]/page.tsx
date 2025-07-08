@@ -61,9 +61,9 @@ export default function EditPropertyPage() {
                     bedrooms: data.bedrooms?.toString() || '1',
                     bathrooms: data.bathrooms?.toString() || '1',
                     propertyType: data.property_type || 'apartment',
-                    amenities: data.amenities || [],
-                    rules: data.rules || [],
-                    image_urls: data.image_urls || [],
+                    amenities: Array.isArray(data.amenities) ? data.amenities : [],
+                    rules: Array.isArray(data.rules) ? data.rules : [],
+                    image_urls: Array.isArray(data.image_urls) ? data.image_urls : [],
                 });
             }
         } catch (err: unknown) {
@@ -80,7 +80,11 @@ export default function EditPropertyPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'amenities' || name === 'rules') {
+            setFormData(prev => ({ ...prev, [name]: value.split(',').map(s => s.trim()) }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,7 +272,7 @@ export default function EditPropertyPage() {
                                 type="text"
                                 name="amenities"
                                 id="amenities"
-                                value={formData.amenities.join(', ')}
+                                value={Array.isArray(formData.amenities) ? formData.amenities.join(', ') : ''}
                                 onChange={handleChange}
                                 className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm"
                                 placeholder="Comma-separated values"
@@ -281,7 +285,7 @@ export default function EditPropertyPage() {
                                 type="text"
                                 name="rules"
                                 id="rules"
-                                value={formData.rules.join(', ')}
+                                value={Array.isArray(formData.rules) ? formData.rules.join(', ') : ''}
                                 onChange={handleChange}
                                 className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm"
                                 placeholder="Comma-separated values"
