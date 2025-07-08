@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
+import PropertyImage from '@/components/PropertyImage';
 import Link from 'next/link';
 
 interface Property {
@@ -190,11 +191,10 @@ export default function ManagePropertiesPage() {
                 >
                   <div className="md:flex">
                     <div className="md:flex-shrink-0 w-full md:w-64 h-48">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={property.image_url || '/file.svg'} 
-                        alt={property.title} 
-                        className="h-full w-full object-cover" 
+                      <PropertyImage
+                        src={property.image_url}
+                        alt={property.title}
+                        className="h-full w-full object-cover"
                       />
                     </div>
                     <div className="p-6 w-full">

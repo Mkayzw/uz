@@ -109,18 +109,31 @@ const PropertyForm = () => {
 
       // 1. Upload images to Supabase Storage
       const photoUrls = [];
-      for (const photo of formData.photos) {
-        const filePath = `${user.id}/${Date.now()}_${photo.name}`;
+      for (let i = 0; i < formData.photos.length; i++) {
+        const photo = formData.photos[i];
+        const fileExtension = photo.name.split('.').pop();
+        const fileName = `${Date.now()}_${i}.${fileExtension}`;
+        const filePath = `${user.id}/${fileName}`;
+        
+        // Upload to storage
         const { data, error } = await supabase.storage
           .from("property-images")
-          .upload(filePath, photo);
+          .upload(filePath, photo, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (error) {
-          throw new Error("Error uploading image: " + error.message);
+          console.error("Storage upload error:", error);
+          throw new Error(`Error uploading image ${i + 1}: ${error.message}`);
         }
         
-        const { data: { publicUrl } } = supabase.storage.from('property-images').getPublicUrl(data.path);
-        photoUrls.push(publicUrl);
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(data.path);
+          
+        photoUrls.push(data.path); // Store the path, not the full URL
       }
 
       // Prepare full address

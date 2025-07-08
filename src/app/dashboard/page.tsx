@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import ThemeToggle from '@/components/ThemeToggle'
+import PropertyImage from '@/components/PropertyImage'
 
 interface UserProfile {
   id: string
@@ -416,8 +417,11 @@ export default function DashboardPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {properties.map((property) => (
                   <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow flex flex-col">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={property.image_url || '/file.svg'} alt={property.title} className="w-full h-40 object-cover rounded-t-2xl" />
+                    <PropertyImage
+                      src={property.image_url}
+                      alt={property.title}
+                      className="w-full h-40 object-cover rounded-t-2xl"
+                    />
                     <div className="p-6 flex-grow flex flex-col">
                       <div className="flex-grow">
                         <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">{property.title}</h4>

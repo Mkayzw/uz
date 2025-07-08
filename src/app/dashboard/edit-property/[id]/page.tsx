@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,6 +23,7 @@ export default function EditPropertyPage() {
     const router = useRouter();
     const params = useParams();
     const propertyId = params.id as string;
+    const supabase = createClient();
 
     const [formData, setFormData] = useState<EditFormData>({
         title: '',
@@ -96,16 +97,22 @@ export default function EditPropertyPage() {
         try {
             // Handle image uploads
             const uploadedImageUrls = [...formData.image_urls];
-            for (const file of imageFiles) {
-                const fileName = `${uuidv4()}-${file.name}`;
-                const { error: uploadError } = await supabase.storage
+            for (let i = 0; i < imageFiles.length; i++) {
+                const file = imageFiles[i];
+                const fileExtension = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${i}.${fileExtension}`;
+                const filePath = `${propertyId}/${fileName}`;
+                
+                const { data, error: uploadError } = await supabase.storage
                     .from('property-images')
-                    .upload(fileName, file);
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
 
                 if (uploadError) throw uploadError;
 
-                const { data: urlData } = supabase.storage.from('property-images').getPublicUrl(fileName);
-                uploadedImageUrls.push(urlData.publicUrl);
+                uploadedImageUrls.push(data.path);
             }
 
             const { error: updateError } = await supabase
