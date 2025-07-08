@@ -67,7 +67,13 @@ export default function EditPropertyPage() {
                 });
             }
         } catch (err: unknown) {
-            setError('Failed to fetch property details.');
+            let errorMessage = 'Failed to fetch property details.';
+            if (typeof err === 'object' && err !== null && 'message' in err) {
+                errorMessage = (err as { message: string }).message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+            setError(errorMessage);
             console.error(err);
         } finally {
             setLoading(false);
@@ -141,11 +147,13 @@ export default function EditPropertyPage() {
             router.push('/dashboard/manage-properties');
 
         } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message || 'Failed to update property.');
-            } else {
-                setError('An unknown error occurred during property update.');
+            let errorMessage = 'An unknown error occurred during property update.';
+            if (typeof err === 'object' && err !== null && 'message' in err) {
+                errorMessage = (err as { message: string }).message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
             }
+            setError(errorMessage);
             console.error(err);
         } finally {
             setLoading(false);
