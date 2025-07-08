@@ -21,6 +21,34 @@ interface Property {
   image_url: string | null;
   view_count: number;
   created_at: string;
+  description?: string | null;
+  price?: number;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  image_urls?: string[] | null;
+  active?: boolean;
+  property_type?: string | null;
+  has_internet?: boolean;
+  has_parking?: boolean;
+  has_air_conditioning?: boolean;
+  is_furnished?: boolean;
+}
+
+interface Application {
+  id: string;
+  property_id: string;
+  tenant_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  property?: Property;
+}
+
+interface SavedProperty {
+  id: string;
+  property_id: string;
+  user_id: string;
+  created_at: string;
+  property?: Property;
 }
 
 export default function DashboardPage() {
@@ -28,10 +56,16 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [properties, setProperties] = useState<Property[]>([])
+  const [allProperties, setAllProperties] = useState<Property[]>([])
+  const [applications, setApplications] = useState<Application[]>([])
+  const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
+  const [propertySearchTerm, setPropertySearchTerm] = useState('')
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000])
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('')
   const router = useRouter()
 
   useEffect(() => {
@@ -58,6 +92,20 @@ export default function DashboardPage() {
           setError('Failed to load user profile')
         } else {
           setProfile(profileData)
+          
+          // Fetch all properties for browsing (for all users)
+          const { data: allPropsData, error: allPropsError } = await supabase
+            .from('pads')
+            .select('*')
+            .eq('active', true)
+            .order('created_at', { ascending: false })
+
+          if (allPropsError) {
+            console.error('Error fetching all properties:', allPropsError)
+          } else {
+            setAllProperties(allPropsData || [])
+          }
+          
           // If user is a landlord or active agent, fetch their properties
           if (profileData && (profileData.role === 'landlord' || (profileData.role === 'agent' && profileData.agent_status === 'active'))) {
             const { data: propertiesData, error: propertiesError } = await supabase
@@ -69,8 +117,18 @@ export default function DashboardPage() {
               console.error('Error fetching properties:', propertiesError)
               setError('Failed to load your properties')
             } else {
-              setProperties(propertiesData)
+              setProperties(propertiesData || [])
             }
+          }
+          
+          // If user is a tenant, fetch their applications and saved properties
+          if (profileData && profileData.role === 'tenant') {
+            
+            setApplications([])
+            
+            // Fetch saved properties (placeholder - you'll need to create this table)
+            // For now, set empty array
+            setSavedProperties([])
           }
         }
       } catch (err) {
@@ -159,6 +217,75 @@ export default function DashboardPage() {
     }
   }, [searchParams])
 
+  const handleBrowseProperties = () => {
+    setActiveTab('browse')
+  }
+
+  const handleSaveProperty = async (propertyId: string) => {
+    if (!user) return
+    
+    try {
+      // In a real app, you would save to a 'saved_properties' table
+      // For now, we'll just add it to local state
+      const property = allProperties.find(p => p.id === propertyId)
+      if (property) {
+        const newSavedProperty: SavedProperty = {
+          id: Date.now().toString(),
+          property_id: propertyId,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+          property
+        }
+        setSavedProperties(prev => [...prev, newSavedProperty])
+      }
+    } catch (error) {
+      console.error('Error saving property:', error)
+    }
+  }
+
+  const handleUnsaveProperty = (propertyId: string) => {
+    setSavedProperties(prev => prev.filter(sp => sp.property_id !== propertyId))
+  }
+
+  const handleApplyToProperty = async (propertyId: string) => {
+    if (!user) return
+    
+    try {
+      // In a real app, you would save to an 'applications' table
+      // For now, we'll just add it to local state
+      const property = allProperties.find(p => p.id === propertyId)
+      if (property) {
+        const newApplication: Application = {
+          id: Date.now().toString(),
+          property_id: propertyId,
+          tenant_id: user.id,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          property
+        }
+        setApplications(prev => [...prev, newApplication])
+      }
+    } catch (error) {
+      console.error('Error applying to property:', error)
+    }
+  }
+
+  const filteredProperties = allProperties.filter(property => {
+    const matchesSearch = property.title.toLowerCase().includes(propertySearchTerm.toLowerCase()) ||
+                         property.location?.toLowerCase().includes(propertySearchTerm.toLowerCase())
+    const matchesPrice = !property.price || (property.price >= priceRange[0] && property.price <= priceRange[1])
+    const matchesType = !propertyTypeFilter || property.property_type === propertyTypeFilter
+    return matchesSearch && matchesPrice && matchesType
+  })
+
+  const isPropertySaved = (propertyId: string) => {
+    return savedProperties.some(sp => sp.property_id === propertyId)
+  }
+
+  const hasAppliedToProperty = (propertyId: string) => {
+    return applications.some(app => app.property_id === propertyId)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -239,10 +366,14 @@ export default function DashboardPage() {
               onChange={(e) => setActiveTab(e.target.value)}
             >
               <option value="overview">Overview</option>
+              <option value="browse">Browse Properties</option>
               {(profile?.role === 'landlord' || (profile?.role === 'agent' && profile?.agent_status === 'active')) && (
-                <option value="properties">Properties</option>
+                <option value="properties">My Properties</option>
               )}
               <option value="applications">Applications</option>
+              {profile?.role === 'tenant' && (
+                <option value="saved">Saved Properties</option>
+              )}
               <option value="account">Account</option>
             </select>
           </div>
@@ -260,6 +391,17 @@ export default function DashboardPage() {
                   Overview
                 </button>
                 
+                <button
+                  onClick={() => setActiveTab('browse')}
+                  className={`${
+                    activeTab === 'browse'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Browse Properties
+                </button>
+                
                 {(profile?.role === 'landlord' || (profile?.role === 'agent' && profile?.agent_status === 'active')) && (
                   <button
                     onClick={() => setActiveTab('properties')}
@@ -269,7 +411,7 @@ export default function DashboardPage() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                     } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
                   >
-                    Properties
+                    My Properties
                   </button>
                 )}
                 
@@ -283,6 +425,19 @@ export default function DashboardPage() {
                 >
                   Applications
                 </button>
+                
+                {profile?.role === 'tenant' && (
+                  <button
+                    onClick={() => setActiveTab('saved')}
+                    className={`${
+                      activeTab === 'saved'
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  >
+                    Saved Properties
+                  </button>
+                )}
                 
                 <button
                   onClick={() => setActiveTab('account')}
@@ -354,12 +509,18 @@ export default function DashboardPage() {
                   </p>
                   <button 
                     onClick={() => {
-                      if (action.includes('Add')) {
+                      if (action.includes('Browse')) {
+                        handleBrowseProperties();
+                      } else if (action.includes('Add')) {
                         router.push('/dashboard/list-property');
                       } else if (action.includes('Manage')) {
                         router.push('/dashboard/manage-properties');
                       } else if (action.includes('Payment')) {
                         router.push('/dashboard/payment');
+                      } else if (action.includes('Applications')) {
+                        setActiveTab('applications');
+                      } else if (action.includes('Saved')) {
+                        setActiveTab('saved');
                       }
                     }}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
@@ -392,6 +553,165 @@ export default function DashboardPage() {
                     <div className="text-sm text-gray-600 dark:text-gray-400">Bookings</div>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Browse Properties Tab */}
+        {activeTab === 'browse' && (
+          <div>
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Browse Properties</h3>
+              
+              {/* Search and Filter Controls */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Search Properties
+                    </label>
+                    <input
+                      type="text"
+                      id="search"
+                      value={propertySearchTerm}
+                      onChange={(e) => setPropertySearchTerm(e.target.value)}
+                      placeholder="Search by title or location..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="property-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Property Type
+                    </label>
+                    <select
+                      id="property-type"
+                      value={propertyTypeFilter}
+                      onChange={(e) => setPropertyTypeFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">All Types</option>
+                      <option value="apartment">Apartment</option>
+                      <option value="house">House</option>
+                      <option value="room">Room</option>
+                      <option value="studio">Studio</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Price Range: ${priceRange[0]} - ${priceRange[1]}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="50000"
+                      step="1000"
+                      value={priceRange[1]}
+                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Properties Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProperties.map((property) => (
+                <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+                  <PropertyImage
+                    src={property.image_url}
+                    alt={property.title}
+                    className="w-full h-48 object-cover rounded-t-2xl"
+                  />
+                  <div className="p-6">
+                    <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{property.title}</h4>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{property.location}</p>
+                    {property.price && (
+                      <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+                        ${property.price}/month
+                      </p>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {property.bedrooms && (
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
+                          {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {property.bathrooms && (
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
+                          {property.bathrooms} bath{property.bathrooms > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {property.has_internet && (
+                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                          WiFi
+                        </span>
+                      )}
+                      {property.has_parking && (
+                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                          Parking
+                        </span>
+                      )}
+                      {property.is_furnished && (
+                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                          Furnished
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {profile?.role === 'tenant' && (
+                        <>
+                          <button
+                            onClick={() => handleApplyToProperty(property.id)}
+                            disabled={hasAppliedToProperty(property.id)}
+                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              hasAppliedToProperty(property.id)
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                          >
+                            {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply'}
+                          </button>
+                          <button
+                            onClick={() => isPropertySaved(property.id) 
+                              ? handleUnsaveProperty(property.id) 
+                              : handleSaveProperty(property.id)
+                            }
+                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              isPropertySaved(property.id)
+                                ? 'bg-red-600 text-white hover:bg-red-700'
+                                : 'bg-gray-600 text-white hover:bg-gray-700'
+                            }`}
+                          >
+                            {isPropertySaved(property.id) ? 'Unsave' : 'Save'}
+                          </button>
+                        </>
+                      )}
+                      {profile?.role !== 'tenant' && (
+                        <button className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                          View Details
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {filteredProperties.length === 0 && (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No properties found</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Try adjusting your search criteria or check back later for new listings.
+                </p>
               </div>
             )}
           </div>
@@ -486,27 +806,143 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Saved Properties Tab */}
+        {activeTab === 'saved' && profile?.role === 'tenant' && (
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Saved Properties</h3>
+            
+            {savedProperties.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {savedProperties.map((savedProperty) => (
+                  <div key={savedProperty.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+                    <PropertyImage
+                      src={savedProperty.property?.image_url || null}
+                      alt={savedProperty.property?.title || 'Property'}
+                      className="w-full h-48 object-cover rounded-t-2xl"
+                    />
+                    <div className="p-6">
+                      <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{savedProperty.property?.title}</h4>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{savedProperty.property?.location}</p>
+                      {savedProperty.property?.price && (
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+                          ${savedProperty.property.price}/month
+                        </p>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApplyToProperty(savedProperty.property_id)}
+                          disabled={hasAppliedToProperty(savedProperty.property_id)}
+                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            hasAppliedToProperty(savedProperty.property_id)
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {hasAppliedToProperty(savedProperty.property_id) ? 'Applied' : 'Apply'}
+                        </button>
+                        <button
+                          onClick={() => handleUnsaveProperty(savedProperty.property_id)}
+                          className="px-3 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No saved properties</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Start browsing properties and save your favorites here.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setActiveTab('browse')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Browse Properties
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Applications Tab */}
         {activeTab === 'applications' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {profile?.role === 'tenant' ? 
-                "You haven't applied to any properties yet." : 
-                "You haven't received any applications yet."
-              }
-            </p>
-            {profile?.role === 'tenant' && (
-              <div className="mt-6">
-                <button
-                  onClick={() => router.push('/')}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Browse Properties
-                </button>
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+              {profile?.role === 'tenant' ? 'My Applications' : 'Property Applications'}
+            </h3>
+            
+            {profile?.role === 'tenant' ? (
+              // Tenant view - show their applications
+              applications.length > 0 ? (
+                <div className="space-y-4">
+                  {applications.map((application) => (
+                    <div key={application.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
+                            {application.property?.title}
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                            {application.property?.location}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Applied on {new Date(application.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            application.status === 'pending' 
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              : application.status === 'approved'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {application.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    You haven't applied to any properties yet.
+                  </p>
+                  <div className="mt-6">
+                    <button
+                      onClick={() => setActiveTab('browse')}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      Browse Properties
+                    </button>
+                  </div>
+                </div>
+              )
+            ) : (
+              // Landlord/Agent view - show applications to their properties
+              <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  You haven't received any applications yet.
+                </p>
               </div>
             )}
           </div>
