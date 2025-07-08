@@ -85,11 +85,31 @@ export type Database = {
           id: string
           created_by: string | null
           title: string
+          description: string | null
           location: string | null
+          city: string | null
+          state: string | null
+          zip_code: string | null
+          property_type: string | null
+          bedrooms: number | null
+          bathrooms: number | null
+          image_urls: string[] | null
           image_url: string | null
+          available_from: string | null
+          available_to: string | null
+          rules: string | null
+          contact_phone: string | null
+          contact_email: string | null
+          has_internet: boolean
+          has_pool: boolean
+          has_parking: boolean
           has_power: boolean
           has_water: boolean
-          has_internet: boolean
+          has_tv: boolean
+          has_air_conditioning: boolean
+          is_furnished: boolean
+          has_laundry: boolean
+          has_security_system: boolean
           view_count: number
           created_at: string
         }
@@ -97,11 +117,31 @@ export type Database = {
           id?: string
           created_by?: string | null
           title: string
+          description?: string | null
           location?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          property_type?: string | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          image_urls?: string[] | null
           image_url?: string | null
+          available_from?: string | null
+          available_to?: string | null
+          rules?: string | null
+          contact_phone?: string | null
+          contact_email?: string | null
+          has_internet?: boolean
+          has_pool?: boolean
+          has_parking?: boolean
           has_power?: boolean
           has_water?: boolean
-          has_internet?: boolean
+          has_tv?: boolean
+          has_air_conditioning?: boolean
+          is_furnished?: boolean
+          has_laundry?: boolean
+          has_security_system?: boolean
           view_count?: number
           created_at?: string
         }
@@ -109,11 +149,31 @@ export type Database = {
           id?: string
           created_by?: string | null
           title?: string
+          description?: string | null
           location?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          property_type?: string | null
+          bedrooms?: number | null
+          bathrooms?: number | null
+          image_urls?: string[] | null
           image_url?: string | null
+          available_from?: string | null
+          available_to?: string | null
+          rules?: string | null
+          contact_phone?: string | null
+          contact_email?: string | null
+          has_internet?: boolean
+          has_pool?: boolean
+          has_parking?: boolean
           has_power?: boolean
           has_water?: boolean
-          has_internet?: boolean
+          has_tv?: boolean
+          has_air_conditioning?: boolean
+          is_furnished?: boolean
+          has_laundry?: boolean
+          has_security_system?: boolean
           view_count?: number
           created_at?: string
         }

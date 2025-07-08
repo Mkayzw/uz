@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
-import { getUserProfile, UserProfile } from '@/lib/database'
+import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+
+interface UserProfile {
+  id: string
+  full_name: string | null
+  role: 'tenant' | 'landlord' | 'agent'
+  agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
+}
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -17,6 +23,7 @@ export default function AuthGuard({
   allowedRoles,
   requiresActiveAgent = false 
 }: AuthGuardProps) {
+  const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const router = useRouter()
@@ -32,8 +39,13 @@ export default function AuthGuard({
         }
 
         // Get user profile
-        const userProfile = await getUserProfile(user.id)
-        if (!userProfile) {
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single<UserProfile>()
+
+        if (profileError || !userProfile) {
           router.push('/auth/login')
           return
         }
@@ -60,7 +72,7 @@ export default function AuthGuard({
     }
 
     checkAuth()
-  }, [router, allowedRoles, requiresActiveAgent])
+  }, [router, allowedRoles, requiresActiveAgent, supabase])
 
   if (loading) {
     return (
@@ -96,47 +108,4 @@ export default function AuthGuard({
   }
 
   return <>{children}</>
-}
-
-// Hook for accessing auth state in components
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const getAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-
-        if (user) {
-          const userProfile = await getUserProfile(user.id)
-          setProfile(userProfile)
-        }
-      } catch (error) {
-        console.error('Error getting auth state:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    getAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser(session.user)
-        const userProfile = await getUserProfile(session.user.id)
-        setProfile(userProfile)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setProfile(null)
-      }
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  return { user, profile, loading }
 }

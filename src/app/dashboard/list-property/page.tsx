@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import AuthGuard from "@/components/AuthGuard";
 
 const PropertyForm = () => {
+  const supabase = createClient();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -161,7 +162,6 @@ const PropertyForm = () => {
           is_furnished: formData.amenities.furnished,
           has_laundry: formData.amenities.laundry,
           has_security_system: formData.amenities.securitySystem,
-          active: true
         })
         .select()
         .single();

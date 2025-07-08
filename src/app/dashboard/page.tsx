@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -23,12 +23,14 @@ interface Property {
 }
 
 export default function DashboardPage() {
+  const supabase = createClient()
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('overview')
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
   const router = useRouter()
 
   useEffect(() => {
@@ -74,7 +76,8 @@ export default function DashboardPage() {
         console.error('Error:', err)
         setError('An unexpected error occurred')
       } finally {
-        setLoading(false)
+        setLoading(false
+        )
       }
     }
 
@@ -94,7 +97,7 @@ export default function DashboardPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [router, user?.id])
+  }, [router, user?.id, supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -147,6 +150,13 @@ export default function DashboardPage() {
         }
     }
   }
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   if (loading) {
     return (
