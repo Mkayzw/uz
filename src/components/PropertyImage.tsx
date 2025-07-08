@@ -25,9 +25,7 @@ export default function PropertyImage({
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    console.log('PropertyImage useEffect - src:', src);
     const imageUrl = getImageUrl(src);
-    console.log('PropertyImage useEffect - processed URL:', imageUrl);
     
     // Only set image source if we have a valid URL
     if (imageUrl && imageUrl !== '/file.svg') {
@@ -36,7 +34,6 @@ export default function PropertyImage({
       setHasError(false);
     } else {
       // Use fallback immediately for empty or invalid sources
-      console.log('PropertyImage useEffect - using fallback:', fallbackSrc);
       setImageSrc(fallbackSrc);
       setIsLoading(false);
       setHasError(false);
@@ -44,14 +41,11 @@ export default function PropertyImage({
   }, [src, fallbackSrc]);
 
   const handleLoad = () => {
-    console.log('PropertyImage - Image loaded successfully:', imageSrc);
     setIsLoading(false);
     setHasError(false);
   };
 
   const handleError = (e: any) => {
-    console.error('PropertyImage - Image failed to load:', imageSrc);
-    console.error('PropertyImage - Error event:', e);
     setIsLoading(false);
     setHasError(true);
     setImageSrc(fallbackSrc);

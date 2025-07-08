@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import PropertyImage from '@/components/PropertyImage';
-import ImageTester from '@/components/ImageTester';
 import Link from 'next/link';
 
 interface Property {
@@ -51,17 +50,6 @@ export default function ManagePropertiesPage() {
         if (propertiesError) {
           throw propertiesError;
         }
-
-        // Debug logging to check image data
-        console.log('Properties data:', data);
-        data?.forEach((property, index) => {
-          console.log(`Property ${index + 1}:`, {
-            id: property.id,
-            title: property.title,
-            image_url: property.image_url,
-            image_urls: property.image_urls
-          });
-        });
 
         setProperties(data || []);
       } catch (err: unknown) {
@@ -205,24 +193,73 @@ export default function ManagePropertiesPage() {
                   className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden ${!property.active ? 'border-l-4 border-red-500' : ''}`}
                 >
                   <div className="md:flex">
-                    <div className="md:flex-shrink-0 w-full md:w-64 h-48">
-                      <PropertyImage
-                        src={property.image_url}
-                        alt={property.title}
-                        className="h-full w-full object-cover"
-                      />
-                      {/* Debug info - remove this after debugging */}
-                      <div className="text-xs text-gray-500 p-1 bg-gray-100 dark:bg-gray-700">
-                        Image URL: {property.image_url || 'No image_url'}
-                        {property.image_urls && property.image_urls.length > 0 && (
-                          <div>Alt URLs: {property.image_urls.join(', ')}</div>
-                        )}
-                      </div>
-                      
-                      {/* Temporary image tester */}
-                      {property.image_url && (
-                        <ImageTester url={property.image_url} />
-                      )}
+                    {/* Image Gallery Section */}
+                    <div className="md:flex-shrink-0 w-full md:w-80">
+                      {(() => {
+                        // Combine all available images
+                        const allImages = [
+                          ...(property.image_url ? [property.image_url] : []),
+                          ...(property.image_urls || [])
+                        ].filter((url, index, array) => array.indexOf(url) === index); // Remove duplicates
+
+                        if (allImages.length === 0) {
+                          return (
+                            <div className="h-48 w-full">
+                              <PropertyImage
+                                src={null}
+                                alt={property.title}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          );
+                        }
+
+                        if (allImages.length === 1) {
+                          return (
+                            <div className="h-48 w-full">
+                              <PropertyImage
+                                src={allImages[0]}
+                                alt={property.title}
+                                className="h-full w-full object-cover rounded-md"
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Multiple images - show staggered grid
+                        return (
+                          <div className="grid grid-cols-2 gap-2 h-48">
+                            {/* Main image - takes up left column */}
+                            <div className="row-span-2">
+                              <PropertyImage
+                                src={allImages[0]}
+                                alt={`${property.title} - Main`}
+                                className="h-full w-full object-cover rounded-md"
+                              />
+                            </div>
+                            
+                            {/* Secondary images - right column */}
+                            <div className="space-y-2 h-full flex flex-col">
+                              {allImages.slice(1, 3).map((imageUrl, index) => (
+                                <div key={index} className="flex-1 relative">
+                                  <PropertyImage
+                                    src={imageUrl}
+                                    alt={`${property.title} - ${index + 2}`}
+                                    className="h-full w-full object-cover rounded-md"
+                                  />
+                                </div>
+                              ))}
+                              
+                              {/* Show count overlay if more than 3 images */}
+                              {allImages.length > 3 && (
+                                <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded-md">
+                                  +{allImages.length - 3} more
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="p-6 w-full">
                       <div className="flex justify-between">
