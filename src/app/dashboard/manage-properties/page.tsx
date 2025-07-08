@@ -218,7 +218,7 @@ export default function ManagePropertiesPage() {
 
                         if (allImages.length === 1) {
                           return (
-                            <div className="h-48 w-full">
+                            <div className="h-48 w-full cursor-pointer" onClick={() => setFullViewImage(allImages[0])}>
                               <PropertyImage
                                 src={allImages[0]}
                                 alt={property.title}
@@ -232,7 +232,7 @@ export default function ManagePropertiesPage() {
                         return (
                           <div className="grid grid-cols-2 gap-2 h-48">
                             {/* Main image - takes up left column */}
-                            <div className="row-span-2">
+                            <div className="row-span-2 cursor-pointer" onClick={() => setFullViewImage(allImages[0])}>
                               <PropertyImage
                                 src={allImages[0]}
                                 alt={`${property.title} - Main`}
@@ -243,7 +243,7 @@ export default function ManagePropertiesPage() {
                             {/* Secondary images - right column */}
                             <div className="space-y-2 h-full flex flex-col">
                               {allImages.slice(1, 3).map((imageUrl, index) => (
-                                <div key={index} className="flex-1 relative">
+                                <div key={index} className="flex-1 relative cursor-pointer" onClick={() => setFullViewImage(imageUrl)}>
                                   <PropertyImage
                                     src={imageUrl}
                                     alt={`${property.title} - ${index + 2}`}
