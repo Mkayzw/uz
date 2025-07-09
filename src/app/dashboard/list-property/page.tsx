@@ -185,10 +185,25 @@ const PropertyForm = () => {
       }
 
       // 3. Insert room information
+      // Map property type and bedroom count to appropriate room type
+      const getRoomType = (propertyType: string, bedrooms: number): 'single' | 'double' | 'triple' | 'quad' => {
+        if (propertyType === "bedsitter" || propertyType === "single-room") {
+          return "single";
+        }
+        
+        // For other property types, use bedroom count to determine room type
+        if (bedrooms >= 4) return "quad";
+        if (bedrooms === 3) return "triple";
+        if (bedrooms === 2) return "double";
+        return "single"; // Default for 1 bedroom or fallback
+      };
+
+      const roomType = getRoomType(formData.propertyType, parseInt(formData.bedrooms) || 1);
+      
       const { error: roomError } = await supabase.from("rooms").insert({
         pad_id: padData.id,
         name: "Main Space",
-        type: formData.propertyType === "apartment" ? "single" : "shared",
+        type: roomType,
         price: parseFloat(formData.price),
         capacity: parseInt(formData.bedrooms) || 1,
       });
