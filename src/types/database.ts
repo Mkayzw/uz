@@ -5,19 +5,19 @@ export type Database = {
         Row: {
           id: string
           full_name: string | null
-          role: 'tenant' | 'landlord' | 'agent'
+          role: 'tenant' | 'agent'
           agent_status: 'not_applicable' | 'pending_payment' | 'active'
         }
         Insert: {
           id: string
           full_name?: string | null
-          role: 'tenant' | 'landlord' | 'agent'
+          role: 'tenant' | 'agent'
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
         }
         Update: {
           id?: string
           full_name?: string | null
-          role?: 'tenant' | 'landlord' | 'agent'
+          role?: 'tenant' | 'agent'
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
         }
       }

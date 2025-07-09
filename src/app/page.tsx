@@ -41,7 +41,7 @@ export default function Home() {
             <Link href="/auth/signup" className="inline-block px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
               Explore Listings
             </Link>
-            <Link href="/auth/signup?role=landlord" className="inline-block px-8 py-4 text-lg font-medium text-blue-600 bg-white border-2 border-blue-600 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
+            <Link href="/auth/signup?role=agent" className="inline-block px-8 py-4 text-lg font-medium text-blue-600 bg-white border-2 border-blue-600 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
               List a Property
             </Link>
           </div>
@@ -53,9 +53,9 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">A Platform for Everyone</h2>
-            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you&apos;re a student, landlord, or agent, UniStay is built for you.</p>
+            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you&apos;re a student or agent, UniStay is built for you.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 text-left">
+          <div className="grid md:grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
             {/* Card 1: For UZ Students */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-blue-500">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center mb-5">
@@ -63,29 +63,18 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Students</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Secure your ideal room with verified listings, advanced search filters, and direct communication with landlords.
+                Secure your ideal room with verified listings, advanced search filters, and direct communication with agents.
               </p>
             </div>
             
-            {/* Card 2: For Property Owners */}
+            {/* Card 2: For Property Agents */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-green-500">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center mb-5">
                 <span className="text-2xl">🏠</span>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Landlords</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Connect with responsible UZ students, manage your properties efficiently, and fill vacancies faster than ever.
-              </p>
-            </div>
-            
-            {/* Card 3: For Housing Agents */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-purple-500">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center mb-5">
-                <span className="text-2xl">🤝</span>
-              </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Agents</h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Expand your reach, streamline your workflow, and connect more students with their perfect home-away-from-home.
+                Connect with responsible UZ students, manage property listings efficiently, and fill vacancies faster than ever.
               </p>
             </div>
           </div>

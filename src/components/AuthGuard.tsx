@@ -8,13 +8,13 @@ import { User } from '@supabase/supabase-js'
 interface UserProfile {
   id: string
   full_name: string | null
-  role: 'tenant' | 'landlord' | 'agent'
+  role: 'tenant' | 'agent'
   agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
 }
 
 interface AuthGuardProps {
   children: React.ReactNode
-  allowedRoles?: ('tenant' | 'landlord' | 'agent')[]
+  allowedRoles?: ('tenant' | 'agent')[]
   requiresActiveAgent?: boolean
 }
 

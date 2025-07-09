@@ -9,7 +9,7 @@ import DashboardWrapper from '@/components/DashboardWrapper'
 interface UserProfile {
   id: string
   full_name: string | null
-  role: 'tenant' | 'landlord' | 'agent'
+  role: 'tenant' | 'agent'
   agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
 }
 

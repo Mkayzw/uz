@@ -10,7 +10,7 @@ import PropertyImage from '@/components/PropertyImage'
 interface UserProfile {
   id: string
   full_name: string | null
-  role: 'tenant' | 'landlord' | 'agent'
+  role: 'tenant' | 'agent'
   agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
 }
 
@@ -106,8 +106,8 @@ export default function DashboardContent() {
             setAllProperties(allPropsData || [])
           }
           
-          // If user is a landlord or active agent, fetch their properties
-          if (profileData && (profileData.role === 'landlord' || (profileData.role === 'agent' && profileData.agent_status === 'active'))) {
+          // If user is an active agent, fetch their properties
+          if (profileData && (profileData.role === 'agent' && profileData.agent_status === 'active')) {
             const { data: propertiesData, error: propertiesError } = await supabase
               .from('pads')
               .select('*')
@@ -172,14 +172,6 @@ export default function DashboardContent() {
           title: 'Tenant',
           description: 'You can browse and apply for accommodation.',
           actions: ['Browse Properties', 'My Applications', 'Saved Properties']
-        }
-      case 'landlord':
-        return { 
-          icon: '🏠', 
-          color: 'green', 
-          title: 'Landlord',
-          description: 'You can list and manage your properties.',
-          actions: ['Add Property', 'Manage Listings', 'View Applications']
         }
       case 'agent':
         const isActive = agentStatus === 'active'
@@ -367,7 +359,7 @@ export default function DashboardContent() {
             >
               <option value="overview">Overview</option>
               <option value="browse">Browse Properties</option>
-              {(profile?.role === 'landlord' || (profile?.role === 'agent' && profile?.agent_status === 'active')) && (
+              {(profile?.role === 'agent' && profile?.agent_status === 'active') && (
                 <option value="properties">My Properties</option>
               )}
               <option value="applications">Applications</option>
@@ -402,7 +394,7 @@ export default function DashboardContent() {
                   Browse Properties
                 </button>
                 
-                {(profile?.role === 'landlord' || (profile?.role === 'agent' && profile?.agent_status === 'active')) && (
+                {(profile?.role === 'agent' && profile?.agent_status === 'active') && (
                   <button
                     onClick={() => setActiveTab('properties')}
                     className={`${
@@ -531,8 +523,8 @@ export default function DashboardContent() {
               ))}
             </div>
 
-            {/* Stats Section for Landlords and Agents */}
-            {(profile?.role === 'landlord' || (profile?.role === 'agent' && profile?.agent_status === 'active')) && (
+            {/* Stats Section for Agents */}
+            {(profile?.role === 'agent' && profile?.agent_status === 'active') && (
               <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Your Statistics</h3>
                 <div className="grid md:grid-cols-4 gap-6">
@@ -718,7 +710,7 @@ export default function DashboardContent() {
         )}
 
         {/* Properties Tab */}
-        {activeTab === 'properties' && (profile?.role === 'landlord' || (profile?.role === 'agent' && profile?.agent_status === 'active')) && (
+        {activeTab === 'properties' && (profile?.role === 'agent' && profile?.agent_status === 'active') && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Your Property Listings</h3>
@@ -934,7 +926,7 @@ export default function DashboardContent() {
                 </div>
               )
             ) : (
-              // Landlord/Agent view - show applications to their properties
+              // Agent view - show applications to their properties
               <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

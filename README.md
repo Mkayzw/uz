@@ -8,7 +8,7 @@ A modern Next.js application for University of Zimbabwe students to find off-cam
 - **Clean Next.js Setup**: Modern React 18+ with App Router
 - **Tailwind CSS**: Responsive design with dark mode support
 - **Supabase Integration**: Complete backend with authentication
-- **Role-Based Authentication**: Support for Tenants, Landlords, and Agents
+- **Role-Based Authentication**: Support for Tenants and Agents
 - **Database Schema**: Tables for users, profiles, properties, and bookings
 - **Row Level Security**: Secure data access policies
 
@@ -51,7 +51,7 @@ A modern Next.js application for University of Zimbabwe students to find off-cam
 
 The application uses these main tables:
 
-- **profiles** - User profile data with roles (tenant, landlord, agent)
+- **profiles** - User profile data with roles (tenant, agent)
 - **pads** - Property listings with amenities
 - **rooms** - Individual bookable units within properties  
 - **bookings** - Booking requests from tenants
@@ -59,7 +59,6 @@ The application uses these main tables:
 ## 👥 User Roles
 
 - **Tenant**: Browse properties, apply for rooms, track applications
-- **Landlord**: List properties, manage applications, view statistics
 - **Agent**: Manage client properties, track commissions (requires payment)
 
 ## 🔐 Authentication
