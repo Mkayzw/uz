@@ -12,7 +12,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">uzoca</span>
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">UniStay</span>
               </Link>
             </div>
             <div className="flex items-center space-x-4">
@@ -53,7 +53,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">A Platform for Everyone</h2>
-            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you&apos;re a student, landlord, or agent, uzoca is built for you.</p>
+            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you&apos;re a student, landlord, or agent, UniStay is built for you.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 text-left">
             {/* Card 1: For UZ Students */}
@@ -96,7 +96,7 @@ export default function Home() {
       <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-600 dark:text-gray-400">
-            <p>&copy; {new Date().getFullYear()} uzoca. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} UniStay. All rights reserved.</p>
             <p>Built for the UZ community.</p>
           </div>
         </div>

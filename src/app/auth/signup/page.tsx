@@ -68,7 +68,7 @@ export default function SignupPage() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
             <Link href="/">
-                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">uzoca</h1>
+                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">UniStay</h1>
             </Link>
           <p className="text-gray-600 dark:text-gray-300">Create your account</p>
         </div>

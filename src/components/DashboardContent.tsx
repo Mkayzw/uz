@@ -327,7 +327,7 @@ export default function DashboardContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">uzoca</h1>
+              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">UniStay</h1>
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
@@ -350,7 +350,7 @@ export default function DashboardContent() {
             Welcome back, {displayName}!
           </h2>
           <p className="dark:bg-gray-800 dark:text-gray-300">
-            Here&apos;s your personalized dashboard for uzoca.
+            Here&apos;s your personalized dashboard for UniStay.
           </p>
         </div>
         

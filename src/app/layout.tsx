@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "uzoca - UZ Student Housing",
+  title: "UniStay - UZ Student Housing",
   description: "The premier platform for University of Zimbabwe students to find safe, affordable, and convenient off-campus housing.",
 };
 

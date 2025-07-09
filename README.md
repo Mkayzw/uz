@@ -1,4 +1,4 @@
-# uzoca - UZ Student Housing Platform
+# UniStay - UZ Student Housing Platform
 
 A modern Next.js application for University of Zimbabwe students to find off-campus accommodation, built with Supabase and Tailwind CSS.
 
