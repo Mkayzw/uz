@@ -161,8 +161,8 @@ const PropertyForm = () => {
           bathrooms: parseInt(formData.bathrooms),
           image_urls: photoUrls,
           image_url: photoUrls[0] || null, // Using the first image as the main one
-          available_from: formData.availableFrom,
-          available_to: formData.availableTo,
+          available_from: formData.availableFrom || null,
+          available_to: formData.availableTo || null,
           rules: formData.rules,
           contact_phone: formData.contactPhone,
           contact_email: formData.contactEmail || user.email,

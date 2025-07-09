@@ -7,18 +7,21 @@ export type Database = {
           full_name: string | null
           role: 'tenant' | 'agent'
           agent_status: 'not_applicable' | 'pending_payment' | 'active'
+          is_verified_agent: boolean
         }
         Insert: {
           id: string
           full_name?: string | null
           role: 'tenant' | 'agent'
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
+          is_verified_agent?: boolean
         }
         Update: {
           id?: string
           full_name?: string | null
           role?: 'tenant' | 'agent'
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
+          is_verified_agent?: boolean
         }
       }
       properties: {
@@ -219,6 +222,29 @@ export type Database = {
           created_at?: string
         }
       }
+      agent_payments: {
+        Row: {
+          id: string
+          agent_id: string
+          transaction_code: string
+          verified: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          agent_id: string
+          transaction_code: string
+          verified?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          agent_id?: string
+          transaction_code?: string
+          verified?: boolean
+          created_at?: string
+        }
+      }
       bookings: {
         Row: {
           id: string
@@ -245,6 +271,55 @@ export type Database = {
           verified?: boolean
         }
       }
+      applications: {
+        Row: {
+          id: string
+          property_id: string
+          tenant_id: string
+          status: 'pending' | 'approved' | 'rejected'
+          message: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          tenant_id: string
+          status?: 'pending' | 'approved' | 'rejected'
+          message?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          tenant_id?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          message?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      saved_properties: {
+        Row: {
+          id: string
+          property_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -269,3 +344,5 @@ export type PadRow = Database['public']['Tables']['pads']['Row']
 export type RoomRow = Database['public']['Tables']['rooms']['Row']
 export type BookingRow = Database['public']['Tables']['bookings']['Row']
 export type PropertyRow = Database['public']['Tables']['properties']['Row']
+export type ApplicationRow = Database['public']['Tables']['applications']['Row']
+export type SavedPropertyRow = Database['public']['Tables']['saved_properties']['Row']

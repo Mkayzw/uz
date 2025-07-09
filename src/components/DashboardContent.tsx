@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import ThemeToggle from '@/components/ThemeToggle'
 import PropertyImage from '@/components/PropertyImage'
+import ConfirmationModal from '@/components/ConfirmationModal'
+import NotificationModal from '@/components/NotificationModal'
 
 interface UserProfile {
   id: string
@@ -68,6 +70,51 @@ export default function DashboardContent() {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('')
   const router = useRouter()
 
+  // Modal states
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    type?: 'danger' | 'warning' | 'info' | 'success'
+    confirmText?: string
+    icon?: string
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
+
+  const [notificationModal, setNotificationModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type?: 'success' | 'error' | 'warning' | 'info'
+    icon?: string
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  })
+
+  // Helper functions for modals
+  const showConfirmation = (config: Omit<typeof confirmationModal, 'isOpen'>) => {
+    setConfirmationModal({ ...config, isOpen: true })
+  }
+
+  const showNotification = (config: Omit<typeof notificationModal, 'isOpen'>) => {
+    setNotificationModal({ ...config, isOpen: true })
+  }
+
+  const closeConfirmation = () => {
+    setConfirmationModal(prev => ({ ...prev, isOpen: false }))
+  }
+
+  const closeNotification = () => {
+    setNotificationModal(prev => ({ ...prev, isOpen: false }))
+  }
+
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -123,12 +170,83 @@ export default function DashboardContent() {
           
           // If user is a tenant, fetch their applications and saved properties
           if (profileData && profileData.role === 'tenant') {
+            // Fetch applications
+            const { data: applicationsData, error: applicationsError } = await supabase
+              .from('applications')
+              .select(`
+                *,
+                property:pads(*)
+              `)
+              .eq('tenant_id', user.id)
+              .order('created_at', { ascending: false })
+
+            if (applicationsError) {
+              console.error('Error fetching applications:', applicationsError)
+            } else {
+              const formattedApplications = applicationsData?.map(app => ({
+                ...app,
+                property: app.property ? {
+                  ...app.property,
+                  id: app.property.id,
+                  title: app.property.title,
+                  location: app.property.location,
+                  image_url: app.property.image_url,
+                  view_count: app.property.view_count,
+                  created_at: app.property.created_at,
+                  description: app.property.description,
+                  price: app.property.price,
+                  bedrooms: app.property.bedrooms,
+                  bathrooms: app.property.bathrooms,
+                  image_urls: app.property.image_urls,
+                  active: app.property.active,
+                  property_type: app.property.property_type,
+                  has_internet: app.property.has_internet,
+                  has_parking: app.property.has_parking,
+                  has_air_conditioning: app.property.has_air_conditioning,
+                  is_furnished: app.property.is_furnished
+                } : undefined
+              })) || []
+              setApplications(formattedApplications)
+            }
             
-            setApplications([])
-            
-            // Fetch saved properties (placeholder - you'll need to create this table)
-            // For now, set empty array
-            setSavedProperties([])
+            // Fetch saved properties
+            const { data: savedPropsData, error: savedPropsError } = await supabase
+              .from('saved_properties')
+              .select(`
+                *,
+                property:pads(*)
+              `)
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+
+            if (savedPropsError) {
+              console.error('Error fetching saved properties:', savedPropsError)
+            } else {
+              const formattedSavedProps = savedPropsData?.map(saved => ({
+                ...saved,
+                property: saved.property ? {
+                  ...saved.property,
+                  id: saved.property.id,
+                  title: saved.property.title,
+                  location: saved.property.location,
+                  image_url: saved.property.image_url,
+                  view_count: saved.property.view_count,
+                  created_at: saved.property.created_at,
+                  description: saved.property.description,
+                  price: saved.property.price,
+                  bedrooms: saved.property.bedrooms,
+                  bathrooms: saved.property.bathrooms,
+                  image_urls: saved.property.image_urls,
+                  active: saved.property.active,
+                  property_type: saved.property.property_type,
+                  has_internet: saved.property.has_internet,
+                  has_parking: saved.property.has_parking,
+                  has_air_conditioning: saved.property.has_air_conditioning,
+                  is_furnished: saved.property.is_furnished
+                } : undefined
+              })) || []
+              setSavedProperties(formattedSavedProps)
+            }
           }
         }
       } catch (err) {
@@ -216,50 +334,244 @@ export default function DashboardContent() {
   const handleSaveProperty = async (propertyId: string) => {
     if (!user) return
     
+    // Check if already saved
+    if (isPropertySaved(propertyId)) {
+      showNotification({
+        title: 'Already Saved',
+        message: 'This property is already in your saved list.',
+        type: 'warning',
+        icon: '💾'
+      })
+      return
+    }
+    
     try {
-      // In a real app, you would save to a 'saved_properties' table
-      // For now, we'll just add it to local state
+      const { data, error } = await supabase
+        .from('saved_properties')
+        .insert({
+          property_id: propertyId,
+          user_id: user.id
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Error saving property:', error)
+        showNotification({
+          title: 'Save Failed',
+          message: `Failed to save property. Please try again.\n\nError: ${error.message}`,
+          type: 'error'
+        })
+        return
+      }
+      
+      // Add to local state
       const property = allProperties.find(p => p.id === propertyId)
-      if (property) {
+      if (property && data) {
         const newSavedProperty: SavedProperty = {
-          id: Date.now().toString(),
+          id: data.id,
           property_id: propertyId,
           user_id: user.id,
-          created_at: new Date().toISOString(),
+          created_at: data.created_at,
           property
         }
         setSavedProperties(prev => [...prev, newSavedProperty])
+        
+        // Show success notification
+        showNotification({
+          title: 'Property Saved',
+          message: `Property saved successfully!\n\n"${property.title}" has been added to your saved properties. You can view it in the "Saved Properties" tab.`,
+          type: 'success',
+          icon: '💾'
+        })
       }
     } catch (error) {
       console.error('Error saving property:', error)
+      showNotification({
+        title: 'Save Failed',
+        message: 'Failed to save property. Please check your internet connection and try again.',
+        type: 'error'
+      })
     }
   }
 
-  const handleUnsaveProperty = (propertyId: string) => {
-    setSavedProperties(prev => prev.filter(sp => sp.property_id !== propertyId))
+  const handleUnsaveProperty = async (propertyId: string) => {
+    if (!user) return
+    
+    const property = allProperties.find(p => p.id === propertyId)
+    showConfirmation({
+      title: 'Remove from Saved',
+      message: `Remove "${property?.title}" from saved properties?\n\nThis action cannot be undone, but you can save it again later.`,
+      type: 'warning',
+      confirmText: 'Remove',
+      icon: '🗑️',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('saved_properties')
+            .delete()
+            .eq('property_id', propertyId)
+            .eq('user_id', user.id)
+          
+          if (error) {
+            console.error('Error unsaving property:', error)
+            showNotification({
+              title: 'Remove Failed',
+              message: `Failed to remove property from saved list. Please try again.\n\nError: ${error.message}`,
+              type: 'error'
+            })
+            return
+          }
+          
+          setSavedProperties(prev => prev.filter(sp => sp.property_id !== propertyId))
+          showNotification({
+            title: 'Property Removed',
+            message: 'Property removed from saved list successfully!',
+            type: 'success',
+            icon: '✅'
+          })
+        } catch (error) {
+          console.error('Error unsaving property:', error)
+          showNotification({
+            title: 'Remove Failed',
+            message: 'Failed to remove property. Please check your internet connection and try again.',
+            type: 'error'
+          })
+        }
+      }
+    })
+  }
+
+  const handleCancelApplication = async (propertyId: string) => {
+    if (!user) return
+    
+    const application = applications.find(app => app.property_id === propertyId)
+    const property = application?.property
+    
+    showConfirmation({
+      title: 'Cancel Application',
+      message: `Cancel application for "${property?.title}"?\n\nStatus: ${application?.status?.toUpperCase() || 'PENDING'}\nApplied: ${application?.created_at ? new Date(application.created_at).toLocaleDateString() : 'Unknown'}\n\n⚠️ This action cannot be undone. You'll need to apply again if you change your mind.\n\nAre you sure you want to cancel this application?`,
+      type: 'danger',
+      confirmText: 'Cancel Application',
+      icon: '🚫',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('applications')
+            .delete()
+            .eq('property_id', propertyId)
+            .eq('tenant_id', user.id)
+          
+          if (error) {
+            console.error('Error canceling application:', error)
+            showNotification({
+              title: 'Cancel Failed',
+              message: `Failed to cancel application. Please try again.\n\nError: ${error.message}`,
+              type: 'error'
+            })
+            return
+          }
+          
+          // Remove from local state
+          setApplications(prev => prev.filter(app => app.property_id !== propertyId))
+          showNotification({
+            title: 'Application Canceled',
+            message: `Application canceled successfully!\n\nYour application for "${property?.title}" has been removed. You can apply again anytime from the Browse Properties section.`,
+            type: 'success',
+            icon: '✅'
+          })
+        } catch (error) {
+          console.error('Error canceling application:', error)
+          showNotification({
+            title: 'Cancel Failed',
+            message: 'Failed to cancel application. Please check your internet connection and try again.',
+            type: 'error'
+          })
+        }
+      }
+    })
   }
 
   const handleApplyToProperty = async (propertyId: string) => {
     if (!user) return
     
-    try {
-      // In a real app, you would save to an 'applications' table
-      // For now, we'll just add it to local state
-      const property = allProperties.find(p => p.id === propertyId)
-      if (property) {
-        const newApplication: Application = {
-          id: Date.now().toString(),
-          property_id: propertyId,
-          tenant_id: user.id,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          property
-        }
-        setApplications(prev => [...prev, newApplication])
-      }
-    } catch (error) {
-      console.error('Error applying to property:', error)
+    // Check if already applied
+    const alreadyApplied = applications.some(app => app.property_id === propertyId)
+    if (alreadyApplied) {
+      showNotification({
+        title: 'Already Applied',
+        message: 'You have already applied to this property.',
+        type: 'warning',
+        icon: '⚠️'
+      })
+      return
     }
+    
+    // Show confirmation dialog
+    const property = allProperties.find(p => p.id === propertyId)
+    showConfirmation({
+      title: 'Apply for Property',
+      message: `🏠 Apply for "${property?.title}"?\n\n📍 Location: ${property?.location || 'Not specified'}\n💰 Price: ${property?.price ? `₦${property.price.toLocaleString()}` : 'Contact for price'}\n\nNote: You can cancel your application later if needed.`,
+      type: 'info',
+      confirmText: 'Submit Application',
+      icon: '🏠',
+      onConfirm: async () => {
+        try {
+          setLoading(true)
+          const { data, error } = await supabase
+            .from('applications')
+            .insert({
+              property_id: propertyId,
+              tenant_id: user.id,
+              status: 'pending'
+            })
+            .select(`
+              *,
+              property:pads(*)
+            `)
+            .single()
+          
+          if (error) {
+            console.error('Error applying to property:', error)
+            showNotification({
+              title: 'Application Failed',
+              message: `Failed to submit application. Please try again.\n\nError: ${error.message}`,
+              type: 'error'
+            })
+            return
+          }
+          
+          // Add to local state with proper data
+          if (data && property) {
+            const newApplication: Application = {
+              id: data.id,
+              property_id: propertyId,
+              tenant_id: user.id,
+              status: 'pending',
+              created_at: data.created_at,
+              property
+            }
+            setApplications(prev => [...prev, newApplication])
+            
+            // Show success notification
+            showNotification({
+              title: 'Application Submitted',
+              message: `Application submitted successfully!\n\nProperty: ${property.title}\nStatus: Pending Review\n\nThe property owner will review your application and contact you soon. You can view your application status in the "My Applications" tab.`,
+              type: 'success'
+            })
+          }
+        } catch (error) {
+          console.error('Error applying to property:', error)
+          showNotification({
+            title: 'Application Failed',
+            message: 'Failed to submit application. Please check your internet connection and try again.',
+            type: 'error'
+          })
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
   }
 
   const filteredProperties = allProperties.filter(property => {
@@ -659,15 +971,21 @@ export default function DashboardContent() {
                       {profile?.role === 'tenant' && (
                         <>
                           <button
-                            onClick={() => handleApplyToProperty(property.id)}
-                            disabled={hasAppliedToProperty(property.id)}
+                            onClick={() => {
+                              if (hasAppliedToProperty(property.id)) {
+                                handleCancelApplication(property.id)
+                              } else {
+                                handleApplyToProperty(property.id)
+                              }
+                            }}
+                            disabled={false}
                             className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                               hasAppliedToProperty(property.id)
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-red-600 text-white hover:bg-red-700'
                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                             }`}
                           >
-                            {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply'}
+                            {hasAppliedToProperty(property.id) ? 'Cancel Application' : 'Apply'}
                           </button>
                           <button
                             onClick={() => isPropertySaved(property.id) 
@@ -763,8 +1081,8 @@ export default function DashboardContent() {
               </div>
             ) : (
               <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No properties</h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -823,15 +1141,21 @@ export default function DashboardContent() {
                       
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleApplyToProperty(savedProperty.property_id)}
-                          disabled={hasAppliedToProperty(savedProperty.property_id)}
+                          onClick={() => {
+                            if (hasAppliedToProperty(savedProperty.property_id)) {
+                              handleCancelApplication(savedProperty.property_id)
+                            } else {
+                              handleApplyToProperty(savedProperty.property_id)
+                            }
+                          }}
+                          disabled={false}
                           className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                             hasAppliedToProperty(savedProperty.property_id)
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              ? 'bg-red-600 text-white hover:bg-red-700'
                               : 'bg-blue-600 text-white hover:bg-blue-700'
                           }`}
                         >
-                          {hasAppliedToProperty(savedProperty.property_id) ? 'Applied' : 'Apply'}
+                          {hasAppliedToProperty(savedProperty.property_id) ? 'Cancel Application' : 'Apply'}
                         </button>
                         <button
                           onClick={() => handleUnsaveProperty(savedProperty.property_id)}
@@ -991,6 +1315,33 @@ export default function DashboardContent() {
           </div>
         )}
       </main>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        onConfirm={async () => {
+          // Call the onConfirm function passed to the modal
+          await confirmationModal.onConfirm()
+          // Close the modal
+          closeConfirmation()
+        }}
+        onClose={closeConfirmation}
+        type={confirmationModal.type}
+        confirmText={confirmationModal.confirmText}
+        icon={confirmationModal.icon}
+      />
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notificationModal.isOpen}
+        title={notificationModal.title}
+        message={notificationModal.message}
+        onClose={closeNotification}
+        type={notificationModal.type}
+        icon={notificationModal.icon}
+      />
     </div>
   )
 }

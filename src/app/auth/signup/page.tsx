@@ -41,7 +41,8 @@ export default function SignupPage() {
           data: {
             full_name: formData.name,
             role: formData.role
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       })
 
