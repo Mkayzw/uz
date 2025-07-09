@@ -214,7 +214,7 @@ export default function EditPropertyPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price</label>
+                            <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (USD)</label>
                             <input
                                 type="number"
                                 name="price"

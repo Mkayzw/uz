@@ -66,7 +66,7 @@ export default function DashboardContent() {
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
   const [propertySearchTerm, setPropertySearchTerm] = useState('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('')
   const router = useRouter()
 
@@ -511,7 +511,7 @@ export default function DashboardContent() {
     const property = allProperties.find(p => p.id === propertyId)
     showConfirmation({
       title: 'Apply for Property',
-      message: `🏠 Apply for "${property?.title}"?\n\n📍 Location: ${property?.location || 'Not specified'}\n💰 Price: ${property?.price ? `₦${property.price.toLocaleString()}` : 'Contact for price'}\n\nNote: You can cancel your application later if needed.`,
+      message: `🏠 Apply for "${property?.title}"?\n\n📍 Location: ${property?.location || 'Not specified'}\n💰 Price: ${property?.price ? `$${property.price.toLocaleString()}` : 'Contact for price'}\n\nNote: You can cancel your application later if needed.`,
       type: 'info',
       confirmText: 'Submit Application',
       icon: '🏠',
@@ -910,8 +910,8 @@ export default function DashboardContent() {
                     <input
                       type="range"
                       min="0"
-                      max="50000"
-                      step="1000"
+                      max="5000"
+                      step="100"
                       value={priceRange[1]}
                       onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"

@@ -302,7 +302,7 @@ const PropertyForm = () => {
                     
                     <div>
                       <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Monthly Price (KSH) *
+                        Monthly Price (USD) *
                       </label>
                       <input
                         type="number"
@@ -312,7 +312,7 @@ const PropertyForm = () => {
                         min="0"
                         value={formData.price}
                         onChange={handleChange}
-                        placeholder="E.g. 15000"
+                        placeholder="E.g. 150"
                         className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       />
                     </div>
