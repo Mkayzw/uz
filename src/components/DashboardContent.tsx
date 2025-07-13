@@ -8,6 +8,7 @@ import ThemeToggle from '@/components/ThemeToggle'
 import PropertyImage from '@/components/PropertyImage'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NotificationModal from '@/components/NotificationModal'
+import ImageModal from '@/components/ImageModal'
 import {
   getProfile,
   getAgentProperties,
@@ -16,7 +17,9 @@ import {
   getSavedProperties,
   getAgentApplications,
 } from '@/lib/utils/dashboard'
+import { getImageUrl } from '@/lib/utils/imageHelpers'
 import { updateApplicationStatus } from '@/app/dashboard/actions'
+
 
 interface UserProfile {
   id: string
@@ -520,6 +523,21 @@ export default function DashboardContent() {
     return applications.some(app => app.property_id === propertyId)
   }
 
+  const [imageModal, setImageModal] = useState<{ isOpen: boolean; src: string; alt: string }>({
+    isOpen: false,
+    src: '',
+    alt: '',
+  })
+
+  const openImageModal = (src: string | null, alt: string) => {
+    const imageUrl = getImageUrl(src)
+    setImageModal({ isOpen: true, src: imageUrl, alt })
+  }
+
+  const closeImageModal = () => {
+    setImageModal({ isOpen: false, src: '', alt: '' })
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -855,11 +873,20 @@ export default function DashboardContent() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProperties.map((property) => (
                 <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-                  <PropertyImage
-                    src={property.image_url}
-                    alt={property.title}
+                  <button
+                    onClick={() => {
+                      if (property.image_url) {
+                        openImageModal(property.image_url, property.title)
+                      }
+                    }}
                     className="w-full h-48 object-cover rounded-t-2xl"
-                  />
+                  >
+                    <PropertyImage
+                      src={property.image_url}
+                      alt={property.title}
+                      className="w-full h-full object-cover rounded-t-2xl"
+                    />
+                  </button>
                   <div className="p-6">
                     <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{property.title}</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{property.location}</p>
@@ -977,11 +1004,20 @@ export default function DashboardContent() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {properties.map((property) => (
                   <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                    <button
+                    onClick={() => {
+                      if (property.image_url) {
+                        openImageModal(property.image_url, property.title)
+                      }
+                    }}
+                    className="w-full h-40 object-cover rounded-t-2xl"
+                  >
                     <PropertyImage
                       src={property.image_url}
                       alt={property.title}
-                      className="w-full h-40 object-cover rounded-t-2xl"
+                      className="w-full h-full object-cover rounded-t-2xl"
                     />
+                  </button>
                     <div className="p-6 flex-grow flex flex-col">
                       <div className="flex-grow">
                         <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">{property.title}</h4>
@@ -1055,11 +1091,20 @@ export default function DashboardContent() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {savedProperties.map((savedProperty) => (
                   <div key={savedProperty.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+                    <button
+                    onClick={() => {
+                      if (savedProperty.property?.image_url) {
+                        openImageModal(savedProperty.property.image_url, savedProperty.property.title || 'Property')
+                      }
+                    }}
+                    className="w-full h-48 object-cover rounded-t-2xl"
+                  >
                     <PropertyImage
                       src={savedProperty.property?.image_url || null}
                       alt={savedProperty.property?.title || 'Property'}
-                      className="w-full h-48 object-cover rounded-t-2xl"
+                      className="w-full h-full object-cover rounded-t-2xl"
                     />
+                  </button>
                     <div className="p-6">
                       <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{savedProperty.property?.title}</h4>
                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{savedProperty.property?.location}</p>
@@ -1145,7 +1190,7 @@ export default function DashboardContent() {
                             Applied on {new Date(application.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             application.status === 'pending' 
                               ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
@@ -1320,6 +1365,13 @@ export default function DashboardContent() {
         onClose={closeNotification}
         type={notificationModal.type}
         icon={notificationModal.icon}
+      />
+
+      <ImageModal
+        isOpen={imageModal.isOpen}
+        onClose={closeImageModal}
+        src={imageModal.src}
+        alt={imageModal.alt}
       />
     </div>
   )
