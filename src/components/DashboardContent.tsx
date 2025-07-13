@@ -8,6 +8,15 @@ import ThemeToggle from '@/components/ThemeToggle'
 import PropertyImage from '@/components/PropertyImage'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NotificationModal from '@/components/NotificationModal'
+import {
+  getProfile,
+  getAgentProperties,
+  getAllActiveProperties,
+  getTenantApplications,
+  getSavedProperties,
+  getAgentApplications,
+} from '@/lib/utils/dashboard'
+import { updateApplicationStatus } from '@/app/dashboard/actions'
 
 interface UserProfile {
   id: string
@@ -43,6 +52,9 @@ interface Application {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   property?: Property;
+  tenant?: {
+    full_name?: string | null
+  }
 }
 
 interface SavedProperty {
@@ -60,6 +72,7 @@ export default function DashboardContent() {
   const [properties, setProperties] = useState<Property[]>([])
   const [allProperties, setAllProperties] = useState<Property[]>([])
   const [applications, setApplications] = useState<Application[]>([])
+  const [agentApplications, setAgentApplications] = useState<Application[]>([])
   const [savedProperties, setSavedProperties] = useState<SavedProperty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -116,7 +129,7 @@ export default function DashboardContent() {
   }
 
   useEffect(() => {
-    const getUser = async () => {
+    const fetchData = async () => {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         
@@ -127,140 +140,49 @@ export default function DashboardContent() {
 
         setUser(user)
 
-        // Fetch user profile from the database
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
+        const [
+          profileData,
+          allPropsData,
+        ] = await Promise.all([
+          getProfile(supabase, user),
+          getAllActiveProperties(supabase),
+        ]);
 
-        if (profileError) {
-          console.error('Error fetching profile:', profileError)
-          setError('Failed to load user profile')
-        } else {
-          setProfile(profileData)
-          
-          // Fetch all properties for browsing (for all users)
-          const { data: allPropsData, error: allPropsError } = await supabase
-            .from('pads')
-            .select('*')
-            .eq('active', true)
-            .order('created_at', { ascending: false })
+        setProfile(profileData)
+        setAllProperties(allPropsData)
 
-          if (allPropsError) {
-            console.error('Error fetching all properties:', allPropsError)
-          } else {
-            setAllProperties(allPropsData || [])
-          }
-          
-          // If user is an active agent, fetch their properties
-          if (profileData && (profileData.role === 'agent' && profileData.agent_status === 'active')) {
-            const { data: propertiesData, error: propertiesError } = await supabase
-              .from('pads')
-              .select('*')
-              .eq('created_by', user.id)
-
-            if (propertiesError) {
-              console.error('Error fetching properties:', propertiesError)
-              setError('Failed to load your properties')
-            } else {
-              setProperties(propertiesData || [])
-            }
-          }
-          
-          // If user is a tenant, fetch their applications and saved properties
-          if (profileData && profileData.role === 'tenant') {
-            // Fetch applications
-            const { data: applicationsData, error: applicationsError } = await supabase
-              .from('applications')
-              .select(`
-                *,
-                property:pads(*)
-              `)
-              .eq('tenant_id', user.id)
-              .order('created_at', { ascending: false })
-
-            if (applicationsError) {
-              console.error('Error fetching applications:', applicationsError)
-            } else {
-              const formattedApplications = applicationsData?.map(app => ({
-                ...app,
-                property: app.property ? {
-                  ...app.property,
-                  id: app.property.id,
-                  title: app.property.title,
-                  location: app.property.location,
-                  image_url: app.property.image_url,
-                  view_count: app.property.view_count,
-                  created_at: app.property.created_at,
-                  description: app.property.description,
-                  price: app.property.price,
-                  bedrooms: app.property.bedrooms,
-                  bathrooms: app.property.bathrooms,
-                  image_urls: app.property.image_urls,
-                  active: app.property.active,
-                  property_type: app.property.property_type,
-                  has_internet: app.property.has_internet,
-                  has_parking: app.property.has_parking,
-                  has_air_conditioning: app.property.has_air_conditioning,
-                  is_furnished: app.property.is_furnished
-                } : undefined
-              })) || []
-              setApplications(formattedApplications)
-            }
-            
-            // Fetch saved properties
-            const { data: savedPropsData, error: savedPropsError } = await supabase
-              .from('saved_properties')
-              .select(`
-                *,
-                property:pads(*)
-              `)
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
-
-            if (savedPropsError) {
-              console.error('Error fetching saved properties:', savedPropsError)
-            } else {
-              const formattedSavedProps = savedPropsData?.map(saved => ({
-                ...saved,
-                property: saved.property ? {
-                  ...saved.property,
-                  id: saved.property.id,
-                  title: saved.property.title,
-                  location: saved.property.location,
-                  image_url: saved.property.image_url,
-                  view_count: saved.property.view_count,
-                  created_at: saved.property.created_at,
-                  description: saved.property.description,
-                  price: saved.property.price,
-                  bedrooms: saved.property.bedrooms,
-                  bathrooms: saved.property.bathrooms,
-                  image_urls: saved.property.image_urls,
-                  active: saved.property.active,
-                  property_type: saved.property.property_type,
-                  has_internet: saved.property.has_internet,
-                  has_parking: saved.property.has_parking,
-                  has_air_conditioning: saved.property.has_air_conditioning,
-                  is_furnished: saved.property.is_furnished
-                } : undefined
-              })) || []
-              setSavedProperties(formattedSavedProps)
-            }
-          }
+        if (profileData.role === 'agent' && profileData.agent_status === 'active') {
+          const [agentProperties, agentApps] = await Promise.all([
+            getAgentProperties(supabase, user.id),
+            getAgentApplications(supabase, user.id)
+          ]);
+          setProperties(agentProperties)
+          setAgentApplications(agentApps)
         }
+
+        if (profileData.role === 'tenant') {
+          const [
+            tenantApplications,
+            savedProps,
+          ] = await Promise.all([
+            getTenantApplications(supabase, user.id),
+            getSavedProperties(supabase, user.id),
+          ]);
+          setApplications(tenantApplications)
+          setSavedProperties(savedProps)
+        }
+
       } catch (err) {
         console.error('Error:', err)
         setError('An unexpected error occurred')
       } finally {
-        setLoading(false
-        )
+        setLoading(false)
       }
     }
 
-    getUser()
+    fetchData()
 
-    const channel = supabase
+    const profileChannel = supabase
       .channel('profile-changes')
       .on(
         'postgres_changes',
@@ -271,10 +193,58 @@ export default function DashboardContent() {
       )
       .subscribe()
 
+    const propertiesChannel = supabase
+      .channel('property-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pads' },
+        (payload) => {
+            getAllActiveProperties(supabase).then(setAllProperties)
+            if(profile?.role === 'agent' && profile?.agent_status === 'active' && user?.id) {
+                getAgentProperties(supabase, user.id).then(setProperties)
+            }
+        }
+      )
+      .subscribe()
+
+    const applicationsChannel = supabase
+        .channel('application-changes')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'applications' },
+            (payload) => {
+                if(user?.id) {
+                    if(profile?.role === 'tenant') {
+                        getTenantApplications(supabase, user.id).then(setApplications)
+                    }
+                    if(profile?.role === 'agent' && profile?.agent_status === 'active') {
+                        getAgentApplications(supabase, user.id).then(setAgentApplications);
+                    }
+                }
+            }
+        )
+        .subscribe()
+
+    const savedPropertiesChannel = supabase
+        .channel('saved-property-changes')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'saved_properties' },
+            (payload) => {
+                if(profile?.role === 'tenant' && user?.id) {
+                    getSavedProperties(supabase, user.id).then(setSavedProperties)
+                }
+            }
+        )
+        .subscribe()
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(profileChannel)
+      supabase.removeChannel(propertiesChannel)
+      supabase.removeChannel(applicationsChannel)
+      supabase.removeChannel(savedPropertiesChannel)
     }
-  }, [router, user?.id, supabase])
+  }, [router, user?.id, supabase, profile?.role, profile?.agent_status])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -334,7 +304,6 @@ export default function DashboardContent() {
   const handleSaveProperty = async (propertyId: string) => {
     if (!user) return
     
-    // Check if already saved
     if (isPropertySaved(propertyId)) {
       showNotification({
         title: 'Already Saved',
@@ -355,41 +324,21 @@ export default function DashboardContent() {
         .select()
         .single()
       
-      if (error) {
-        console.error('Error saving property:', error)
-        showNotification({
-          title: 'Save Failed',
-          message: `Failed to save property. Please try again.\n\nError: ${error.message}`,
-          type: 'error'
-        })
-        return
-      }
+      if (error) throw error
       
-      // Add to local state
       const property = allProperties.find(p => p.id === propertyId)
       if (property && data) {
-        const newSavedProperty: SavedProperty = {
-          id: data.id,
-          property_id: propertyId,
-          user_id: user.id,
-          created_at: data.created_at,
-          property
-        }
-        setSavedProperties(prev => [...prev, newSavedProperty])
-        
-        // Show success notification
         showNotification({
           title: 'Property Saved',
-          message: `Property saved successfully!\n\n"${property.title}" has been added to your saved properties. You can view it in the "Saved Properties" tab.`,
+          message: `"${property.title}" has been added to your saved properties.`,
           type: 'success',
           icon: '💾'
         })
       }
-    } catch (error) {
-      console.error('Error saving property:', error)
+    } catch (error: any) {
       showNotification({
         title: 'Save Failed',
-        message: 'Failed to save property. Please check your internet connection and try again.',
+        message: error.message,
         type: 'error'
       })
     }
@@ -401,7 +350,7 @@ export default function DashboardContent() {
     const property = allProperties.find(p => p.id === propertyId)
     showConfirmation({
       title: 'Remove from Saved',
-      message: `Remove "${property?.title}" from saved properties?\n\nThis action cannot be undone, but you can save it again later.`,
+      message: `Remove "${property?.title}" from saved properties?`,
       type: 'warning',
       confirmText: 'Remove',
       icon: '🗑️',
@@ -413,28 +362,18 @@ export default function DashboardContent() {
             .eq('property_id', propertyId)
             .eq('user_id', user.id)
           
-          if (error) {
-            console.error('Error unsaving property:', error)
-            showNotification({
-              title: 'Remove Failed',
-              message: `Failed to remove property from saved list. Please try again.\n\nError: ${error.message}`,
-              type: 'error'
-            })
-            return
-          }
+          if (error) throw error
           
-          setSavedProperties(prev => prev.filter(sp => sp.property_id !== propertyId))
           showNotification({
             title: 'Property Removed',
             message: 'Property removed from saved list successfully!',
             type: 'success',
             icon: '✅'
           })
-        } catch (error) {
-          console.error('Error unsaving property:', error)
+        } catch (error: any) {
           showNotification({
             title: 'Remove Failed',
-            message: 'Failed to remove property. Please check your internet connection and try again.',
+            message: error.message,
             type: 'error'
           })
         }
@@ -450,7 +389,7 @@ export default function DashboardContent() {
     
     showConfirmation({
       title: 'Cancel Application',
-      message: `Cancel application for "${property?.title}"?\n\nStatus: ${application?.status?.toUpperCase() || 'PENDING'}\nApplied: ${application?.created_at ? new Date(application.created_at).toLocaleDateString() : 'Unknown'}\n\n⚠️ This action cannot be undone. You'll need to apply again if you change your mind.\n\nAre you sure you want to cancel this application?`,
+      message: `Cancel application for "${property?.title}"?`,
       type: 'danger',
       confirmText: 'Cancel Application',
       icon: '🚫',
@@ -462,29 +401,18 @@ export default function DashboardContent() {
             .eq('property_id', propertyId)
             .eq('tenant_id', user.id)
           
-          if (error) {
-            console.error('Error canceling application:', error)
-            showNotification({
-              title: 'Cancel Failed',
-              message: `Failed to cancel application. Please try again.\n\nError: ${error.message}`,
-              type: 'error'
-            })
-            return
-          }
+          if (error) throw error
           
-          // Remove from local state
-          setApplications(prev => prev.filter(app => app.property_id !== propertyId))
           showNotification({
             title: 'Application Canceled',
-            message: `Application canceled successfully!\n\nYour application for "${property?.title}" has been removed. You can apply again anytime from the Browse Properties section.`,
+            message: `Your application for "${property?.title}" has been removed.`,
             type: 'success',
             icon: '✅'
           })
-        } catch (error) {
-          console.error('Error canceling application:', error)
+        } catch (error: any) {
           showNotification({
             title: 'Cancel Failed',
-            message: 'Failed to cancel application. Please check your internet connection and try again.',
+            message: error.message,
             type: 'error'
           })
         }
@@ -495,9 +423,7 @@ export default function DashboardContent() {
   const handleApplyToProperty = async (propertyId: string) => {
     if (!user) return
     
-    // Check if already applied
-    const alreadyApplied = applications.some(app => app.property_id === propertyId)
-    if (alreadyApplied) {
+    if (applications.some(app => app.property_id === propertyId)) {
       showNotification({
         title: 'Already Applied',
         message: 'You have already applied to this property.',
@@ -507,71 +433,75 @@ export default function DashboardContent() {
       return
     }
     
-    // Show confirmation dialog
     const property = allProperties.find(p => p.id === propertyId)
     showConfirmation({
       title: 'Apply for Property',
-      message: `🏠 Apply for "${property?.title}"?\n\n📍 Location: ${property?.location || 'Not specified'}\n💰 Price: ${property?.price ? `$${property.price.toLocaleString()}` : 'Contact for price'}\n\nNote: You can cancel your application later if needed.`,
+      message: `Apply for "${property?.title}"?`,
       type: 'info',
       confirmText: 'Submit Application',
       icon: '🏠',
       onConfirm: async () => {
         try {
-          setLoading(true)
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('applications')
             .insert({
               property_id: propertyId,
               tenant_id: user.id,
               status: 'pending'
             })
-            .select(`
-              *,
-              property:pads(*)
-            `)
-            .single()
           
-          if (error) {
-            console.error('Error applying to property:', error)
-            showNotification({
-              title: 'Application Failed',
-              message: `Failed to submit application. Please try again.\n\nError: ${error.message}`,
-              type: 'error'
-            })
-            return
-          }
-          
-          // Add to local state with proper data
-          if (data && property) {
-            const newApplication: Application = {
-              id: data.id,
-              property_id: propertyId,
-              tenant_id: user.id,
-              status: 'pending',
-              created_at: data.created_at,
-              property
-            }
-            setApplications(prev => [...prev, newApplication])
+          if (error) throw error
             
-            // Show success notification
-            showNotification({
-              title: 'Application Submitted',
-              message: `Application submitted successfully!\n\nProperty: ${property.title}\nStatus: Pending Review\n\nThe property owner will review your application and contact you soon. You can view your application status in the "My Applications" tab.`,
-              type: 'success'
-            })
-          }
-        } catch (error) {
-          console.error('Error applying to property:', error)
+          showNotification({
+            title: 'Application Submitted',
+            message: `Your application for "${property?.title}" has been submitted.`,
+            type: 'success'
+          })
+        } catch (error: any) {
           showNotification({
             title: 'Application Failed',
-            message: 'Failed to submit application. Please check your internet connection and try again.',
+            message: error.message,
             type: 'error'
           })
-        } finally {
-          setLoading(false)
         }
       }
     })
+  }
+
+  const handleApproveApplication = (applicationId: string) => {
+    showConfirmation({
+        title: 'Approve Application',
+        message: 'Are you sure you want to approve this application? The tenant will be notified.',
+        type: 'success',
+        confirmText: 'Approve',
+        icon: '✅',
+        onConfirm: async () => {
+            const result = await updateApplicationStatus(applicationId, 'approved');
+            if (result.error) {
+                showNotification({ title: 'Error', message: result.error, type: 'error' });
+            } else {
+                showNotification({ title: 'Success', message: 'Application approved.', type: 'success' });
+            }
+        }
+    });
+  }
+
+  const handleRejectApplication = (applicationId: string) => {
+      showConfirmation({
+          title: 'Reject Application',
+          message: 'Are you sure you want to reject this application?',
+          type: 'danger',
+          confirmText: 'Reject',
+          icon: '🚫',
+          onConfirm: async () => {
+              const result = await updateApplicationStatus(applicationId, 'rejected');
+              if (result.error) {
+                  showNotification({ title: 'Error', message: result.error, type: 'error' });
+              } else {
+                  showNotification({ title: 'Success', message: 'Application rejected.', type: 'success' });
+              }
+          }
+      });
   }
 
   const filteredProperties = allProperties.filter(property => {
@@ -849,7 +779,7 @@ export default function DashboardContent() {
                     <div className="text-sm text-gray-600 dark:text-gray-400">Total Views</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">0</div>
+                    <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{agentApplications.length}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Applications</div>
                   </div>
                   <div className="text-center">
@@ -1197,8 +1127,8 @@ export default function DashboardContent() {
               {profile?.role === 'tenant' ? 'My Applications' : 'Property Applications'}
             </h3>
             
-            {profile?.role === 'tenant' ? (
-              // Tenant view - show their applications
+            {profile?.role === 'tenant' && (
+              // Tenant view
               applications.length > 0 ? (
                 <div className="space-y-4">
                   {applications.map((application) => (
@@ -1225,6 +1155,14 @@ export default function DashboardContent() {
                           }`}>
                             {application.status}
                           </span>
+                          {application.status === 'approved' && (
+                            <button 
+                              onClick={() => router.push(`/dashboard/payment?application_id=${application.id}`)}
+                              className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                            >
+                              Pay
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1239,27 +1177,70 @@ export default function DashboardContent() {
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     You haven't applied to any properties yet.
                   </p>
-                  <div className="mt-6">
-                    <button
-                      onClick={() => setActiveTab('browse')}
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                    >
-                      Browse Properties
-                    </button>
-                  </div>
                 </div>
               )
-            ) : (
-              // Agent view - show applications to their properties
-              <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  You haven't received any applications yet.
-                </p>
-              </div>
+            )}
+
+            {profile?.role === 'agent' && (
+              // Agent view
+              agentApplications.length > 0 ? (
+                <div className="space-y-4">
+                  {agentApplications.map((application) => (
+                    <div key={application.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                      <div className="flex flex-col sm:flex-row justify-between items-start">
+                        <div className="flex-1 mb-4 sm:mb-0">
+                          <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
+                            {application.property?.title}
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm">
+                            Applicant: {application.tenant?.full_name || 'N/A'}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Applied on {new Date(application.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            application.status === 'pending' 
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              : application.status === 'approved'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {application.status}
+                          </span>
+                          {application.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => handleApproveApplication(application.id)}
+                                className="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => handleRejectApplication(application.id)}
+                                className="px-3 py-1 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    You haven't received any applications for your properties.
+                  </p>
+                </div>
+              )
             )}
           </div>
         )}
@@ -1322,9 +1303,7 @@ export default function DashboardContent() {
         title={confirmationModal.title}
         message={confirmationModal.message}
         onConfirm={async () => {
-          // Call the onConfirm function passed to the modal
           await confirmationModal.onConfirm()
-          // Close the modal
           closeConfirmation()
         }}
         onClose={closeConfirmation}

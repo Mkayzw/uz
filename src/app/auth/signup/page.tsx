@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
-import NotificationModal from '@/components/NotificationModal'
 
 export default function SignupPage() {
   const supabase = createClient()
@@ -17,7 +16,6 @@ export default function SignupPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showNotification, setShowNotification] = useState(false)
   const router = useRouter()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -44,14 +42,13 @@ export default function SignupPage() {
             full_name: formData.name,
             role: formData.role
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       })
 
       if (error) throw error
 
-      // Show notification that confirmation email has been sent
-      setShowNotification(true)
+      router.push('/auth/confirm')
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message)
@@ -168,20 +165,7 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-
-      {/* Email Confirmation Notification */}
-      <NotificationModal
-        isOpen={showNotification}
-        onClose={() => {
-          setShowNotification(false)
-          router.push('/auth/login')
-        }}
-        title="Check Your Email"
-        message={`We've sent a confirmation email to ${formData.email}.\n\nPlease check your inbox and click the confirmation link to activate your account.\n\nAfter confirming, you can sign in to access your dashboard.`}
-        type="success"
-        icon="✉️"
-        autoClose={false}
-      />
     </div>
   )
 }
+
