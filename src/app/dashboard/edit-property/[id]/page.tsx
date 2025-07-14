@@ -5,21 +5,14 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import { v4 as uuidv4 } from 'uuid';
+import { use } from 'react';
 
-// ⚠️ CRITICAL: This edit form uses legacy bedrooms/bathrooms fields
-// while the create form uses the new rooms/beds system.
-// This creates a major architectural inconsistency where:
-// 1. New properties use room/bed system
-// 2. Edited properties revert to legacy system
-// 3. Data integrity is compromised
-// TODO: Rewrite this form to use rooms/beds system like the create form
 
 interface EditFormData {
     title: string;
     description: string;
     location: string;
     price: string;
-    bedrooms: string;
     bathrooms: string;
     propertyType: string;
     amenities: string[];
@@ -27,10 +20,20 @@ interface EditFormData {
     image_urls: string[];
 }
 
+// Room configuration type
+interface Room {
+    id: number;
+    name: string;
+    beds: number;
+    room_id?: string; // Database ID for existing rooms
+}
+
 export default function EditPropertyPage() {
     const router = useRouter();
+    // Get params from Next.js
     const params = useParams();
     const propertyId = params.id as string;
+    
     const supabase = createClient();
 
     const [formData, setFormData] = useState<EditFormData>({
@@ -38,21 +41,60 @@ export default function EditPropertyPage() {
         description: '',
         location: '',
         price: '0',
-        bedrooms: '1',
         bathrooms: '1',
         propertyType: 'apartment',
         amenities: [],
         rules: [],
         image_urls: [],
     });
+    
+    // Room configuration state
+    const [rooms, setRooms] = useState<Room[]>([]);
+    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
+
+    // Room management functions
+    const addRoom = () => {
+        // Generate unique ID to prevent duplicates when rooms are removed
+        const maxId = rooms.length > 0 ? Math.max(...rooms.map(r => r.id)) : 0;
+        const newRoom = {
+            id: maxId + 1,
+            name: `Room ${rooms.length + 1}`,
+            beds: 1
+        };
+        setRooms([...rooms, newRoom]);
+    };
+
+    const removeRoom = (roomId: number) => {
+        if (rooms.length > 1) {
+            setRooms(rooms.filter(room => room.id !== roomId));
+        }
+    };
+
+    const updateRoom = (roomId: number, field: string, value: any) => {
+        setRooms(rooms.map(room => 
+            room.id === roomId ? { ...room, [field]: value } : room
+        ));
+    };
+
+    // Calculate total beds across all rooms
+    const getTotalBeds = () => rooms.reduce((total, room) => total + room.beds, 0);
+
+    // Determine room type based on number of beds
+    const getRoomType = (bedCount: number): 'single' | 'double' | 'triple' | 'quad' => {
+        if (bedCount >= 4) return 'quad';
+        if (bedCount === 3) return 'triple';
+        if (bedCount === 2) return 'double';
+        return 'single';
+    };
 
     const fetchProperty = useCallback(async () => {
         if (!propertyId) return;
         setLoading(true);
         try {
+            // Fetch property data
             const { data, error } = await supabase
                 .from('pads')
                 .select('*')
@@ -66,13 +108,38 @@ export default function EditPropertyPage() {
                     description: data.description || '',
                     location: data.location || '',
                     price: data.price?.toString() || '0',
-                    bedrooms: data.bedrooms?.toString() || '1',
                     bathrooms: data.bathrooms?.toString() || '1',
                     propertyType: data.property_type || 'apartment',
                     amenities: Array.isArray(data.amenities) ? data.amenities : [],
                     rules: Array.isArray(data.rules) ? data.rules : [],
                     image_urls: Array.isArray(data.image_urls) ? data.image_urls : [],
                 });
+
+                // Fetch rooms for this property
+                const { data: roomsData, error: roomsError } = await supabase
+                    .from('rooms')
+                    .select('*')
+                    .eq('pad_id', propertyId);
+
+                if (roomsError) throw roomsError;
+
+                if (roomsData && roomsData.length > 0) {
+                    // Transform rooms data to match our Room interface
+                    const formattedRooms = roomsData.map(room => ({
+                        id: room.id, // Use database ID as the room ID
+                        room_id: room.id, // Store the original database ID
+                        name: room.name,
+                        beds: room.capacity, // Capacity represents maximum number of beds
+                    }));
+                    setRooms(formattedRooms);
+                } else {
+                    // If no rooms exist yet, create a default room
+                    setRooms([{
+                        id: 1,
+                        name: "Room 1",
+                        beds: data.bedrooms || 1, // Use legacy bedrooms count for bed count
+                    }]);
+                }
             }
         } catch (err: unknown) {
             let errorMessage = 'Failed to fetch property details.';
@@ -113,6 +180,16 @@ export default function EditPropertyPage() {
         setError('');
 
         try {
+            // Validate room configuration
+            if (rooms.length === 0) {
+                throw new Error("Please configure at least one room");
+            }
+
+            const hasInvalidRooms = rooms.some(room => !room.name.trim() || room.beds < 1);
+            if (hasInvalidRooms) {
+                throw new Error("Please ensure all rooms have valid names and at least 1 bed");
+            }
+            
             // Handle image uploads
             const uploadedImageUrls = [...formData.image_urls];
             for (let i = 0; i < imageFiles.length; i++) {
@@ -132,7 +209,11 @@ export default function EditPropertyPage() {
 
                 uploadedImageUrls.push(data.path);
             }
+            
+            // Calculate total beds across all rooms
+            const totalBeds = getTotalBeds();
 
+            // 1. Update property data
             const { error: updateError } = await supabase
                 .from('pads')
                 .update({
@@ -140,7 +221,7 @@ export default function EditPropertyPage() {
                     description: formData.description,
                     location: formData.location,
                     price: parseFloat(formData.price),
-                    bedrooms: parseInt(formData.bedrooms),
+                    bedrooms: totalBeds, // Calculated from rooms
                     bathrooms: parseInt(formData.bathrooms),
                     property_type: formData.propertyType,
                     amenities: formData.amenities,
@@ -151,6 +232,106 @@ export default function EditPropertyPage() {
                 .eq('id', propertyId);
 
             if (updateError) throw updateError;
+            
+            // 2. Process rooms: handle existing, new, and deleted rooms
+            
+            // Get existing rooms for comparison
+            const { data: existingRoomsData } = await supabase
+                .from('rooms')
+                .select('id')
+                .eq('pad_id', propertyId);
+                
+            const existingRoomIds = new Set((existingRoomsData || []).map(r => r.id));
+            
+            // Calculate room price - distribute price equally among rooms
+            const roomPrice = parseFloat(formData.price) / rooms.length;
+            
+            // Process each room
+            for (const room of rooms) {
+                // For existing rooms, update them
+                if (room.room_id && existingRoomIds.has(room.room_id)) {
+                    existingRoomIds.delete(room.room_id); // Remove from set to track deletions
+                    
+                    await supabase
+                        .from('rooms')
+                        .update({
+                            name: room.name,
+                            type: getRoomType(room.beds),
+                            price: roomPrice,
+                            capacity: room.beds
+                        })
+                        .eq('id', room.room_id);
+                        
+                    // Get existing beds to see what needs to be added or removed
+                    const { data: existingBeds } = await supabase
+                        .from('beds')
+                        .select('bed_number')
+                        .eq('room_id', room.room_id);
+                        
+                    const existingBedNumbers = new Set((existingBeds || []).map(b => b.bed_number));
+                    
+                    // Add new beds if needed
+                    const bedsToAdd = [];
+                    for (let i = 1; i <= room.beds; i++) {
+                        if (!existingBedNumbers.has(i)) {
+                            bedsToAdd.push({
+                                room_id: room.room_id,
+                                bed_number: i,
+                                is_available: true
+                            });
+                        }
+                    }
+                    
+                    if (bedsToAdd.length > 0) {
+                        await supabase.from('beds').insert(bedsToAdd);
+                    }
+                    
+                    // Remove extra beds if needed
+                    if (existingBeds && existingBeds.length > room.beds) {
+                        const bedNumbersToKeep = Array.from({length: room.beds}, (_, i) => i + 1);
+                        await supabase
+                            .from('beds')
+                            .delete()
+                            .eq('room_id', room.room_id)
+                            .not('bed_number', 'in', bedNumbersToKeep);
+                    }
+                } 
+                // For new rooms, insert them
+                else {
+                    // Insert room
+                    const { data: roomData, error: roomError } = await supabase.from('rooms').insert({
+                        pad_id: propertyId,
+                        name: room.name,
+                        type: getRoomType(room.beds),
+                        price: roomPrice,
+                        capacity: room.beds,
+                    }).select().single();
+                    
+                    if (roomError) throw roomError;
+                    
+                    // Insert beds for this room
+                    const bedInserts = [];
+                    for (let i = 1; i <= room.beds; i++) {
+                        bedInserts.push({
+                            room_id: roomData.id,
+                            bed_number: i,
+                            is_available: true
+                        });
+                    }
+                    
+                    if (bedInserts.length > 0) {
+                        await supabase.from('beds').insert(bedInserts);
+                    }
+                }
+            }
+            
+            // Delete rooms that no longer exist
+            if (existingRoomIds.size > 0) {
+                await supabase
+                    .from('rooms')
+                    .delete()
+                    .in('id', Array.from(existingRoomIds));
+            }
 
             router.push('/dashboard/manage-properties');
 
@@ -237,31 +418,24 @@ export default function EditPropertyPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="bedrooms" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrooms</label>
-                            <input
-                                type="number"
-                                name="bedrooms"
-                                id="bedrooms"
-                                value={formData.bedrooms}
-                                onChange={handleChange}
-                                className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm"
-                                min="1"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="bathrooms" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
-                            <input
-                                type="number"
+                            <label htmlFor="bathrooms" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms (Property-wide)</label>
+                            <select
                                 name="bathrooms"
                                 id="bathrooms"
                                 value={formData.bathrooms}
                                 onChange={handleChange}
                                 className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm"
-                                min="1"
                                 required
-                            />
+                            >
+                                <option value="1">1 bathroom</option>
+                                <option value="2">2 bathrooms</option>
+                                <option value="3">3 bathrooms</option>
+                                <option value="4">4 bathrooms</option>
+                                <option value="5">5+ bathrooms</option>
+                            </select>
+                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                <strong>Note:</strong> Bathrooms are shared facilities for the entire property.
+                            </p>
                         </div>
 
                         <div>
@@ -280,6 +454,75 @@ export default function EditPropertyPage() {
                                 <option value="townhouse">Townhouse</option>
                                 <option value="land">Land</option>
                             </select>
+                        </div>
+                        
+                        {/* Room Configuration Section */}
+                        <div className="border-t pt-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Room Configuration</h3>
+                                <button
+                                    type="button"
+                                    onClick={addRoom}
+                                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800"
+                                >
+                                    + Add Room
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                {rooms.map((room, index) => (
+                                    <div key={room.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h4 className="font-medium text-gray-900 dark:text-white">Room {index + 1}</h4>
+                                            {rooms.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeRoom(room.id)}
+                                                    className="text-red-600 hover:text-red-800 text-sm"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Room Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={room.name}
+                                                    onChange={(e) => updateRoom(room.id, 'name', e.target.value)}
+                                                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                                />
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Number of Beds ({getRoomType(room.beds)} room)
+                                                </label>
+                                                <select
+                                                    value={room.beds}
+                                                    onChange={(e) => updateRoom(room.id, 'beds', parseInt(e.target.value))}
+                                                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                                >
+                                                    <option value={1}>1 bed (single)</option>
+                                                    <option value={2}>2 beds (double)</option>
+                                                    <option value={3}>3 beds (triple)</option>
+                                                    <option value={4}>4 beds (quad)</option>
+                                                    <option value={5}>5 beds</option>
+                                                    <option value={6}>6 beds</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                    <strong>Total beds across all rooms:</strong> {getTotalBeds()}
+                                </div>
+                            </div>
                         </div>
 
                         <div>
