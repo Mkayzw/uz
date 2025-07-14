@@ -8,6 +8,11 @@ import PropertyImage from '@/components/PropertyImage';
 import Link from 'next/link';
 import { getImageUrl } from '@/lib/utils/imageHelpers';
 
+// ⚠️ CRITICAL: This interface still uses legacy bedrooms/bathrooms fields
+// while the new system uses rooms/beds tables.
+// This creates inconsistency with newly created properties.
+// TODO: Update to fetch room/bed data or use computed values
+
 interface Property {
   id: string;
   title: string;
@@ -29,7 +34,6 @@ export default function ManagePropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [fullViewImage, setFullViewImage] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -68,76 +72,6 @@ export default function ManagePropertiesPage() {
 
     fetchProperties();
   }, [router]);
-
-  const togglePropertyStatus = async (propertyId: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('pads')
-        .update({ active: !currentStatus })
-        .eq('id', propertyId);
-        
-      if (error) {
-        console.error('Database error:', error);
-        throw new Error(`Database error: ${error.message}`);
-      }
-      
-      // Update local state to reflect the change
-      setProperties(properties.map(property => 
-        property.id === propertyId 
-          ? { ...property, active: !currentStatus }
-          : property
-      ));
-      
-      // Clear any previous errors
-      setError('');
-    } catch (err: unknown) {
-        if (err instanceof Error) {
-            console.error('Error toggling property status:', err);
-            setError(`Failed to update property status: ${err.message}`);
-        } else {
-            console.error('Unknown error:', err);
-            setError('An unknown error occurred while updating property status');
-        }
-    }
-  };
-
-  const deleteProperty = async (propertyId: string) => {
-    if (!confirm('Are you sure you want to delete this property? This action cannot be undone.')) {
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      // First delete any associated rooms
-      const { error: roomsError } = await supabase
-        .from('rooms')
-        .delete()
-        .eq('pad_id', propertyId);
-        
-      if (roomsError) throw roomsError;
-      
-      // Then delete the property
-      const { error } = await supabase
-        .from('pads')
-        .delete()
-        .eq('id', propertyId);
-        
-      if (error) throw error;
-      
-      // Remove from local state
-      setProperties(properties.filter(property => property.id !== propertyId));
-    } catch (err: unknown) {
-        if (err instanceof Error) {
-            console.error('Error deleting property:', err);
-            setError(err.message || 'Failed to delete property');
-        } else {
-            setError('An unknown error occurred');
-        }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <AuthGuard allowedRoles={['agent']}>
@@ -192,76 +126,15 @@ export default function ManagePropertiesPage() {
               {properties.map((property) => (
                 <div 
                   key={property.id} 
-                  className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden ${!property.active ? 'border-l-4 border-red-500' : ''}`}
+                  className={`bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden`}
                 >
                   <div className="md:flex">
-                    {/* Image Gallery Section */}
                     <div className="md:flex-shrink-0 w-full md:w-80">
-                      {(() => {
-                        // Combine all available images
-                        const allImages = [
-                          ...(property.image_url ? [property.image_url] : []),
-                          ...(property.image_urls || [])
-                        ].filter((url, index, array) => array.indexOf(url) === index); // Remove duplicates
-
-                        if (allImages.length === 0) {
-                          return (
-                            <div className="h-48 w-full">
-                              <PropertyImage
-                                src={null}
-                                alt={property.title}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          );
-                        }
-
-                        if (allImages.length === 1) {
-                          return (
-                            <div className="h-48 w-full cursor-pointer" onClick={() => setFullViewImage(allImages[0])}>
-                              <PropertyImage
-                                src={allImages[0]}
-                                alt={property.title}
-                                className="h-full w-full object-cover rounded-md"
-                              />
-                            </div>
-                          );
-                        }
-
-                        // Multiple images - show staggered grid
-                        return (
-                          <div className="grid grid-cols-2 gap-2 h-48">
-                            {/* Main image - takes up left column */}
-                            <div className="row-span-2 cursor-pointer" onClick={() => setFullViewImage(allImages[0])}>
-                              <PropertyImage
-                                src={allImages[0]}
-                                alt={`${property.title} - Main`}
-                                className="h-full w-full object-cover rounded-md"
-                              />
-                            </div>
-                            
-                            {/* Secondary images - right column */}
-                            <div className="space-y-2 h-full flex flex-col">
-                              {allImages.slice(1, 3).map((imageUrl, index) => (
-                                <div key={index} className="flex-1 relative cursor-pointer" onClick={() => setFullViewImage(imageUrl)}>
-                                  <PropertyImage
-                                    src={imageUrl}
-                                    alt={`${property.title} - ${index + 2}`}
-                                    className="h-full w-full object-cover rounded-md"
-                                  />
-                                </div>
-                              ))}
-                              
-                              {/* Show count overlay if more than 3 images */}
-                              {allImages.length > 3 && (
-                                <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded-md">
-                                  +{allImages.length - 3} more
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
+                      <PropertyImage
+                        src={getImageUrl(property.image_url || (property.image_urls && property.image_urls[0]))}
+                        alt={property.title}
+                        className="h-48 w-full object-cover"
+                      />
                     </div>
                     <div className="p-6 w-full">
                       <div className="flex justify-between">
@@ -269,67 +142,13 @@ export default function ManagePropertiesPage() {
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white">{property.title}</h3>
                           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{property.location}</p>
                         </div>
-                        <div>
-                          <span className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
-                            property.active 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                          }`}>
-                            {property.active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          {property.bedrooms} {property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}
-                        </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          {property.bathrooms} {property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}
-                        </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                          ${property.price}/month
-                        </span>
-                      </div>
-                      
-                      {property.description && (
-                        <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {property.description}
-                        </p>
-                      )}
-                      
-                      <div className="mt-4 flex flex-wrap justify-between items-center">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Listed on {new Date(property.created_at).toLocaleDateString()}
-                          <span className="mx-2">•</span>
-                          <span>
-                            {property.view_count || 0} {property.view_count === 1 ? 'view' : 'views'}
-                          </span>
-                        </div>
-                        
                         <div className="mt-2 sm:mt-0 flex space-x-2">
-                          <button
-                            onClick={() => router.push(`/dashboard/edit-property/${property.id}`)}
+                          <Link
+                            href={`/dashboard/manage-properties/${property.id}`}
                             className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
                           >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => togglePropertyStatus(property.id, property.active)}
-                            className={`inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-xs font-medium text-white ${
-                              property.active 
-                                ? 'bg-yellow-600 hover:bg-yellow-700' 
-                                : 'bg-green-600 hover:bg-green-700'
-                            }`}
-                          >
-                            {property.active ? 'Unpublish' : 'Publish'}
-                          </button>
-                          <button
-                            onClick={() => deleteProperty(property.id)}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-xs font-medium text-white bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
+                            Manage
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -340,27 +159,6 @@ export default function ManagePropertiesPage() {
           )}
         </div>
       </div>
-      {fullViewImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
-          onClick={() => setFullViewImage(null)}
-        >
-          <div className="relative max-w-4xl max-h-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={getImageUrl(fullViewImage) || '/file.svg'} 
-              alt="Full view" 
-              className="max-w-full max-h-[90vh] object-contain"
-            />
-            <button
-              onClick={() => setFullViewImage(null)}
-              className="absolute top-4 right-4 text-white text-2xl bg-black bg-opacity-50 rounded-full p-2"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-      )}
     </AuthGuard>
   );
 }

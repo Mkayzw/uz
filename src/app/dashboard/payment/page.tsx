@@ -61,7 +61,12 @@ export default function PaymentPage() {
         } else if (data.status !== 'approved') {
           setError('This application has not been approved for payment.')
         } else {
-          setApplication(data as Application)
+          // Fix: property is returned as an array, extract the first element
+          const fixedData = {
+            ...data,
+            property: Array.isArray(data.property) ? data.property[0] : data.property
+          }
+          setApplication(fixedData as Application)
         }
       }
       setLoading(false)

@@ -132,49 +132,37 @@ export default function DashboardContent() {
   }
 
   useEffect(() => {
+    // Initial data fetch
     const fetchData = async () => {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
-        
         if (authError || !user) {
           router.push('/auth/login')
           return
         }
-
         setUser(user)
-
-        const [
-          profileData,
-          allPropsData,
-        ] = await Promise.all([
+        const [profileData, allPropsData] = await Promise.all([
           getProfile(supabase, user),
           getAllActiveProperties(supabase),
-        ]);
-
+        ])
         setProfile(profileData)
         setAllProperties(allPropsData)
-
         if (profileData.role === 'agent' && profileData.agent_status === 'active') {
           const [agentProperties, agentApps] = await Promise.all([
             getAgentProperties(supabase, user.id),
-            getAgentApplications(supabase, user.id)
-          ]);
+            getAgentApplications(supabase, user.id),
+          ])
           setProperties(agentProperties)
           setAgentApplications(agentApps)
         }
-
         if (profileData.role === 'tenant') {
-          const [
-            tenantApplications,
-            savedProps,
-          ] = await Promise.all([
+          const [tenantApplications, savedProps] = await Promise.all([
             getTenantApplications(supabase, user.id),
             getSavedProperties(supabase, user.id),
-          ]);
+          ])
           setApplications(tenantApplications)
           setSavedProperties(savedProps)
         }
-
       } catch (err) {
         console.error('Error:', err)
         setError('An unexpected error occurred')
@@ -182,70 +170,71 @@ export default function DashboardContent() {
         setLoading(false)
       }
     }
-
     fetchData()
 
-    const profileChannel = supabase
-      .channel('profile-changes')
+    // Real-time subscriptions
+    const profileChannel = supabase.channel('profile-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user?.id}` }, payload => setProfile(payload.new as UserProfile))
+      .subscribe()
+
+    const propertiesChannel = supabase.channel('property-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pads' }, () => {
+        getAllActiveProperties(supabase).then(setAllProperties)
+        if (profile?.role === 'agent' && profile.agent_status === 'active' && user?.id) {
+          getAgentProperties(supabase, user.id).then(setProperties)
+        }
+      })
+      .subscribe()
+
+    const applicationsChannel = supabase.channel('application-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, payload => {
+        if (user?.id) {
+          if (profile?.role === 'tenant') getTenantApplications(supabase, user.id).then(setApplications)
+          if (profile?.role === 'agent' && profile.agent_status === 'active') getAgentApplications(supabase, user.id).then(setAgentApplications)
+        }
+      })
+      .subscribe()
+
+    const savedPropertiesChannel = supabase.channel('saved-property-changes')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user?.id}` },
+        { event: '*', schema: 'public', table: 'saved_properties' },
         (payload) => {
-          setProfile(payload.new as UserProfile)
+          if (profile?.role === 'tenant' && user?.id) {
+            getSavedProperties(supabase, user.id).then(setSavedProperties)
+          }
         }
       )
       .subscribe()
 
-    const propertiesChannel = supabase
-      .channel('property-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pads' },
-        (payload) => {
-            getAllActiveProperties(supabase).then(setAllProperties)
-            if(profile?.role === 'agent' && profile?.agent_status === 'active' && user?.id) {
-                getAgentProperties(supabase, user.id).then(setProperties)
-            }
-        }
-      )
+    // Subscribe to public channels for immediate UI updates
+    const appChannelPublic = supabase
+      .channel('public:applications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
+        const newApp = payload.new as Application
+        setApplications(prev => {
+          if (payload.eventType === 'INSERT') return [...prev, newApp]
+          if (payload.eventType === 'UPDATE') return prev.map(app => app.id === newApp.id ? newApp : app)
+          if (payload.eventType === 'DELETE') return prev.filter(app => app.id !== payload.old.id)
+          return prev
+        })
+      })
       .subscribe()
 
-    const applicationsChannel = supabase
-        .channel('application-changes')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'applications' },
-            (payload) => {
-                if(user?.id) {
-                    if(profile?.role === 'tenant') {
-                        getTenantApplications(supabase, user.id).then(setApplications)
-                    }
-                    if(profile?.role === 'agent' && profile?.agent_status === 'active') {
-                        getAgentApplications(supabase, user.id).then(setAgentApplications);
-                    }
-                }
-            }
-        )
-        .subscribe()
-
-    const savedPropertiesChannel = supabase
-        .channel('saved-property-changes')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'saved_properties' },
-            (payload) => {
-                if(profile?.role === 'tenant' && user?.id) {
-                    getSavedProperties(supabase, user.id).then(setSavedProperties)
-                }
-            }
-        )
-        .subscribe()
+    const propChannelPublic = supabase
+      .channel('public:pads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pads' }, () => {
+        getAllActiveProperties(supabase).then(setAllProperties)
+      })
+      .subscribe()
 
     return () => {
       supabase.removeChannel(profileChannel)
       supabase.removeChannel(propertiesChannel)
       supabase.removeChannel(applicationsChannel)
       supabase.removeChannel(savedPropertiesChannel)
+      supabase.removeChannel(appChannelPublic)
+      supabase.removeChannel(propChannelPublic)
     }
   }, [router, user?.id, supabase, profile?.role, profile?.agent_status])
 
@@ -405,7 +394,8 @@ export default function DashboardContent() {
             .eq('tenant_id', user.id)
           
           if (error) throw error
-          
+          // Remove all matching applications from local state
+          setApplications(prev => prev.filter(app => app.property_id !== propertyId))
           showNotification({
             title: 'Application Canceled',
             message: `Your application for "${property?.title}" has been removed.`,

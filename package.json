@@ -27,6 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
+    "supabase": "^2.30.4",
     "tailwindcss": "^4",
     "typescript": "^5",
     "typescript-eslint": "^8.36.0"

@@ -6,6 +6,14 @@ import { useRouter, useParams } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import { v4 as uuidv4 } from 'uuid';
 
+// ⚠️ CRITICAL: This edit form uses legacy bedrooms/bathrooms fields
+// while the create form uses the new rooms/beds system.
+// This creates a major architectural inconsistency where:
+// 1. New properties use room/bed system
+// 2. Edited properties revert to legacy system
+// 3. Data integrity is compromised
+// TODO: Rewrite this form to use rooms/beds system like the create form
+
 interface EditFormData {
     title: string;
     description: string;

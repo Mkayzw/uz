@@ -22,9 +22,8 @@ const PropertyForm = () => {
     state: "",
     zipCode: "",
     propertyType: "apartment",
-    bedrooms: "1",
-    bathrooms: "1",
     price: "",
+    bathrooms: "1", // Property-level bathrooms (shared facilities)
     photos: [] as File[],
     amenities: {
       wifi: false,
@@ -44,6 +43,46 @@ const PropertyForm = () => {
     contactPhone: "",
     contactEmail: "",
   });
+
+  // Room configuration state
+  const [rooms, setRooms] = useState([
+    { id: 1, name: "Room 1", beds: 1 }
+  ]);
+
+  // Room management functions
+  const addRoom = () => {
+    // Generate unique ID to prevent duplicates when rooms are removed
+    const maxId = rooms.length > 0 ? Math.max(...rooms.map(r => r.id)) : 0;
+    const newRoom = {
+      id: maxId + 1,
+      name: `Room ${rooms.length + 1}`,
+      beds: 1
+    };
+    setRooms([...rooms, newRoom]);
+  };
+
+  const removeRoom = (roomId: number) => {
+    if (rooms.length > 1) {
+      setRooms(rooms.filter(room => room.id !== roomId));
+    }
+  };
+
+  const updateRoom = (roomId: number, field: string, value: any) => {
+    setRooms(rooms.map(room => 
+      room.id === roomId ? { ...room, [field]: value } : room
+    ));
+  };
+
+  // Calculate total beds across all rooms
+  const getTotalBeds = () => rooms.reduce((total, room) => total + room.beds, 0);
+
+  // Determine room type based on number of beds
+  const getRoomType = (bedCount: number): 'single' | 'double' | 'triple' | 'quad' => {
+    if (bedCount >= 4) return 'quad';
+    if (bedCount === 3) return 'triple';
+    if (bedCount === 2) return 'double';
+    return 'single';
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -102,6 +141,16 @@ const PropertyForm = () => {
         throw new Error("Please upload at least one photo of your property");
       }
 
+      // Validate room configuration
+      if (rooms.length === 0) {
+        throw new Error("Please configure at least one room");
+      }
+
+      const hasInvalidRooms = rooms.some(room => !room.name.trim() || room.beds < 1);
+      if (hasInvalidRooms) {
+        throw new Error("Please ensure all rooms have valid names and at least 1 bed");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/auth/login");
@@ -157,8 +206,8 @@ const PropertyForm = () => {
           state: formData.state,
           zip_code: formData.zipCode,
           property_type: formData.propertyType,
-          bedrooms: parseInt(formData.bedrooms),
-          bathrooms: parseInt(formData.bathrooms),
+          bedrooms: getTotalBeds(), // Total beds across all rooms
+          bathrooms: parseInt(formData.bathrooms), // Property-level bathrooms
           image_urls: photoUrls,
           image_url: photoUrls[0] || null, // Using the first image as the main one
           available_from: formData.availableFrom || null,
@@ -184,34 +233,45 @@ const PropertyForm = () => {
         throw new Error("Error creating property: " + padError.message);
       }
 
-      // 3. Insert room information
-      // Map property type and bedroom count to appropriate room type
-      const getRoomType = (propertyType: string, bedrooms: number): 'single' | 'double' | 'triple' | 'quad' => {
-        if (propertyType === "bedsitter" || propertyType === "single-room") {
-          return "single";
-        }
+      // 3. Insert rooms and beds
+      for (const room of rooms) {
+        // Insert room
+        // TODO: Individual room pricing should be implemented in the UI
+        // For now, using property price divided by number of rooms as baseline
+        const roomPrice = parseFloat(formData.price) / rooms.length;
         
-        // For other property types, use bedroom count to determine room type
-        if (bedrooms >= 4) return "quad";
-        if (bedrooms === 3) return "triple";
-        if (bedrooms === 2) return "double";
-        return "single"; // Default for 1 bedroom or fallback
-      };
+        const { data: roomData, error: roomError } = await supabase.from("rooms").insert({
+          pad_id: padData.id,
+          name: room.name,
+          type: getRoomType(room.beds),
+          price: roomPrice, // Price per room, not total property price
+          capacity: room.beds,
+        }).select().single();
 
-      const roomType = getRoomType(formData.propertyType, parseInt(formData.bedrooms) || 1);
-      
-      const { error: roomError } = await supabase.from("rooms").insert({
-        pad_id: padData.id,
-        name: "Main Space",
-        type: roomType,
-        price: parseFloat(formData.price),
-        capacity: parseInt(formData.bedrooms) || 1,
-      });
+        if (roomError) {
+          // Consider deleting the pad if room creation fails
+          await supabase.from("pads").delete().eq("id", padData.id);
+          throw new Error("Error creating room: " + roomError.message);
+        }
 
-      if (roomError) {
-        // Consider deleting the pad if room creation fails
-        await supabase.from("pads").delete().eq("id", padData.id);
-        throw new Error("Error creating room: " + roomError.message);
+        // Insert beds for this room
+        const bedInserts = [];
+        for (let i = 1; i <= room.beds; i++) {
+          bedInserts.push({
+            room_id: roomData.id,
+            bed_number: i,
+            is_available: true
+          });
+        }
+
+        if (bedInserts.length > 0) {
+          const { error: bedError } = await supabase.from("beds").insert(bedInserts);
+          if (bedError) {
+            // Clean up: delete pad and rooms if bed creation fails
+            await supabase.from("pads").delete().eq("id", padData.id);
+            throw new Error("Error creating beds: " + bedError.message);
+          }
+        }
       }
 
       // Success!
@@ -246,7 +306,7 @@ const PropertyForm = () => {
             {/* Stepper */}
             <div className="mb-8">
               <div className="flex justify-between mb-2">
-                <span className={`text-sm ${step === 0 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>Property Details</span>
+                <span className={`text-sm ${step === 0 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>Property & Rooms</span>
                 <span className={`text-sm ${step === 1 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>Media & Amenities</span>
                 <span className={`text-sm ${step === 2 ? 'font-bold text-blue-600' : 'text-gray-500'}`}>Availability & Contact</span>
               </div>
@@ -261,7 +321,7 @@ const PropertyForm = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {step === 0 && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold border-b pb-2">Step 1: Property Details</h2>
+                  <h2 className="text-xl font-semibold border-b pb-2">Step 1: Property Details & Room Configuration</h2>
                   
                   <div className="mb-4">
                     <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -335,40 +395,98 @@ const PropertyForm = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="bedrooms" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Bedrooms
-                      </label>
-                      <select
-                        id="bedrooms"
-                        name="bedrooms"
-                        value={formData.bedrooms}
-                        onChange={handleChange}
-                        className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5+</option>
-                      </select>
-                    </div>
-                    
-                    <div>
                       <label htmlFor="bathrooms" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Bathrooms
+                        Bathrooms (Property-wide) *
                       </label>
                       <select
                         id="bathrooms"
                         name="bathrooms"
+                        required
                         value={formData.bathrooms}
                         onChange={handleChange}
                         className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4+</option>
+                        <option value="1">1 bathroom</option>
+                        <option value="2">2 bathrooms</option>
+                        <option value="3">3 bathrooms</option>
+                        <option value="4">4 bathrooms</option>
+                        <option value="5">5+ bathrooms</option>
                       </select>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-6">
+                        <strong>Note:</strong> Bathrooms are shared facilities for the entire property, separate from individual room configurations.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  
+                  {/* Room Configuration Section */}
+                  <div className="border-t pt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">Room Configuration</h3>
+                      <button
+                        type="button"
+                        onClick={addRoom}
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800"
+                      >
+                        + Add Room
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {rooms.map((room, index) => (
+                        <div key={room.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                          <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-medium text-gray-900 dark:text-white">Room {index + 1}</h4>
+                            {rooms.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeRoom(room.id)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Room Name
+                              </label>
+                              <input
+                                type="text"
+                                value={room.name}
+                                onChange={(e) => updateRoom(room.id, 'name', e.target.value)}
+                                className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Number of Beds ({getRoomType(room.beds)} room)
+                              </label>
+                              <select
+                                value={room.beds}
+                                onChange={(e) => updateRoom(room.id, 'beds', parseInt(e.target.value))}
+                                className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                              >
+                                <option value={1}>1 bed (single)</option>
+                                <option value={2}>2 beds (double)</option>
+                                <option value={3}>3 beds (triple)</option>
+                                <option value={4}>4 beds (quad)</option>
+                                <option value={5}>5 beds</option>
+                                <option value={6}>6 beds</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <strong>Total beds across all rooms:</strong> {getTotalBeds()}
+                      </div>
                     </div>
                   </div>
                   

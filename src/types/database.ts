@@ -222,6 +222,26 @@ export type Database = {
           created_at?: string
         }
       }
+      beds: {
+        Row: {
+          id: string
+          room_id: string
+          bed_number: number
+          is_available: boolean
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          bed_number: number
+          is_available?: boolean
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          bed_number?: number
+          is_available?: boolean
+        }
+      }
       agent_payments: {
         Row: {
           id: string
@@ -342,6 +362,7 @@ export type PropertyStatus = Database['public']['Tables']['properties']['Row']['
 export type ProfileRow = Database['public']['Tables']['profiles']['Row']
 export type PadRow = Database['public']['Tables']['pads']['Row']
 export type RoomRow = Database['public']['Tables']['rooms']['Row']
+export type BedRow = Database['public']['Tables']['beds']['Row']
 export type BookingRow = Database['public']['Tables']['bookings']['Row']
 export type PropertyRow = Database['public']['Tables']['properties']['Row']
 export type ApplicationRow = Database['public']['Tables']['applications']['Row']
