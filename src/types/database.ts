@@ -8,6 +8,7 @@ export type Database = {
           role: 'tenant' | 'agent'
           agent_status: 'not_applicable' | 'pending_payment' | 'active'
           is_verified_agent: boolean
+          ecocash_number: string | null
         }
         Insert: {
           id: string
@@ -15,6 +16,7 @@ export type Database = {
           role: 'tenant' | 'agent'
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
           is_verified_agent?: boolean
+          ecocash_number?: string | null
         }
         Update: {
           id?: string
@@ -22,6 +24,7 @@ export type Database = {
           role?: 'tenant' | 'agent'
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
           is_verified_agent?: boolean
+          ecocash_number?: string | null
         }
       }
       properties: {
@@ -300,6 +303,8 @@ export type Database = {
           message: string | null
           created_at: string
           updated_at: string
+          transaction_code: string | null
+          payment_verified: boolean
         }
         Insert: {
           id?: string
@@ -309,6 +314,8 @@ export type Database = {
           message?: string | null
           created_at?: string
           updated_at?: string
+          transaction_code?: string | null
+          payment_verified?: boolean
         }
         Update: {
           id?: string
@@ -318,6 +325,8 @@ export type Database = {
           message?: string | null
           created_at?: string
           updated_at?: string
+          transaction_code?: string | null
+          payment_verified?: boolean
         }
       }
       saved_properties: {

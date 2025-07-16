@@ -17,6 +17,9 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
+              <Link href="/changelog" className="hidden md:inline-block text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                Changelog
+              </Link>
               <Link href="/auth/login" className="hidden md:inline-block text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 Sign In
               </Link>

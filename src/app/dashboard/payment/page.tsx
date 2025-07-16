@@ -13,7 +13,8 @@ interface Application {
     title: string;
     price: number;
     agent_id: string;
-  }
+  };
+  agent_ecocash?: string;
 }
 
 export default function PaymentPage() {
@@ -24,6 +25,7 @@ export default function PaymentPage() {
 
   const [user, setUser] = useState<User | null>(null)
   const [application, setApplication] = useState<Application | null>(null)
+  const [agentEcocash, setAgentEcocash] = useState<string>('0770 000 000')
   const [transactionCode, setTransactionCode] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -67,6 +69,20 @@ export default function PaymentPage() {
             property: Array.isArray(data.property) ? data.property[0] : data.property
           }
           setApplication(fixedData as Application)
+
+          // Fetch agent's EcoCash number
+          const agentId = fixedData.property.agent_id
+          if (agentId) {
+            const { data: agentData, error: agentError } = await supabase
+              .from('profiles')
+              .select('ecocash_number')
+              .eq('id', agentId)
+              .single()
+
+            if (!agentError && agentData?.ecocash_number) {
+              setAgentEcocash(agentData.ecocash_number)
+            }
+          }
         }
       }
       setLoading(false)
@@ -89,27 +105,30 @@ export default function PaymentPage() {
     }
 
     try {
-      let insertData: any = { transaction_code: transactionCode.trim() }
-      let tableName = ''
-
       if (paymentType === 'rent' && application) {
-        tableName = 'rent_payments'
-        insertData = {
-          ...insertData,
-          application_id: application.id,
-          tenant_id: user.id,
-          agent_id: application.property.agent_id,
-          amount: application.property.price,
-        }
+        // Update the application with the transaction code
+        const { error: updateError } = await supabase
+          .from('applications')
+          .update({
+            transaction_code: transactionCode.trim(),
+            payment_verified: false
+          })
+          .eq('id', application.id)
+          
+        if (updateError) throw updateError
       } else if (paymentType === 'agent_activation') {
-        tableName = 'agent_payments'
-        insertData = { ...insertData, agent_id: user.id }
+        // Insert into agent_payments for agent activation
+        const { error: insertError } = await supabase
+          .from('agent_payments')
+          .insert({
+            agent_id: user.id,
+            transaction_code: transactionCode.trim()
+          })
+          
+        if (insertError) throw insertError
       } else {
         throw new Error('Invalid payment type.')
       }
-
-      const { error: insertError } = await supabase.from(tableName).insert(insertData)
-      if (insertError) throw insertError
 
       setSuccess(true)
       setTransactionCode('')
@@ -163,7 +182,7 @@ export default function PaymentPage() {
               <h3 className="font-bold text-gray-900 dark:text-white">Payment Instructions</h3>
               {instructions}
               <p className="text-lg font-mono font-bold text-blue-600 dark:text-blue-400 text-center my-3 py-2 bg-white dark:bg-gray-800 rounded">
-                0770 000 000
+                {agentEcocash}
               </p>
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 After sending the money, enter the transaction code you receive from EcoCash in the field below.

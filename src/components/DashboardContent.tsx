@@ -18,7 +18,7 @@ import {
   getAgentApplications,
 } from '@/lib/utils/dashboard'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
-import { updateApplicationStatus } from '@/app/dashboard/actions'
+import { updateApplicationStatus, verifyPayment } from '@/app/dashboard/actions'
 
 
 interface UserProfile {
@@ -26,6 +26,7 @@ interface UserProfile {
   full_name: string | null
   role: 'tenant' | 'agent'
   agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
+  ecocash_number?: string | null
 }
 
 interface Property {
@@ -54,6 +55,8 @@ interface Application {
   tenant_id: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  transaction_code?: string | null;
+  payment_verified?: boolean;
   property?: Property;
   tenant?: {
     full_name?: string | null
@@ -84,6 +87,8 @@ export default function DashboardContent() {
   const [propertySearchTerm, setPropertySearchTerm] = useState('')
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('')
+  const [ecocashNumber, setEcocashNumber] = useState<string>('')
+  const [updatingEcocash, setUpdatingEcocash] = useState(false)
   const router = useRouter()
 
   // Modal states
@@ -130,6 +135,42 @@ export default function DashboardContent() {
   const closeNotification = () => {
     setNotificationModal(prev => ({ ...prev, isOpen: false }))
   }
+  
+  const updateEcocashNumber = async () => {
+    if (!user || !profile) return;
+    
+    try {
+      setUpdatingEcocash(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ecocash_number: ecocashNumber })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setProfile({
+        ...profile,
+        ecocash_number: ecocashNumber
+      });
+      
+      showNotification({
+        title: 'Success!',
+        message: 'Your EcoCash number has been updated successfully.',
+        type: 'success',
+      });
+    } catch (err) {
+      console.error('Error updating EcoCash number:', err);
+      showNotification({
+        title: 'Error',
+        message: 'Failed to update your EcoCash number. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setUpdatingEcocash(false);
+    }
+  };
 
   useEffect(() => {
     // Initial data fetch
@@ -146,6 +187,10 @@ export default function DashboardContent() {
           getAllActiveProperties(supabase),
         ])
         setProfile(profileData)
+        // Set ecocash number from profile data if it exists
+        if (profileData.ecocash_number) {
+          setEcocashNumber(profileData.ecocash_number)
+        }
         setAllProperties(allPropsData)
         if (profileData.role === 'agent' && profileData.agent_status === 'active') {
           const [agentProperties, agentApps] = await Promise.all([
@@ -167,7 +212,8 @@ export default function DashboardContent() {
         console.error('Error:', err)
         setError('An unexpected error occurred')
       } finally {
-        setLoading(false)
+        setLoading(false
+        )
       }
     }
     fetchData()
@@ -478,6 +524,28 @@ export default function DashboardContent() {
         }
     });
   }
+  
+  const handleVerifyPayment = (applicationId: string) => {
+    showConfirmation({
+      title: 'Verify Payment',
+      message: 'Confirm that you have received this payment in your EcoCash account?',
+      type: 'success',
+      confirmText: 'Verify Payment',
+      icon: '💰',
+      onConfirm: async () => {
+        const result = await verifyPayment(applicationId);
+        if (result.error) {
+          showNotification({ title: 'Error', message: result.error, type: 'error' });
+        } else {
+          showNotification({ 
+            title: 'Payment Verified', 
+            message: 'The payment has been marked as verified.', 
+            type: 'success' 
+          });
+        }
+      }
+    });
+  };
 
   const handleRejectApplication = (applicationId: string) => {
       showConfirmation({
@@ -1191,12 +1259,36 @@ export default function DashboardContent() {
                             {application.status}
                           </span>
                           {application.status === 'approved' && (
-                            <button 
-                              onClick={() => router.push(`/dashboard/payment?application_id=${application.id}`)}
-                              className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                            >
-                              Pay
-                            </button>
+                            <>
+                              {application.transaction_code ? (
+                                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md">
+                                  <p className="text-sm text-gray-800 dark:text-gray-300">
+                                    <span className="font-medium">Transaction Code:</span> {application.transaction_code}
+                                  </p>
+                                  {application.payment_verified ? (
+                                    <div className="flex items-center mt-2 text-green-600 dark:text-green-400">
+                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      <span className="text-xs font-medium">Payment verified</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center mt-2">
+                                      <button
+                                        onClick={() => handleVerifyPayment(application.id)}
+                                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                                      >
+                                        Verify Payment
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                                  Awaiting payment from tenant
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
@@ -1205,8 +1297,8 @@ export default function DashboardContent() {
                 </div>
               ) : (
                 <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -1262,13 +1354,52 @@ export default function DashboardContent() {
                           )}
                         </div>
                       </div>
+                      
+                      {/* Payment information section for approved applications */}
+                      {application.status === 'approved' && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div className="flex justify-between items-center mb-2">
+                            <h5 className="font-semibold text-gray-900 dark:text-white">Payment Status</h5>
+                            {application.payment_verified ? (
+                              <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">
+                                Verified
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs rounded-full">
+                                Pending Verification
+                              </span>
+                            )}
+                          </div>
+                          
+                          {application.transaction_code ? (
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                              <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 flex-1">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction Code:</p>
+                                <p className="font-mono font-medium text-gray-800 dark:text-gray-200">{application.transaction_code}</p>
+                              </div>
+                              {!application.payment_verified && (
+                                <button 
+                                  onClick={() => handleVerifyPayment(application.id)}
+                                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                                >
+                                  Verify Payment
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                              Awaiting payment from tenant
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No applications yet</h3>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -1306,6 +1437,27 @@ export default function DashboardContent() {
                       <p className="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
                       <p className="text-gray-900 dark:text-white">Active</p>
                     </div>
+                    {profile?.role === 'agent' && (
+                      <div className="col-span-2">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">EcoCash Number</p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={ecocashNumber}
+                            onChange={(e) => setEcocashNumber(e.target.value)}
+                            placeholder="e.g., 0777123456"
+                            className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          />
+                          <button 
+                            onClick={updateEcocashNumber}
+                            disabled={updatingEcocash} 
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                          >
+                            {updatingEcocash ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

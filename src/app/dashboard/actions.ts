@@ -148,6 +148,26 @@ export async function updateApplicationStatus(applicationId: string, status: 'ap
   return { data }
 }
 
+export async function verifyPayment(applicationId: string) {
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
+
+  const { data, error } = await supabase
+    .from('applications')
+    .update({ payment_verified: true })
+    .eq('id', applicationId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error verifying payment:', error)
+    return { error: 'Failed to verify payment.' }
+  }
+
+  revalidatePath('/dashboard')
+  return { data }
+}
+
 export async function getRoomStats(padId: string) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)

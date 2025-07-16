@@ -30,6 +30,7 @@ export default function ManagePropertyPage({ params }: { params: { id: string } 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
+  const propertyId = params.id;
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -44,7 +45,7 @@ export default function ManagePropertyPage({ params }: { params: { id: string } 
         const { data, error: propertyError } = await supabase
           .from('pads')
           .select('*')
-          .eq('id', params.id)
+          .eq('id', propertyId)
           .eq('created_by', user.id)
           .single();
 
@@ -70,7 +71,7 @@ export default function ManagePropertyPage({ params }: { params: { id: string } 
     };
 
     fetchProperty();
-  }, [params.id, router]);
+  }, [propertyId, router]);
 
   if (loading) {
     return (
