@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
@@ -17,7 +17,7 @@ interface Application {
   agent_ecocash?: string;
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -220,5 +220,18 @@ export default function PaymentPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading payment page...</p>
+      </div>
+    </div>}>
+      <PaymentPageContent />
+    </Suspense>
   )
 }

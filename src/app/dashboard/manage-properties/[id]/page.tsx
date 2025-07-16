@@ -24,13 +24,14 @@ interface Property {
   view_count: number;
 }
 
-export default function ManagePropertyPage({ params }: { params: { id: string } }) {
+export default async function ManagePropertyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = createClient();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
-  const propertyId = params.id;
+  const propertyId = id;
 
   useEffect(() => {
     const fetchProperty = async () => {

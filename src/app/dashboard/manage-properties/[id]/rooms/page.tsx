@@ -8,7 +8,8 @@ import AuthGuard from '@/components/AuthGuard';
 import { RoomRow, BedRow } from '@/types/database';
 import { addRoom, addBed, deleteBed, updateBedAvailability, deleteRoom, getRoomStats } from '@/app/dashboard/actions';
 
-export default function ManageRoomsPage({ params }: { params: { id: string } }) {
+export default async function ManageRoomsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = createClient();
   const [rooms, setRooms] = useState<RoomRow[]>([]);
   const [beds, setBeds] = useState<{ [key: string]: BedRow[] }>({});
@@ -26,7 +27,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
   const [propertyStats, setPropertyStats] = useState<any>(null);
 
   const refreshStats = async () => {
-    const statsResult = await getRoomStats(params.id);
+    const statsResult = await getRoomStats(id);
     if (!statsResult.error) {
       setPropertyStats(statsResult);
     }
@@ -94,7 +95,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
         const { data: roomsData, error: roomsError } = await supabase
           .from('rooms')
           .select('*')
-          .eq('pad_id', params.id);
+          .eq('pad_id', id);
 
         if (roomsError) {
           throw roomsError;
@@ -117,7 +118,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
           setBeds(bedsByRoom);
 
           // Fetch property statistics
-          const statsResult = await getRoomStats(params.id);
+          const statsResult = await getRoomStats(id);
           if (!statsResult.error) {
             setPropertyStats(statsResult);
           }
@@ -136,7 +137,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
     };
 
     fetchRoomsAndBeds();
-  }, [params.id, router]);
+  }, [id, router]);
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +166,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
       available: true,
     };
     
-    const result = await addRoom(params.id, roomData);
+    const result = await addRoom(id, roomData);
     if (result.error) {
       setError(result.error);
     } else {
@@ -229,7 +230,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Rooms</h1>
             <Link
-              href={`/dashboard/manage-properties/${params.id}`}
+              href={`/dashboard/manage-properties/${id}`}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               ← Back to Property
