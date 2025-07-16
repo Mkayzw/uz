@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
 export default function SignupPage() {
   const supabase = createClient()
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,7 +17,13 @@ export default function SignupPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [intent, setIntent] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const intentParam = searchParams.get('intent')
+    setIntent(intentParam)
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -70,7 +77,16 @@ export default function SignupPage() {
             <Link href="/">
                 <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">UniStay</h1>
             </Link>
-          <p className="text-gray-600 dark:text-gray-300">Create your account</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {intent === 'apply' ? 'Sign up to apply for this property' : 'Create your account'}
+          </p>
+          {intent === 'apply' && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                📍 You'll be redirected to apply for your selected property after registration
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">

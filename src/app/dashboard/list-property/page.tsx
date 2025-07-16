@@ -610,13 +610,15 @@ const PropertyForm = () => {
                       <img 
                         src={src} 
                         alt={`Preview ${index + 1}`} 
-                        className="h-24 w-full object-cover rounded-md cursor-pointer"
+                        className="h-24 w-full object-cover rounded-md cursor-pointer touch-manipulation"
                         onClick={() => setFullViewImage(src)}
+                        style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
                       />
                       <button
                         type="button"
                         onClick={() => removePhoto(index)}
-                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity touch-manipulation"
+                        style={{ WebkitTouchCallout: 'none' }}
                       >
                         X
                       </button>
@@ -920,19 +922,22 @@ const PropertyForm = () => {
       </div>
       {fullViewImage && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 touch-manipulation"
           onClick={() => setFullViewImage(null)}
+          style={{ WebkitTouchCallout: 'none' }}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={fullViewImage} 
               alt="Full view" 
-              className="max-w-full max-h-[90vh] object-contain"
+              className="max-w-full max-h-[90vh] object-contain pointer-events-none"
+              style={{ WebkitUserSelect: 'none' }}
             />
             <button
               onClick={() => setFullViewImage(null)}
-              className="absolute top-4 right-4 text-white text-2xl bg-black bg-opacity-50 rounded-full p-2"
+              className="absolute top-4 right-4 text-white text-2xl bg-black bg-opacity-50 rounded-full p-2 touch-manipulation"
+              style={{ WebkitTouchCallout: 'none' }}
             >
               &times;
             </button>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
+import PropertyListing from '@/components/PropertyListing'
 
 export default function Home() {
   return (
@@ -41,9 +42,9 @@ export default function Home() {
             The #1 platform for University of Zimbabwe students to discover safe, affordable, and convenient off-campus housing.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup" className="inline-block px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
-              Explore Listings
-            </Link>
+            <a href="#properties" className="inline-block px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
+              Browse Properties
+            </a>
             <Link href="/auth/signup?role=agent" className="inline-block px-8 py-4 text-lg font-medium text-blue-600 bg-white border-2 border-blue-600 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
               List a Property
             </Link>
@@ -83,6 +84,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Property Listings */}
+      <div id="properties">
+        <PropertyListing limit={6} />
+      </div>
 
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">

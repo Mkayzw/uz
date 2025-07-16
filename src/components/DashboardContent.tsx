@@ -218,6 +218,41 @@ export default function DashboardContent() {
     }
     fetchData()
 
+    // Handle apply parameter from URL
+    const handleApplyParameter = () => {
+      const applyParam = searchParams.get('apply')
+      const storedRedirect = typeof window !== 'undefined' ? localStorage.getItem('redirect_after_auth') : null
+      
+      let propertyIdToApply = applyParam
+      
+      // If no URL param, check localStorage
+      if (!propertyIdToApply && storedRedirect) {
+        const url = new URL(storedRedirect, window.location.origin)
+        propertyIdToApply = url.searchParams.get('apply')
+      }
+      
+      if (propertyIdToApply && user && profile?.role === 'tenant') {
+        // Clear the URL parameter
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('apply')
+        window.history.replaceState({}, '', newUrl.toString())
+        
+        // Auto-apply to the property
+        setTimeout(() => {
+          handleApplyToProperty(propertyIdToApply!)
+        }, 1000) // Wait a bit for data to load
+      }
+      
+      // Clear any stored redirect
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('redirect_after_auth')
+      }
+    }
+    
+    if (!loading && user && profile) {
+      handleApplyParameter()
+    }
+
     // Real-time subscriptions
     const profileChannel = supabase.channel('profile-changes')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user?.id}` }, payload => setProfile(payload.new as UserProfile))

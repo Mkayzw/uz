@@ -10,6 +10,16 @@ const ChangelogPage = () => {
         <p className="text-gray-600 mb-4">July 16, 2025</p>
         <ul className="list-disc list-inside">
           <li>Initial release of the application.</li>
+          
+        </ul>
+      </div>
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Version 0.1.1</h2>
+        <p className="text-gray-600 mb-4">July 17, 2025</p>
+        <ul className="list-disc list-inside">
+          <li>Added property image gallery: users can now view multiple images per property with a carousel/gallery UI.</li>
+          <li>Properties are now viewable on the main page without authentication; users only need to sign up when applying.</li>
+          <li>Improved public property browsing experience and fixed image modal navigation.</li>
         </ul>
       </div>
     </div>

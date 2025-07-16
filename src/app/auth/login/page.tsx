@@ -38,7 +38,14 @@ export default function LoginPage() {
         throw new Error(data.error || 'An unknown error occurred')
       }
 
-      router.push('/dashboard')
+    
+      const storedRedirect = typeof window !== 'undefined' ? localStorage.getItem('redirect_after_auth') : null
+      if (storedRedirect) {
+        router.push(storedRedirect)
+        localStorage.removeItem('redirect_after_auth')
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (error: unknown) {
       if (error instanceof Error) {
