@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
-import pdf from 'html-pdf-node'
+import puppeteer from 'puppeteer'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
-  const applicationId = params.id
+  const { id } = await params
+  const applicationId = id
 
   const { data: application, error } = await supabase
     .from('applications')
@@ -41,15 +42,17 @@ export async function GET(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 40px; }
-      .container { border: 1px solid #ddd; padding: 40px; }
-      h1 { text-align: center; color: #333; }
-      .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-      .details, .summary { margin-top: 20px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
-      th { background-color: #f7f7f7; }
+      body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 12px; }
+      .container { padding: 20px; }
+      h1 { text-align: center; color: #333; font-size: 18px; margin-bottom: 20px; }
+      .header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 11px; }
+      .details, .summary { margin-top: 15px; }
+      .details h2, .summary h2 { font-size: 14px; margin-bottom: 10px; color: #333; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+      th { background-color: #f7f7f7; font-weight: bold; }
       .total { font-weight: bold; }
+      p { margin: 5px 0; }
     </style>
   </head>
   <body>
@@ -120,15 +123,27 @@ export async function GET(
   `
 
   try {
-    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-      pdf.generatePdf({ content: htmlContent }, { format: 'A4' }, (err, buffer) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(buffer)
-        }
-      })
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     })
+    const page = await browser.newPage()
+    
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' })
+    
+    const pdfBuffer = await page.pdf({
+      width: '148mm',  
+      height: '210mm', 
+      printBackground: true,
+      margin: {
+        top: '8mm',
+        right: '8mm',
+        bottom: '8mm',
+        left: '8mm'
+      }
+    })
+    
+    await browser.close()
 
     return new NextResponse(pdfBuffer, {
       status: 200,
