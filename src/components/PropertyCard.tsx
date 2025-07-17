@@ -160,30 +160,6 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs z-10">
                 {currentImageIndex + 1} / {allImages.length}
               </div>
-              
-              {/* Dot Indicators - Only show if there are multiple images and more than 2 images */}
-              {allImages.length > 2 && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-                  {allImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        goToImage(index)
-                      }}
-                      onTouchStart={(e) => {
-                        e.stopPropagation()
-                      }}
-                      className={`w-1.5 h-1.5 rounded-full transition-all touch-manipulation ${
-                        index === currentImageIndex 
-                          ? 'bg-white shadow-lg' 
-                          : 'bg-white bg-opacity-40 hover:bg-opacity-60'
-                      }`}
-                      style={{ WebkitTouchCallout: 'none' }}
-                    />
-                  ))}
-                </div>
-              )}
             </>
           )}
         </div>
