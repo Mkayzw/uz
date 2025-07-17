@@ -128,7 +128,7 @@ export async function deleteRoom(roomId: string) {
     return { success: true }
 }
 
-export async function updateApplicationStatus(applicationId: string, status: 'approved' | 'rejected') {
+export async function updateApplicationStatus(applicationId: string, status: 'approved' | 'rejected' | 'cancelled') {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
@@ -146,6 +146,9 @@ export async function updateApplicationStatus(applicationId: string, status: 'ap
 
   revalidatePath('/dashboard')
   return { data }
+}
+export async function cancelApplication(applicationId: string) {
+  return updateApplicationStatus(applicationId, 'cancelled')
 }
 
 export async function verifyPayment(applicationId: string) {

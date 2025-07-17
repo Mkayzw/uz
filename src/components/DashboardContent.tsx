@@ -18,7 +18,8 @@ import {
   getAgentApplications,
 } from '@/lib/utils/dashboard'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
-import { updateApplicationStatus, verifyPayment } from '@/app/dashboard/actions'
+import { updateApplicationStatus, verifyPayment, cancelApplication } from '@/app/dashboard/actions'
+import { calculateCommission } from '@/lib/utils/commission'
 
 
 interface UserProfile {
@@ -53,7 +54,7 @@ interface Application {
   id: string;
   property_id: string;
   tenant_id: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   created_at: string;
   transaction_code?: string | null;
   payment_verified?: boolean;
@@ -454,41 +455,22 @@ export default function DashboardContent() {
     })
   }
 
-  const handleCancelApplication = async (propertyId: string) => {
-    if (!user) return
-    
-    const application = applications.find(app => app.property_id === propertyId)
+  const handleCancelApplication = async (applicationId: string) => {
+    const application = applications.find(app => app.id === applicationId)
     const property = application?.property
-    
+
     showConfirmation({
       title: 'Cancel Application',
-      message: `Cancel application for "${property?.title}"?`,
+      message: `Are you sure you want to cancel your application for "${property?.title}"?`,
       type: 'danger',
-      confirmText: 'Cancel Application',
+      confirmText: 'Yes, cancel',
       icon: '🚫',
       onConfirm: async () => {
-        try {
-          const { error } = await supabase
-            .from('applications')
-            .delete()
-            .eq('property_id', propertyId)
-            .eq('tenant_id', user.id)
-          
-          if (error) throw error
-          // Remove all matching applications from local state
-          setApplications(prev => prev.filter(app => app.property_id !== propertyId))
-          showNotification({
-            title: 'Application Canceled',
-            message: `Your application for "${property?.title}" has been removed.`,
-            type: 'success',
-            icon: '✅'
-          })
-        } catch (error: any) {
-          showNotification({
-            title: 'Cancel Failed',
-            message: error.message,
-            type: 'error'
-          })
+        const result = await cancelApplication(applicationId)
+        if (result.error) {
+          showNotification({ title: 'Error', message: result.error, type: 'error' })
+        } else {
+          showNotification({ title: 'Success', message: 'Application cancelled.', type: 'success' })
         }
       }
     })
@@ -613,7 +595,7 @@ export default function DashboardContent() {
   }
 
   const hasAppliedToProperty = (propertyId: string) => {
-    return applications.some(app => app.property_id === propertyId)
+    return applications.some(app => app.property_id === propertyId && app.status !== 'cancelled')
   }
 
   const [imageModal, setImageModal] = useState<{ isOpen: boolean; src: string; alt: string }>({
@@ -664,9 +646,11 @@ export default function DashboardContent() {
 
   const roleInfo = getRoleInfo(profile?.role || 'tenant', profile?.agent_status)
   const displayName = profile?.full_name || user?.email || 'User'
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+  const pendingApplicationsCount = agentApplications.filter(app => app.status === 'pending').length;
+  const bookingsCount = agentApplications.filter(app => app.status === 'approved').length;
+ 
+   return (
+     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -695,7 +679,7 @@ export default function DashboardContent() {
             Welcome back, {displayName}!
           </h2>
           <p className="dark:bg-gray-800 dark:text-gray-300">
-            Here&apos;s your personalized dashboard for UniStay.
+            Here's your personalized dashboard for UniStay.
           </p>
         </div>
         
@@ -720,6 +704,9 @@ export default function DashboardContent() {
                 <option value="saved">Saved Properties</option>
               )}
               <option value="account">Account</option>
+               {(profile?.role === 'agent' && profile?.agent_status === 'active') && (
+                 <option value="commission">Commission Tracking</option>
+               )}
             </select>
           </div>
           <div className="hidden sm:block">
@@ -783,6 +770,19 @@ export default function DashboardContent() {
                     Saved Properties
                   </button>
                 )}
+
+                 {(profile?.role === 'agent' && profile?.agent_status === 'active') && (
+                   <button
+                     onClick={() => setActiveTab('commission')}
+                     className={`${
+                       activeTab === 'commission'
+                         ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                     } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                   >
+                     Commission Tracking
+                   </button>
+                 )}
                 
                 <button
                   onClick={() => setActiveTab('account')}
@@ -819,7 +819,7 @@ export default function DashboardContent() {
                     </h3>
                     {profile?.role === 'agent' && (
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        profile.agent_status === 'active' 
+                        profile.agent_status === 'active'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                           : profile.agent_status === 'pending_verification'
                           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
@@ -852,7 +852,7 @@ export default function DashboardContent() {
                     {action.includes('Support') && 'Get help with your account.'}
                     {action.includes('Saved') && 'View your bookmarked properties.'}
                   </p>
-                  <button 
+                  <button
                     onClick={() => {
                       if (action.includes('Browse')) {
                         handleBrowseProperties();
@@ -866,6 +866,8 @@ export default function DashboardContent() {
                         setActiveTab('applications');
                       } else if (action.includes('Saved')) {
                         setActiveTab('saved');
+                      } else if (action.includes('Commission')) {
+                       setActiveTab('commission');
                       }
                     }}
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
@@ -890,14 +892,14 @@ export default function DashboardContent() {
                     <div className="text-sm text-gray-600 dark:text-gray-400">Total Views</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{agentApplications.length}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Applications</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">0</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Bookings</div>
-                  </div>
-                </div>
+                    <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{pendingApplicationsCount}</div>
+                     <div className="text-sm text-gray-600 dark:text-gray-400">Applications</div>
+                   </div>
+                   <div className="text-center">
+                     <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{bookingsCount}</div>
+                     <div className="text-sm text-gray-600 dark:text-gray-400">Bookings</div>
+                   </div>
+                 </div>
               </div>
             )}
           </div>
@@ -1023,7 +1025,10 @@ export default function DashboardContent() {
                           <button
                             onClick={() => {
                               if (hasAppliedToProperty(property.id)) {
-                                handleCancelApplication(property.id)
+                                const application = applications.find(app => app.property_id === property.id)
+                                if (application) {
+                                  handleCancelApplication(application.id)
+                                }
                               } else {
                                 handleApplyToProperty(property.id)
                               }
@@ -1211,7 +1216,10 @@ export default function DashboardContent() {
                         <button
                           onClick={() => {
                             if (hasAppliedToProperty(savedProperty.property_id)) {
-                              handleCancelApplication(savedProperty.property_id)
+                              const application = applications.find(app => app.property_id === savedProperty.property_id);
+                              if (application) {
+                                handleCancelApplication(application.id);
+                              }
                             } else {
                               handleApplyToProperty(savedProperty.property_id)
                             }
@@ -1446,6 +1454,34 @@ export default function DashboardContent() {
           </div>
         )}
 
+       {/* Commission Tracking Tab */}
+       {activeTab === 'commission' && (profile?.role === 'agent' && profile?.agent_status === 'active') && (
+         <div>
+           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Commission Tracking</h3>
+           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
+             <div className="grid md:grid-cols-3 gap-6">
+               <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">${calculateCommission(1000).toFixed(2)}</div>
+                 <div className="text-sm text-gray-600 dark:text-gray-400">Total Earned</div>
+               </div>
+               <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                 <div className="text-3xl font-bold text-green-600 dark:text-green-400">$0.00</div>
+                 <div className="text-sm text-gray-600 dark:text-gray-400">Paid Out</div>
+               </div>
+               <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                 <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">${calculateCommission(1000).toFixed(2)}</div>
+                 <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
+               </div>
+             </div>
+             <div className="mt-8">
+               <button className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                 Request Payout
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
         {/* Account Tab */}
         {activeTab === 'account' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8">
@@ -1483,9 +1519,9 @@ export default function DashboardContent() {
                             placeholder="e.g., 0777123456"
                             className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                           />
-                          <button 
+                          <button
                             onClick={updateEcocashNumber}
-                            disabled={updatingEcocash} 
+                            disabled={updatingEcocash}
                             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
                           >
                             {updatingEcocash ? 'Saving...' : 'Save'}
@@ -1506,7 +1542,7 @@ export default function DashboardContent() {
                   <button className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
                     Change Password
                   </button>
-                  <button 
+                  <button
                     onClick={handleSignOut}
                     className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
                   >
