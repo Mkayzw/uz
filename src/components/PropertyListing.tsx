@@ -32,9 +32,10 @@ interface Property {
 interface PropertyListingProps {
   limit?: number
   showTitle?: boolean
+  showViewAll?: boolean
 }
 
-export default function PropertyListing({ limit = 12, showTitle = true }: PropertyListingProps) {
+export default function PropertyListing({ limit = 12, showTitle = true, showViewAll = false }: PropertyListingProps) {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -159,10 +160,16 @@ export default function PropertyListing({ limit = 12, showTitle = true }: Proper
         {properties.length === limit && (
           <div className="text-center mt-12">
             <button
-              onClick={() => router.push('/auth/signup?intent=browse')}
+              onClick={() => {
+                if (showViewAll) {
+                  router.push('/dashboard?tab=browse');
+                } else {
+                  router.push('/auth/signup?intent=browse');
+                }
+              }}
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Sign Up to View More Properties
+              {showViewAll ? 'View All Properties' : 'Sign Up to View More Properties'}
             </button>
           </div>
         )}

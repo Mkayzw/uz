@@ -87,7 +87,7 @@ export default function Home() {
 
       {/* Property Listings */}
       <div id="properties">
-        <PropertyListing limit={6} />
+        <PropertyListing limit={6} showViewAll={true} />
       </div>
 
       {/* Footer */}

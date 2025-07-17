@@ -170,6 +170,50 @@ export async function verifyPayment(applicationId: string) {
   revalidatePath('/dashboard')
   return { data }
 }
+export async function submitApplication(
+  propertyId: string,
+  bedId: string,
+  registrationNumber: string,
+  nationalId: string
+) {
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'You must be logged in to apply.' }
+  }
+
+  try {
+    // Update profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ registration_number: registrationNumber, national_id: nationalId })
+      .eq('id', user.id)
+
+    if (profileError) throw profileError
+
+    // Create application
+    const { data, error } = await supabase
+      .from('applications')
+      .insert({
+        property_id: propertyId,
+        tenant_id: user.id,
+        bed_id: bedId,
+        status: 'pending',
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    revalidatePath('/dashboard')
+    return { data }
+  } catch (error: any) {
+    console.error('Error submitting application:', error)
+    return { error: 'Failed to submit application.' }
+  }
+}
 
 export async function getRoomStats(padId: string) {
     const cookieStore = cookies()

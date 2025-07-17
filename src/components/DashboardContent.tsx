@@ -9,6 +9,7 @@ import PropertyImage from '@/components/PropertyImage'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NotificationModal from '@/components/NotificationModal'
 import ImageModal from '@/components/ImageModal'
+import ApplicationModal from '@/components/ApplicationModal'
 import {
   getProfile,
   getAgentProperties,
@@ -18,9 +19,14 @@ import {
   getAgentApplications,
 } from '@/lib/utils/dashboard'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
-import { updateApplicationStatus, verifyPayment, cancelApplication } from '@/app/dashboard/actions'
+import { updateApplicationStatus, verifyPayment, cancelApplication, submitApplication } from '@/app/dashboard/actions'
 import { calculateCommission } from '@/lib/utils/commission'
 
+interface Bed {
+  id: string
+  bed_number: number
+  room_id: string
+}
 
 interface UserProfile {
   id: string
@@ -28,6 +34,8 @@ interface UserProfile {
   role: 'tenant' | 'agent'
   agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
   ecocash_number?: string | null
+  registration_number?: string | null
+  national_id?: string | null
 }
 
 interface Property {
@@ -61,7 +69,14 @@ interface Application {
   property?: Property;
   tenant?: {
     full_name?: string | null
+    ecocash_number?: string | null
   }
+  bed?: {
+    bed_number?: number | null
+    room?: {
+      name?: string | null
+    } | null
+  } | null
 }
 
 interface SavedProperty {
@@ -90,6 +105,20 @@ export default function DashboardContent() {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('')
   const [ecocashNumber, setEcocashNumber] = useState<string>('')
   const [updatingEcocash, setUpdatingEcocash] = useState(false)
+  const [applicationModal, setApplicationModal] = useState<{
+    isOpen: boolean
+    propertyId: string | null
+    beds: Bed[]
+  }>({
+    isOpen: false,
+    propertyId: null,
+    beds: [],
+  })
+  const [applicationDetails, setApplicationDetails] = useState({
+    registration_number: '',
+    national_id: '',
+    bed_id: '',
+  })
   const router = useRouter()
 
   // Modal states
@@ -490,37 +519,24 @@ export default function DashboardContent() {
     }
     
     const property = allProperties.find(p => p.id === propertyId)
-    showConfirmation({
-      title: 'Apply for Property',
-      message: `Apply for "${property?.title}"?`,
-      type: 'info',
-      confirmText: 'Submit Application',
-      icon: '🏠',
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase
-            .from('applications')
-            .insert({
-              property_id: propertyId,
-              tenant_id: user.id,
-              status: 'pending'
-            })
-          
-          if (error) throw error
-            
-          showNotification({
-            title: 'Application Submitted',
-            message: `Your application for "${property?.title}" has been submitted.`,
-            type: 'success'
-          })
-        } catch (error: any) {
-          showNotification({
-            title: 'Application Failed',
-            message: error.message,
-            type: 'error'
-          })
-        }
-      }
+    // Fetch available beds for the property
+    const { data: beds, error } = await supabase
+      .from('beds')
+      .select('id, bed_number, room_id')
+      .eq('is_available', true)
+      .in('room_id',
+        (await supabase.from('rooms').select('id').eq('pad_id', propertyId)).data?.map(r => r.id) || []
+      )
+
+    if (error) {
+      showNotification({ title: 'Error', message: 'Could not fetch available beds.', type: 'error' })
+      return
+    }
+
+    setApplicationModal({
+      isOpen: true,
+      propertyId,
+      beds: beds || [],
     })
   }
 
@@ -1058,7 +1074,7 @@ export default function DashboardContent() {
                         </>
                       )}
                       {profile?.role !== 'tenant' && (
-                        <button className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <button onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)} className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                           View Details
                         </button>
                       )}
@@ -1314,6 +1330,12 @@ export default function DashboardContent() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                       </svg>
                                       <span className="text-xs font-medium">Payment verified</span>
+                                      <button
+                                          onClick={() => window.open(`/api/receipts/${application.id}`)}
+                                          className="ml-4 px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                      >
+                                          Download Receipt
+                                      </button>
                                     </div>
                                   ) : (
                                     <div className="flex items-center mt-2">
@@ -1328,7 +1350,7 @@ export default function DashboardContent() {
                                 </div>
                               ) : (
                                 <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                                  Awaiting payment from tenant
+                                  Awaiting payment from tenant. Agent's EcoCash Number: {(application.property as any)?.created_by_profile?.ecocash_number || 'Not Provided'}
                                 </p>
                               )}
                             </>
@@ -1461,7 +1483,7 @@ export default function DashboardContent() {
            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
              <div className="grid md:grid-cols-3 gap-6">
                <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">${calculateCommission(1000).toFixed(2)}</div>
+                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">${calculateCommission(agentApplications.length).toFixed(2)}</div>
                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Earned</div>
                </div>
                <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
@@ -1469,7 +1491,7 @@ export default function DashboardContent() {
                  <div className="text-sm text-gray-600 dark:text-gray-400">Paid Out</div>
                </div>
                <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-                 <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">${calculateCommission(1000).toFixed(2)}</div>
+                 <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">${calculateCommission(agentApplications.length).toFixed(2)}</div>
                  <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
                </div>
              </div>
@@ -1585,6 +1607,28 @@ export default function DashboardContent() {
         onClose={closeImageModal}
         src={imageModal.src}
         alt={imageModal.alt}
+      />
+
+      <ApplicationModal
+        isOpen={applicationModal.isOpen}
+        beds={applicationModal.beds}
+        onClose={() => setApplicationModal({ isOpen: false, propertyId: null, beds: [] })}
+        onSubmit={async (details) => {
+          if (applicationModal.propertyId) {
+            const result = await submitApplication(
+              applicationModal.propertyId,
+              details.bed_id,
+              details.registration_number,
+              details.national_id
+            )
+            if (result.error) {
+              showNotification({ title: 'Error', message: result.error, type: 'error' })
+            } else {
+              showNotification({ title: 'Success', message: 'Application submitted!', type: 'success' })
+              setApplicationModal({ isOpen: false, propertyId: null, beds: [] })
+            }
+          }
+        }}
       />
     </div>
   )

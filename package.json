@@ -11,6 +11,8 @@
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.3",
+    "@types/html-pdf-node": "^1.0.2",
+    "html-pdf-node": "^1.0.8",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

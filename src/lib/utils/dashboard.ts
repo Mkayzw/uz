@@ -48,7 +48,7 @@ export const getAllActiveProperties = async (supabase: SupabaseClient) => {
 export const getTenantApplications = async (supabase: SupabaseClient, userId: string) => {
   const { data, error } = await supabase
     .from('applications')
-    .select('*, property:pads(*)')
+    .select('*, property:pads(*, created_by_profile:profiles(*))')
     .eq('tenant_id', userId)
     .order('created_at', { ascending: false })
 
@@ -141,7 +141,8 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
     .select(`
       *,
       property:pads(*),
-      tenant:profiles!applications_tenant_id_fkey(*)
+      tenant:profiles!applications_tenant_id_fkey(*),
+      bed:beds(*)
     `)
     .in('property_id', propertyIds)
     .order('created_at', { ascending: false })

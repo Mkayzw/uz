@@ -9,6 +9,8 @@ export type Database = {
           agent_status: 'not_applicable' | 'pending_payment' | 'active'
           is_verified_agent: boolean
           ecocash_number: string | null
+          registration_number: string | null
+          national_id: string | null
         }
         Insert: {
           id: string
@@ -17,6 +19,8 @@ export type Database = {
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
           is_verified_agent?: boolean
           ecocash_number?: string | null
+          registration_number?: string | null
+          national_id?: string | null
         }
         Update: {
           id?: string
@@ -25,6 +29,8 @@ export type Database = {
           agent_status?: 'not_applicable' | 'pending_payment' | 'active'
           is_verified_agent?: boolean
           ecocash_number?: string | null
+          registration_number?: string | null
+          national_id?: string | null
         }
       }
       properties: {
@@ -305,6 +311,7 @@ export type Database = {
           updated_at: string
           transaction_code: string | null
           payment_verified: boolean
+          bed_id: string | null
         }
         Insert: {
           id?: string
@@ -316,6 +323,7 @@ export type Database = {
           updated_at?: string
           transaction_code?: string | null
           payment_verified?: boolean
+          bed_id?: string | null
         }
         Update: {
           id?: string
@@ -327,6 +335,7 @@ export type Database = {
           updated_at?: string
           transaction_code?: string | null
           payment_verified?: boolean
+          bed_id?: string | null
         }
       }
       saved_properties: {
