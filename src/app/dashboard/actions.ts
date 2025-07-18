@@ -235,6 +235,7 @@ export async function getRoomStats(padId: string) {
     const totalBeds = data.reduce((sum, room) => sum + room.total_beds, 0)
     const availableBeds = data.reduce((sum, room) => sum + room.available_beds, 0)
     const occupiedBeds = data.reduce((sum, room) => sum + room.occupied_beds, 0)
+    const fullRooms = data.filter(room => room.total_beds > 0 && room.available_beds === 0).length
     const occupancyRate = totalBeds > 0 ? (occupiedBeds / totalBeds) * 100 : 0
     const capacityUtilization = totalCapacity > 0 ? (totalBeds / totalCapacity) * 100 : 0
 
@@ -246,6 +247,7 @@ export async function getRoomStats(padId: string) {
             totalBeds,
             availableBeds,
             occupiedBeds,
+            fullRooms,
             occupancyRate: Math.round(occupancyRate * 100) / 100,
             capacityUtilization: Math.round(capacityUtilization * 100) / 100
         }

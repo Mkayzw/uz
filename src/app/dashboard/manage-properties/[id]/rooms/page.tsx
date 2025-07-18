@@ -5,11 +5,12 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthGuard from '@/components/AuthGuard';
+import BackButton from '@/components/BackButton';
 import { RoomRow, BedRow } from '@/types/database';
 import { addRoom, addBed, deleteBed, updateBedAvailability, deleteRoom, getRoomStats } from '@/app/dashboard/actions';
 
-export default async function ManageRoomsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function ManageRoomsPage({ params }: { params: { id: string } }) {
+  const id = params.id;
   const supabase = createClient();
   const [rooms, setRooms] = useState<RoomRow[]>([]);
   const [beds, setBeds] = useState<{ [key: string]: BedRow[] }>({});
@@ -85,9 +86,13 @@ export default async function ManageRoomsPage({ params }: { params: Promise<{ id
   useEffect(() => {
     const fetchRoomsAndBeds = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError || !user) {
+        // Use getSession for better reliability during navigation
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.user) {
+          // Store current path for redirect after login
+          const currentPath = window.location.pathname + window.location.search
+          localStorage.setItem('redirect_after_auth', currentPath)
           router.push('/auth/login');
           return;
         }
@@ -229,19 +234,19 @@ export default async function ManageRoomsPage({ params }: { params: Promise<{ id
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Rooms</h1>
-            <Link
-              href={`/dashboard/manage-properties/${id}`}
+            <BackButton
+              fallbackPath={`/dashboard/manage-properties/${id}`}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              ← Back to Property
-            </Link>
+              Back to Property
+            </BackButton>
           </div>
 
           {/* Property Statistics */}
           {propertyStats && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Property Overview</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {propertyStats.summary.totalRooms}
@@ -271,6 +276,12 @@ export default async function ManageRoomsPage({ params }: { params: Promise<{ id
                     {propertyStats.summary.occupiedBeds}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Occupied</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {propertyStats.summary.fullRooms}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Full Rooms</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
@@ -408,12 +419,24 @@ export default async function ManageRoomsPage({ params }: { params: Promise<{ id
                   const roomBeds = beds[room.id] || [];
                   const availableBeds = roomBeds.filter(bed => bed.is_available).length;
                   const occupiedBeds = roomBeds.length - availableBeds;
-                  
+                  const isFull = roomBeds.length > 0 && availableBeds === 0;
+
                   return (
-                    <div key={room.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                    <div key={room.id} className={`rounded-lg shadow-lg p-6 border-2 transition-all duration-200 ${
+                      isFull
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                    }`}>
                       <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{room.name}</h3>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{room.name}</h3>
+                            {isFull && (
+                              <span className="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded-full uppercase tracking-wide">
+                                FULL
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{room.type} Room</p>
                         </div>
                         <button
@@ -427,7 +450,7 @@ export default async function ManageRoomsPage({ params }: { params: Promise<{ id
                         </button>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 text-sm">
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">Capacity:</span>
                           <span className="ml-1 font-medium text-gray-900 dark:text-white">{room.capacity} beds</span>
@@ -438,11 +461,25 @@ export default async function ManageRoomsPage({ params }: { params: Promise<{ id
                         </div>
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">Available:</span>
-                          <span className="ml-1 font-medium text-green-600">{availableBeds} beds</span>
+                          <span className={`ml-1 font-medium ${isFull ? 'text-red-600' : 'text-green-600'}`}>
+                            {availableBeds} beds
+                          </span>
                         </div>
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">Occupied:</span>
                           <span className="ml-1 font-medium text-red-600">{occupiedBeds} beds</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                          <span className={`ml-1 font-bold ${
+                            isFull
+                              ? 'text-red-600 dark:text-red-400'
+                              : availableBeds > 0
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {isFull ? 'FULL' : availableBeds > 0 ? 'Available' : 'Empty'}
+                          </span>
                         </div>
                       </div>
                       

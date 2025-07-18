@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import PropertyImage from '@/components/PropertyImage';
+import BackButton from '@/components/BackButton';
 import Link from 'next/link';
 import { getImageUrl } from '@/lib/utils/imageHelpers';
 
@@ -24,21 +25,24 @@ interface Property {
   view_count: number;
 }
 
-export default async function ManagePropertyPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function ManagePropertyPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
-  const propertyId = id;
+  const propertyId = params.id;
 
   useEffect(() => {
     const fetchProperty = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError || !user) {
+        // Use getSession for better reliability during navigation
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !session?.user) {
+          // Store current path for redirect after login
+          const currentPath = window.location.pathname + window.location.search
+          localStorage.setItem('redirect_after_auth', currentPath)
           router.push('/auth/login');
           return;
         }
@@ -47,7 +51,7 @@ export default async function ManagePropertyPage({ params }: { params: Promise<{
           .from('pads')
           .select('*')
           .eq('id', propertyId)
-          .eq('created_by', user.id)
+          .eq('created_by', session.user.id)
           .single();
 
         if (propertyError) {
@@ -104,6 +108,13 @@ export default async function ManagePropertyPage({ params }: { params: Promise<{
     <AuthGuard allowedRoles={['agent']}>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Back Button */}
+          <div className="mb-6">
+            <BackButton fallbackPath="/dashboard/manage-properties">
+              Back to Properties
+            </BackButton>
+          </div>
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="p-6">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{property.title}</h1>

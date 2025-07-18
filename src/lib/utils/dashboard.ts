@@ -17,7 +17,7 @@ export const getProfile = async (supabase: SupabaseClient, user: User) => {
 
 export const getAgentProperties = async (supabase: SupabaseClient, userId: string) => {
   const { data, error } = await supabase
-    .from('pads')
+    .from('property_room_status')
     .select('*')
     .eq('created_by', userId)
 
@@ -26,22 +26,90 @@ export const getAgentProperties = async (supabase: SupabaseClient, userId: strin
     throw new Error('Failed to load your properties')
   }
 
-  return data || []
+  // Transform the data to match the Property interface
+  return data?.map(prop => ({
+    id: prop.property_id,
+    title: prop.title,
+    description: prop.description,
+    location: prop.location,
+    city: prop.city,
+    state: prop.state,
+    zip_code: prop.zip_code,
+    property_type: prop.property_type,
+    price: prop.price,
+    bedrooms: prop.bedrooms,
+    bathrooms: prop.bathrooms,
+    image_url: prop.image_url,
+    image_urls: prop.image_urls,
+    has_internet: prop.has_internet,
+    has_parking: prop.has_parking,
+    has_air_conditioning: prop.has_air_conditioning,
+    is_furnished: prop.is_furnished,
+    has_pool: prop.has_pool,
+    has_power: prop.has_power,
+    has_water: prop.has_water,
+    has_tv: prop.has_tv,
+    has_laundry: prop.has_laundry,
+    has_security_system: prop.has_security_system,
+    view_count: prop.view_count,
+    created_at: prop.created_at,
+    active: prop.active,
+    total_rooms: prop.total_rooms,
+    full_rooms: prop.full_rooms,
+    available_rooms: prop.available_rooms,
+    total_beds: prop.total_beds,
+    available_beds: prop.available_beds,
+    occupancy_rate: prop.occupancy_rate
+  })) || []
 }
 
 export const getAllActiveProperties = async (supabase: SupabaseClient) => {
     const { data, error } = await supabase
-        .from('pads')
+        .from('property_room_status')
         .select('*')
         .eq('active', true)
-        .order('created_at', { ascending: false })
+        .order('property_id', { ascending: false })
 
     if (error) {
         console.error('Error fetching all properties:', error)
         return []
     }
-    
-    return data || []
+
+    // Transform the data to match the Property interface
+    return data?.map(prop => ({
+        id: prop.property_id,
+        title: prop.title,
+        description: prop.description,
+        location: prop.location,
+        city: prop.city,
+        state: prop.state,
+        zip_code: prop.zip_code,
+        property_type: prop.property_type,
+        price: prop.price,
+        bedrooms: prop.bedrooms,
+        bathrooms: prop.bathrooms,
+        image_url: prop.image_url,
+        image_urls: prop.image_urls,
+        has_internet: prop.has_internet,
+        has_parking: prop.has_parking,
+        has_air_conditioning: prop.has_air_conditioning,
+        is_furnished: prop.is_furnished,
+        has_pool: prop.has_pool,
+        has_power: prop.has_power,
+        has_water: prop.has_water,
+        has_tv: prop.has_tv,
+        has_laundry: prop.has_laundry,
+        has_security_system: prop.has_security_system,
+        view_count: prop.view_count,
+        created_at: prop.created_at,
+        active: prop.active,
+        total_rooms: prop.total_rooms,
+        full_rooms: prop.full_rooms,
+        available_rooms: prop.available_rooms,
+        total_beds: prop.total_beds,
+        available_beds: prop.available_beds,
+        occupancy_rate: prop.occupancy_rate
+    })) || []
 }
 
 

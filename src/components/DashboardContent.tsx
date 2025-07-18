@@ -19,6 +19,7 @@ import CommissionTracking from '@/components/dashboard/CommissionTracking'
 import { useDashboardAuth } from '@/hooks/useDashboardAuth'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useRealTimeSubscriptions } from '@/hooks/useRealTimeSubscriptions'
+import { useNavigationState, restoreNavigationState } from '@/hooks/useNavigationState'
 import { updateApplicationStatus, verifyPayment, cancelApplication, submitApplication } from '@/app/dashboard/actions'
 import { 
   DashboardTab, 
@@ -36,6 +37,7 @@ export default function DashboardContent() {
   
   // Use custom hooks for state management
   const { user, profile, loading: authLoading, error: authError, displayName, handleSignOut } = useDashboardAuth()
+  const { navigateWithHistory, isBackNavigation } = useNavigationState()
   const {
     properties,
     allProperties,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import PropertyImage from './PropertyImage'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
 
@@ -43,6 +43,10 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
   })
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
+  // Touch handling for swipe
+  const touchStartX = useRef<number>(0)
+  const touchEndX = useRef<number>(0)
+
   // Get all available images
   const allImages: string[] = []
   if (property.image_url) {
@@ -75,6 +79,30 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
     setCurrentImageIndex(index)
   }
 
+  // Touch event handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return
+
+    const distance = touchStartX.current - touchEndX.current
+    const isLeftSwipe = distance > 50
+    const isRightSwipe = distance < -50
+
+    if (isLeftSwipe && allImages.length > 1) {
+      nextImage()
+    }
+    if (isRightSwipe && allImages.length > 1) {
+      prevImage()
+    }
+  }
+
   const amenities = [
     { key: 'has_internet', label: 'WiFi', icon: '📶' },
     { key: 'has_parking', label: 'Parking', icon: '🅿️' },
@@ -96,13 +124,16 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
     <>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
         <div className="relative">
-          <button
+          <div
+            className="w-full h-48 relative cursor-pointer touch-manipulation"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             onClick={() => openImageModal(
               getImageUrl(allImages[currentImageIndex] || null),
               property.title,
               currentImageIndex
             )}
-            className="w-full h-48 object-cover block cursor-pointer touch-manipulation"
             style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
           >
             <PropertyImage
@@ -110,7 +141,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               alt={property.title}
               className="w-full h-full object-cover pointer-events-none"
             />
-          </button>
+          </div>
           
           {/* Property Type Badge */}
           {property.property_type && (
@@ -159,6 +190,11 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               {/* Image Counter */}
               <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs z-10">
                 {currentImageIndex + 1} / {allImages.length}
+              </div>
+
+              {/* Swipe indicator for mobile */}
+              <div className="absolute bottom-3 left-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs z-10 md:hidden">
+                👈 Swipe 👉
               </div>
             </>
           )}

@@ -17,21 +17,37 @@ export interface UserProfile {
 export interface Property {
   id: string;
   title: string;
-  location: string | null;
-  image_url: string | null;
-  view_count: number;
-  created_at: string;
   description?: string | null;
+  location: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  property_type?: string | null;
   price?: number;
   bedrooms?: number | null;
   bathrooms?: number | null;
+  image_url: string | null;
   image_urls?: string[] | null;
-  active?: boolean;
-  property_type?: string | null;
   has_internet?: boolean;
   has_parking?: boolean;
   has_air_conditioning?: boolean;
   is_furnished?: boolean;
+  has_pool?: boolean;
+  has_power?: boolean;
+  has_water?: boolean;
+  has_tv?: boolean;
+  has_laundry?: boolean;
+  has_security_system?: boolean;
+  view_count: number;
+  created_at: string;
+  active?: boolean;
+  // Room status fields
+  total_rooms?: number;
+  full_rooms?: number;
+  available_rooms?: number;
+  total_beds?: number;
+  available_beds?: number;
+  occupancy_rate?: number;
 }
 
 export interface Application {

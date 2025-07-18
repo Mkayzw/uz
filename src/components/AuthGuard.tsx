@@ -18,37 +18,81 @@ interface AuthGuardProps {
   requiresActiveAgent?: boolean
 }
 
-export default function AuthGuard({ 
-  children, 
+export default function AuthGuard({
+  children,
   allowedRoles,
-  requiresActiveAgent = false 
+  requiresActiveAgent = false
 }: AuthGuardProps) {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
+    let isMounted = true
+
     const checkAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error || !user) {
-          router.push('/auth/login')
+        // Use getSession instead of getUser for better reliability during navigation
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          setAuthError('Session error')
           return
         }
 
-        // Get user profile
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single<UserProfile>()
+        if (!session?.user) {
+          // Store current path for redirect after login
+          const currentPath = window.location.pathname + window.location.search
+          if (currentPath !== '/dashboard' && !currentPath.startsWith('/auth/')) {
+            localStorage.setItem('redirect_after_auth', currentPath)
+          }
 
-        if (profileError || !userProfile) {
-          router.push('/auth/login')
+          if (isMounted) {
+            router.push('/auth/login')
+          }
           return
         }
+
+        // Get user profile with retry logic
+        let retryCount = 0
+        let userProfile: UserProfile | null = null
+
+        while (retryCount < 3 && !userProfile && isMounted) {
+          try {
+            const { data, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single<UserProfile>()
+
+            if (profileError) {
+              if (profileError.code === 'PGRST116') {
+                // Profile doesn't exist, redirect to login
+                if (isMounted) {
+                  router.push('/auth/login')
+                }
+                return
+              }
+              throw profileError
+            }
+
+            userProfile = data
+          } catch (err) {
+            retryCount++
+            if (retryCount >= 3) {
+              console.error('Profile fetch error after retries:', err)
+              setAuthError('Failed to load profile')
+              return
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
+        }
+
+        if (!userProfile || !isMounted) return
 
         // Check role permissions
         if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
@@ -62,16 +106,27 @@ export default function AuthGuard({
           return
         }
 
-        setAuthorized(true)
+        if (isMounted) {
+          setAuthorized(true)
+          setAuthError(null)
+        }
       } catch (error) {
         console.error('Auth check error:', error)
-        router.push('/auth/login')
+        if (isMounted) {
+          setAuthError('Authentication failed')
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     checkAuth()
+
+    return () => {
+      isMounted = false
+    }
   }, [router, allowedRoles, requiresActiveAgent, supabase])
 
   if (loading) {
@@ -80,6 +135,36 @@ export default function AuthGuard({
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Checking permissions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="text-red-500 text-4xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Authentication Error</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {authError}
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => router.push('/auth/login')}
+                className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Sign In Again
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -95,8 +180,8 @@ export default function AuthGuard({
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               You don&apos;t have permission to access this page.
             </p>
-            <button 
-              onClick={() => router.push('/dashboard')} 
+            <button
+              onClick={() => router.push('/dashboard')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Go to Dashboard
