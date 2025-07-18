@@ -9,8 +9,8 @@ import BackButton from '@/components/BackButton';
 import { RoomRow, BedRow } from '@/types/database';
 import { addRoom, addBed, deleteBed, updateBedAvailability, deleteRoom, getRoomStats } from '@/app/dashboard/actions';
 
-export default function ManageRoomsPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+export default function ManageRoomsPage({ params }: { params: Promise<{ id: string }> }) {
+  const [id, setId] = useState<string | null>(null);
   const supabase = createClient();
   const [rooms, setRooms] = useState<RoomRow[]>([]);
   const [beds, setBeds] = useState<{ [key: string]: BedRow[] }>({});
@@ -27,7 +27,15 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
   const [selectedRoomForBed, setSelectedRoomForBed] = useState<string>('');
   const [propertyStats, setPropertyStats] = useState<any>(null);
 
+  // Resolve params Promise
+  useEffect(() => {
+    params.then(resolvedParams => {
+      setId(resolvedParams.id);
+    });
+  }, [params]);
+
   const refreshStats = async () => {
+    if (!id) return;
     const statsResult = await getRoomStats(id);
     if (!statsResult.error) {
       setPropertyStats(statsResult);
@@ -84,6 +92,8 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
   };
 
   useEffect(() => {
+    if (!id) return;
+
     const fetchRoomsAndBeds = async () => {
       try {
         // Use getSession for better reliability during navigation
@@ -147,22 +157,27 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
+    if (!id) {
+      setError('Property ID not found.');
+      return;
+    }
+
     if (!newRoomName.trim()) {
       setError('Room name is required.');
       return;
     }
-    
+
     if (newRoomPrice <= 0) {
       setError('Price must be greater than 0.');
       return;
     }
-    
+
     if (newRoomCapacity <= 0) {
       setError('Capacity must be at least 1.');
       return;
     }
-    
+
     const roomData = {
       name: newRoomName.trim(),
       type: newRoomType,
@@ -170,7 +185,7 @@ export default function ManageRoomsPage({ params }: { params: { id: string } }) 
       capacity: newRoomCapacity,
       available: true,
     };
-    
+
     const result = await addRoom(id, roomData);
     if (result.error) {
       setError(result.error);
