@@ -44,14 +44,11 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
     if (!propertyId) return;
     const fetchProperty = async () => {
       try {
-        // Use getSession for better reliability during navigation
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // AuthGuard already handles authentication, so we can directly fetch the property
+        const { data: { user } } = await supabase.auth.getUser();
 
-        if (sessionError || !session?.user) {
-          // Store current path for redirect after login
-          const currentPath = window.location.pathname + window.location.search
-          localStorage.setItem('redirect_after_auth', currentPath)
-          router.push('/auth/login');
+        if (!user) {
+          setError('Authentication required');
           return;
         }
 
@@ -59,7 +56,7 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
           .from('pads')
           .select('*')
           .eq('id', propertyId)
-          .eq('created_by', session.user.id)
+          .eq('created_by', user.id)
           .single();
 
         if (propertyError) {
@@ -84,7 +81,7 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
     };
 
     fetchProperty();
-  }, [propertyId, router]);
+  }, [propertyId]);
 
   if (loading) {
     return (

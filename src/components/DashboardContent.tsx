@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NotificationModal from '@/components/NotificationModal'
+import ToastManager from '@/components/ToastManager'
 import ImageModal from '@/components/ImageModal'
 import ApplicationModal from '@/components/ApplicationModal'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
@@ -257,7 +258,26 @@ export default function DashboardContent() {
 
   const handleApplyToProperty = async (propertyId: string) => {
     if (!user) return
-    
+
+    // Double-check for existing application with fresh data from database
+    const { data: existingApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('property_id', propertyId)
+      .eq('tenant_id', user.id)
+      .single()
+
+    if (existingApp) {
+      showNotification({
+        title: 'Already Applied',
+        message: 'You have already applied to this property.',
+        type: 'warning',
+        icon: '⚠️'
+      })
+      return
+    }
+
+    // Also check local applications array as backup
     if (applications.some(app => app.property_id === propertyId)) {
       showNotification({
         title: 'Already Applied',
@@ -267,7 +287,7 @@ export default function DashboardContent() {
       })
       return
     }
-    
+
     // Fetch available beds for the property
     const { data: beds, error } = await supabase
       .from('beds')
@@ -301,7 +321,13 @@ export default function DashboardContent() {
             if (result.error) {
                 showNotification({ title: 'Error', message: result.error, type: 'error' });
             } else {
-                showNotification({ title: 'Success', message: 'Application approved.', type: 'success' });
+                showNotification({
+                    title: 'Application Approved! 🎉',
+                    message: 'The tenant has been notified and can now proceed with payment.',
+                    type: 'success'
+                });
+                // Refresh data to show updated status
+                refreshData();
             }
         }
     });
@@ -561,6 +587,9 @@ export default function DashboardContent() {
           }
         }}
       />
+
+      {/* Toast Notifications */}
+      <ToastManager />
     </div>
   )
 }

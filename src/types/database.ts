@@ -305,7 +305,7 @@ export type Database = {
           id: string
           property_id: string
           tenant_id: string
-          status: 'pending' | 'approved' | 'rejected'
+          status: 'pending' | 'approved' | 'rejected' | 'cancelled'
           message: string | null
           created_at: string
           updated_at: string
@@ -317,7 +317,7 @@ export type Database = {
           id?: string
           property_id: string
           tenant_id: string
-          status?: 'pending' | 'approved' | 'rejected'
+          status?: 'pending' | 'approved' | 'rejected' | 'cancelled'
           message?: string | null
           created_at?: string
           updated_at?: string

@@ -59,9 +59,12 @@ export function useDashboardAuth() {
       }
     }
 
-    initializeAuth()
+    // Only initialize once
+    if (!isInitialized) {
+      initializeAuth()
+    }
 
-    // Set up auth state change listener
+    // Set up auth state change listener only once
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null)
@@ -83,7 +86,7 @@ export function useDashboardAuth() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [router, supabase, isInitialized])
+  }, [router, isInitialized])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

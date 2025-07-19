@@ -56,59 +56,50 @@ export default function AuthGuard({
           return
         }
 
-        // Get user profile with retry logic
-        let retryCount = 0
-        let userProfile: UserProfile | null = null
+        // Get user profile - single attempt, no retry to avoid rate limiting
+        try {
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single<UserProfile>()
 
-        while (retryCount < 3 && !userProfile && isMounted) {
-          try {
-            const { data, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single<UserProfile>()
-
-            if (profileError) {
-              if (profileError.code === 'PGRST116') {
-                // Profile doesn't exist, redirect to login
-                if (isMounted) {
-                  router.push('/auth/login')
-                }
-                return
+          if (profileError) {
+            if (profileError.code === 'PGRST116') {
+              // Profile doesn't exist, redirect to login
+              if (isMounted) {
+                router.push('/auth/login')
               }
-              throw profileError
-            }
-
-            userProfile = data
-          } catch (err) {
-            retryCount++
-            if (retryCount >= 3) {
-              console.error('Profile fetch error after retries:', err)
-              setAuthError('Failed to load profile')
               return
             }
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            throw profileError
           }
-        }
 
-        if (!userProfile || !isMounted) return
+          const userProfile = data
 
-        // Check role permissions
-        if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
-          router.push('/dashboard')
-          return
-        }
+          if (!userProfile || !isMounted) return
 
-        // Check agent status if required
-        if (requiresActiveAgent && userProfile.role === 'agent' && userProfile.agent_status !== 'active') {
-          router.push('/dashboard')
-          return
-        }
+          // Check role permissions
+          if (allowedRoles && !allowedRoles.includes(userProfile.role)) {
+            router.push('/dashboard')
+            return
+          }
 
-        if (isMounted) {
-          setAuthorized(true)
-          setAuthError(null)
+          // Check agent status if required
+          if (requiresActiveAgent && userProfile.role === 'agent' && userProfile.agent_status !== 'active') {
+            router.push('/dashboard')
+            return
+          }
+
+          if (isMounted) {
+            setAuthorized(true)
+            setAuthError(null)
+          }
+        } catch (err) {
+          console.error('Profile fetch error:', err)
+          if (isMounted) {
+            setAuthError('Failed to load profile')
+          }
         }
       } catch (error) {
         console.error('Auth check error:', error)
@@ -127,7 +118,7 @@ export default function AuthGuard({
     return () => {
       isMounted = false
     }
-  }, [router, allowedRoles, requiresActiveAgent, supabase])
+  }, [router, allowedRoles, requiresActiveAgent])
 
   if (loading) {
     return (

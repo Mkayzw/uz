@@ -40,6 +40,7 @@ export interface Property {
   has_security_system?: boolean;
   view_count: number;
   created_at: string;
+  created_by?: string | null;
   active?: boolean;
   // Room status fields
   total_rooms?: number;

@@ -185,6 +185,18 @@ export async function submitApplication(
   }
 
   try {
+    // Check if user has already applied to this property
+    const { data: existingApplication } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('property_id', propertyId)
+      .eq('tenant_id', user.id)
+      .single()
+
+    if (existingApplication) {
+      return { error: 'You have already applied to this property.' }
+    }
+
     // Update profile
     const { error: profileError } = await supabase
       .from('profiles')
@@ -211,6 +223,12 @@ export async function submitApplication(
     return { data }
   } catch (error: any) {
     console.error('Error submitting application:', error)
+
+    // Handle specific database constraint errors
+    if (error.code === '23505' && error.message.includes('applications_property_id_tenant_id_key')) {
+      return { error: 'You have already applied to this property.' }
+    }
+
     return { error: 'Failed to submit application.' }
   }
 }

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { UserProfile, Property, Application, SavedProperty } from '@/types/dashboard'
+import { useToast } from '@/components/ToastManager'
 import {
   getProfile,
   getAgentProperties,
@@ -33,6 +34,7 @@ export function useRealTimeSubscriptions({
   setSavedProperties
 }: UseRealTimeSubscriptionsProps) {
   const supabase = createClient()
+  const { addToast } = useToast()
 
   useEffect(() => {
     if (!user || !profile) return
@@ -78,15 +80,48 @@ export function useRealTimeSubscriptions({
     // Applications subscription
     const applicationsChannel = supabase
       .channel(`applications:${user.id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
         table: 'applications'
-      }, async () => {
+      }, async (payload) => {
         try {
           if (profile.role === 'tenant') {
             const updatedApplications = await getTenantApplications(supabase, user.id)
             setApplications(updatedApplications)
+
+            // Show notification for status changes
+            if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+              const newStatus = payload.new.status
+              const oldStatus = payload.old.status
+              const tenantId = payload.new.tenant_id
+
+              // Only show notification if this is the current user's application and status changed
+              if (tenantId === user.id && newStatus !== oldStatus) {
+                if (newStatus === 'approved') {
+                  // Show approval notification with payment link
+                  addToast({
+                    title: '🎉 Application Approved!',
+                    message: 'Your application has been approved. Complete your payment to secure your place.',
+                    type: 'success',
+                    duration: 10000,
+                    actionButton: {
+                      text: 'Pay Now',
+                      onClick: () => {
+                        window.location.href = `/dashboard/payment?application_id=${payload.new.id}&type=rent`
+                      }
+                    }
+                  })
+                } else if (newStatus === 'rejected') {
+                  addToast({
+                    title: 'Application Update',
+                    message: 'Your application has been rejected. You can apply to other properties.',
+                    type: 'error',
+                    duration: 8000
+                  })
+                }
+              }
+            }
           } else if (profile.role === 'agent' && profile.agent_status === 'active') {
             const updatedAgentApplications = await getAgentApplications(supabase, user.id)
             setAgentApplications(updatedAgentApplications)

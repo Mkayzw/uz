@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AuthGuard from "@/components/AuthGuard";
+import PropertyImage from "@/components/PropertyImage";
 
 const PropertyForm = () => {
   const supabase = createClient();
@@ -927,12 +928,11 @@ const PropertyForm = () => {
           style={{ WebkitTouchCallout: 'none' }}
         >
           <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={fullViewImage} 
-              alt="Full view" 
+            <PropertyImage
+              src={fullViewImage}
+              alt="Full view"
               className="max-w-full max-h-[90vh] object-contain pointer-events-none"
-              style={{ WebkitUserSelect: 'none' }}
+              fallbackSrc="/file.svg"
             />
             <button
               onClick={() => setFullViewImage(null)}

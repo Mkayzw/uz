@@ -102,6 +102,7 @@ export const getAllActiveProperties = async (supabase: SupabaseClient) => {
         has_security_system: prop.has_security_system,
         view_count: prop.view_count,
         created_at: prop.created_at,
+        created_by: prop.created_by,
         active: prop.active,
         total_rooms: prop.total_rooms,
         full_rooms: prop.full_rooms,
@@ -114,40 +115,75 @@ export const getAllActiveProperties = async (supabase: SupabaseClient) => {
 
 
 export const getTenantApplications = async (supabase: SupabaseClient, userId: string) => {
-  const { data, error } = await supabase
-    .from('applications')
-    .select('*, property:pads(*, created_by_profile:profiles(*))')
-    .eq('tenant_id', userId)
-    .order('created_at', { ascending: false })
+  try {
+    // Add small delay to prevent rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-  if (error) {
-    console.error('Error fetching applications:', error)
+    // Skip RPC function for now and go directly to fallback
+    console.log('Skipping RPC function, using direct query approach for user:', userId)
+
+    // Use direct query approach with comprehensive property data
+    const { data: directData, error: directError } = await supabase
+      .from('applications')
+      .select(`
+        *,
+        property:pads(
+          id,
+          title,
+          location,
+          image_url,
+          image_urls,
+          price,
+          bedrooms,
+          bathrooms,
+          property_type,
+          has_internet,
+          has_parking,
+          has_air_conditioning,
+          is_furnished,
+          active,
+          view_count,
+          created_at,
+          description
+        )
+      `)
+      .eq('tenant_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (directError) {
+      console.error('Direct query failed:', {
+        error: directError,
+        message: directError.message,
+        details: directError.details,
+        hint: directError.hint,
+        code: directError.code,
+        userId: userId
+      })
+
+      // Final fallback: just get applications without property data
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('tenant_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (simpleError) {
+        console.error('Simple fallback also failed:', simpleError)
+        return []
+      }
+
+      return simpleData?.map(app => ({ ...app, property: undefined })) || []
+    }
+
+    // Return the direct query result
+    console.log('Direct query successful, returning data for user:', userId, 'Data count:', directData?.length)
+    console.log('Sample data:', directData?.[0])
+    return directData || []
+
+  } catch (err) {
+    console.error('Error in getTenantApplications:', err)
     return []
   }
-
-  return data?.map(app => ({
-    ...app,
-    property: app.property ? {
-      ...app.property,
-      id: app.property.id,
-      title: app.property.title,
-      location: app.property.location,
-      image_url: app.property.image_url,
-      view_count: app.property.view_count,
-      created_at: app.property.created_at,
-      description: app.property.description,
-      price: app.property.price,
-      bedrooms: app.property.bedrooms,
-      bathrooms: app.property.bathrooms,
-      image_urls: app.property.image_urls,
-      active: app.property.active,
-      property_type: app.property.property_type,
-      has_internet: app.property.has_internet,
-      has_parking: app.property.has_parking,
-      has_air_conditioning: app.property.has_air_conditioning,
-      is_furnished: app.property.is_furnished
-    } : undefined
-  })) || []
 }
 
 export const getSavedProperties = async (supabase: SupabaseClient, userId: string) => {

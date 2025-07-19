@@ -218,9 +218,9 @@ export default function PropertiesBrowser({
                     </button>
                   </>
                 )}
-                {profile?.role !== 'tenant' && (
-                  <button 
-                    onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)} 
+                {profile?.role === 'agent' && property.created_by === profile.id && (
+                  <button
+                    onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
                     className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     View Details

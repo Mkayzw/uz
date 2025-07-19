@@ -15,8 +15,8 @@
     "encoding": "^0.1.13",
     "next": "15.3.5",
     "puppeteer": "^24.14.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
     "uuid": "^11.1.0"
   },

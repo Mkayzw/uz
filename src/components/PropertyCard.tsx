@@ -280,11 +280,11 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
           style={{ WebkitTouchCallout: 'none' }}
         >
           <div className="relative max-w-4xl max-h-full p-4" onClick={(e) => e.stopPropagation()}>
-            <img 
-              src={imageModal.src} 
-              alt={imageModal.alt} 
+            <PropertyImage
+              src={imageModal.src}
+              alt={imageModal.alt}
               className="max-w-full max-h-[90vh] object-contain rounded-lg pointer-events-none"
-              style={{ WebkitUserSelect: 'none' }}
+              fallbackSrc="/file.svg"
             />
             
             {/* Close Button */}
