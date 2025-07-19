@@ -110,14 +110,13 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
         <div className="absolute inset-0 bg-transparent" />
       </div>
 
-      {/* Mobile-optimized navigation - larger touch targets */}
+      {/* Navigation buttons - visible on all screen sizes */}
       {allImages.length > 1 && (
         <>
-          {/* Navigation arrows - hidden on mobile, visible on larger screens */}
           <button
             onClick={prevImage}
             onTouchEnd={prevImage}
-            className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all touch-manipulation items-center justify-center"
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all touch-manipulation flex items-center justify-center"
             style={{ WebkitTouchCallout: 'none' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +126,7 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
           <button
             onClick={nextImage}
             onTouchEnd={nextImage}
-            className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all touch-manipulation items-center justify-center"
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all touch-manipulation flex items-center justify-center"
             style={{ WebkitTouchCallout: 'none' }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,31 +134,6 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
             </svg>
           </button>
         </>
-      )}
-
-      {/* Mobile-first image indicators - larger touch targets */}
-      {allImages.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
-          {allImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.stopPropagation()
-                setCurrentImageIndex(index)
-              }}
-              onTouchEnd={(e) => {
-                e.stopPropagation()
-                setCurrentImageIndex(index)
-              }}
-              className={`w-3 h-3 sm:w-2 sm:h-2 rounded-full transition-all touch-manipulation ${
-                index === currentImageIndex
-                  ? 'bg-white shadow-lg'
-                  : 'bg-white bg-opacity-60'
-              }`}
-              style={{ WebkitTouchCallout: 'none', minWidth: '12px', minHeight: '12px' }}
-            />
-          ))}
-        </div>
       )}
 
       {/* Image counter - positioned for mobile readability */}
