@@ -1,10 +1,174 @@
 import { useRouter } from 'next/navigation'
+import { useState, useRef } from 'react'
 import { Property } from '@/types/dashboard'
 import PropertyImage from '@/components/PropertyImage'
+import { getImageUrl } from '@/lib/utils/imageHelpers'
 
 interface AgentPropertiesProps {
   properties: Property[]
+  onImageClick: (src: string | null, alt: string, allImages?: string[], index?: number) => void
+}
+
+interface PropertyImageCarouselProps {
+  property: Property
   onImageClick: (src: string | null, alt: string) => void
+}
+
+function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarouselProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const touchStartX = useRef<number>(0)
+  const touchEndX = useRef<number>(0)
+  const touchStartY = useRef<number>(0)
+  const touchEndY = useRef<number>(0)
+
+  // Get all available images
+  const allImages: string[] = []
+  if (property.image_url) {
+    allImages.push(property.image_url)
+  }
+  if (property.image_urls && property.image_urls.length > 0) {
+    // Add additional images, avoiding duplicates
+    property.image_urls.forEach(url => {
+      if (url && url !== property.image_url) {
+        allImages.push(url)
+      }
+    })
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX
+    touchStartY.current = e.targetTouches[0].clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX
+    touchEndY.current = e.targetTouches[0].clientY
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return
+
+    const deltaX = touchStartX.current - touchEndX.current
+    const deltaY = touchStartY.current - touchEndY.current
+    const minSwipeDistance = 30 // Reduced for better mobile sensitivity
+
+    // Only handle horizontal swipes if they're more significant than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0 && allImages.length > 1) {
+        // Swipe left - next image
+        setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+      } else if (deltaX < 0 && allImages.length > 1) {
+        // Swipe right - previous image
+        setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
+      }
+    }
+  }
+
+  const nextImage = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation()
+    setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+  }
+
+  const prevImage = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation()
+    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-t-2xl">
+      {/* Main image container - optimized for mobile touch */}
+      <div
+        className="w-full h-48 sm:h-40 relative touch-manipulation"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => onImageClick(
+          getImageUrl(allImages[currentImageIndex] || null),
+          property.title
+        )}
+        style={{
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: 'pan-y pinch-zoom' // Allow vertical scroll but handle horizontal swipes
+        }}
+      >
+        <PropertyImage
+          src={getImageUrl(allImages[currentImageIndex] || null)}
+          alt={property.title}
+          className="w-full h-full object-cover transition-transform duration-300 pointer-events-none"
+        />
+
+        {/* Mobile-first overlay for better touch feedback */}
+        <div className="absolute inset-0 bg-transparent" />
+      </div>
+
+      {/* Mobile-optimized navigation - larger touch targets */}
+      {allImages.length > 1 && (
+        <>
+          {/* Navigation arrows - hidden on mobile, visible on larger screens */}
+          <button
+            onClick={prevImage}
+            onTouchEnd={prevImage}
+            className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all touch-manipulation items-center justify-center"
+            style={{ WebkitTouchCallout: 'none' }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={nextImage}
+            onTouchEnd={nextImage}
+            className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all touch-manipulation items-center justify-center"
+            style={{ WebkitTouchCallout: 'none' }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Mobile-first image indicators - larger touch targets */}
+      {allImages.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
+          {allImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={(e) => {
+                e.stopPropagation()
+                setCurrentImageIndex(index)
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation()
+                setCurrentImageIndex(index)
+              }}
+              className={`w-3 h-3 sm:w-2 sm:h-2 rounded-full transition-all touch-manipulation ${
+                index === currentImageIndex
+                  ? 'bg-white shadow-lg'
+                  : 'bg-white bg-opacity-60'
+              }`}
+              style={{ WebkitTouchCallout: 'none', minWidth: '12px', minHeight: '12px' }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Image counter - positioned for mobile readability */}
+      {allImages.length > 1 && (
+        <div className="absolute top-3 right-3 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full">
+          {currentImageIndex + 1}/{allImages.length}
+        </div>
+      )}
+
+      {/* Mobile swipe hint - only show on first load */}
+      {allImages.length > 1 && currentImageIndex === 0 && (
+        <div className="sm:hidden absolute bottom-8 left-1/2 -translate-x-1/2 bg-black bg-opacity-70 text-white text-xs px-3 py-1 rounded-full animate-pulse">
+          Swipe to see more
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function AgentProperties({ properties, onImageClick }: AgentPropertiesProps) {
@@ -26,20 +190,14 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
       </div>
       
       {properties.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {properties.map((property) => (
             <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow flex flex-col">
-              <button
-                onClick={() => onImageClick(property.image_url, property.title)}
-                className="w-full h-40 object-cover rounded-t-2xl"
-              >
-                <PropertyImage
-                  src={property.image_url}
-                  alt={property.title}
-                  className="w-full h-full object-cover rounded-t-2xl"
-                />
-              </button>
-              <div className="p-6 flex-grow flex flex-col">
+              <PropertyImageCarousel
+                property={property}
+                onImageClick={onImageClick}
+              />
+              <div className="p-4 sm:p-6 flex-grow flex flex-col">
                 <div className="flex-grow">
                   <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">{property.title}</h4>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{property.location}</p>
@@ -48,15 +206,15 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     {property.view_count || 0} {property.view_count === 1 ? 'view' : 'views'}
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => router.push(`/dashboard/edit-property/${property.id}`)}
-                      className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors touch-manipulation"
                     >
                       Edit
                     </button>
-                    <button 
-                      className="px-3 py-1 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                    <button
+                      className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors touch-manipulation"
                     >
                       Unpublish
                     </button>
