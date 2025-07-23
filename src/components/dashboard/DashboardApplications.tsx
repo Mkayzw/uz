@@ -33,11 +33,12 @@ export default function DashboardApplications({
       )}
 
       {profile?.role === 'agent' && (
-        <AgentApplications 
+        <AgentApplications
           applications={agentApplications}
           onApproveApplication={onApproveApplication}
           onRejectApplication={onRejectApplication}
           onVerifyPayment={onVerifyPayment}
+          onDownloadReceipt={(applicationId) => window.open(`/api/receipts/${applicationId}`)}
         />
       )}
     </div>
