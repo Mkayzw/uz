@@ -345,11 +345,16 @@ export default function DashboardContent() {
         if (result.error) {
           showNotification({ title: 'Error', message: result.error, type: 'error' });
         } else {
-          showNotification({ 
-            title: 'Payment Verified', 
-            message: 'The payment has been marked as verified.', 
-            type: 'success' 
+          showNotification({
+            title: 'Payment Verified',
+            message: 'The payment has been marked as verified. Dashboard will refresh automatically.',
+            type: 'success'
           });
+
+          // Force refresh the dashboard data to ensure UI updates
+          setTimeout(() => {
+            refreshData();
+          }, 1000);
         }
       }
     });

@@ -25,7 +25,7 @@ function PaymentPageContent() {
 
   const [user, setUser] = useState<User | null>(null)
   const [application, setApplication] = useState<Application | null>(null)
-  const [agentEcocash, setAgentEcocash] = useState<string>('0770 000 000')
+  const [agentEcocash, setAgentEcocash] = useState<string>('')
   const [transactionCode, setTransactionCode] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -41,6 +41,7 @@ function PaymentPageContent() {
       setUser(user)
 
       if (applicationId) {
+        // This is a rent payment - fetch agent's EcoCash number
         const { data, error } = await supabase
           .from('applications')
           .select(`
@@ -81,9 +82,16 @@ function PaymentPageContent() {
 
             if (!agentError && agentData?.ecocash_number) {
               setAgentEcocash(agentData.ecocash_number)
+            } else {
+              setError('Agent has not set up their EcoCash number. Please contact the agent directly.')
             }
+          } else {
+            setError('Unable to find agent information for this property.')
           }
         }
+      } else {
+        // This is agent activation payment - use the centralized number
+        setAgentEcocash('0780851851')
       }
       setLoading(false)
     }
@@ -100,6 +108,12 @@ function PaymentPageContent() {
 
     if (!user || !transactionCode.trim()) {
       setError('Please enter a valid transaction code.')
+      setLoading(false)
+      return
+    }
+
+    if (!agentEcocash) {
+      setError('Payment number not loaded. Please refresh the page and try again.')
       setLoading(false)
       return
     }
@@ -144,13 +158,13 @@ function PaymentPageContent() {
   const instructions = paymentType === 'rent' ? (
     <>
       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        Your application for <strong>{application?.property?.title}</strong> has been approved! To secure your place, please send the rent of <strong>${application?.property?.price.toLocaleString()}</strong> via EcoCash to the agent's number below.
+        Your application for <strong>{application?.property?.title}</strong> has been approved! To secure your place, please send the rent of <strong>${application?.property?.price.toLocaleString()}</strong> via EcoCash to your agent's EcoCash number below.
       </p>
     </>
   ) : (
     <>
       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        To activate your agent account, please send the subscription fee of <strong>$10.00</strong> via EcoCash to the following number:
+        To activate your agent account, please send the subscription fee of <strong>$10.00</strong> via EcoCash to the UniStay activation number below:
       </p>
     </>
   )
@@ -181,9 +195,14 @@ function PaymentPageContent() {
             <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
               <h3 className="font-bold text-gray-900 dark:text-white">Payment Instructions</h3>
               {instructions}
-              <p className="text-lg font-mono font-bold text-blue-600 dark:text-blue-400 text-center my-3 py-2 bg-white dark:bg-gray-800 rounded">
-                {agentEcocash}
-              </p>
+              <div className="my-4 p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-200 dark:border-blue-600">
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-1">
+                  {paymentType === 'rent' ? 'Agent EcoCash Number' : 'UniStay Activation Number'}
+                </p>
+                <p className="text-lg font-mono font-bold text-blue-600 dark:text-blue-400 text-center">
+                  {agentEcocash || 'Loading...'}
+                </p>
+              </div>
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 After sending the money, enter the transaction code you receive from EcoCash in the field below.
               </p>

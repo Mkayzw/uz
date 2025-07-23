@@ -11,6 +11,7 @@ export type Database = {
           ecocash_number: string | null
           registration_number: string | null
           national_id: string | null
+          gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
         }
         Insert: {
           id: string
@@ -21,6 +22,7 @@ export type Database = {
           ecocash_number?: string | null
           registration_number?: string | null
           national_id?: string | null
+          gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
         }
         Update: {
           id?: string
