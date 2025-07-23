@@ -12,6 +12,7 @@ export interface UserProfile {
   ecocash_number?: string | null
   registration_number?: string | null
   national_id?: string | null
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
 }
 
 export interface Property {
@@ -63,6 +64,9 @@ export interface Application {
   tenant?: {
     full_name?: string | null
     ecocash_number?: string | null
+    registration_number?: string | null
+    national_id?: string | null
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
   }
   bed?: {
     bed_number?: number | null

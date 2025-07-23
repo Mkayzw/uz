@@ -5,13 +5,15 @@ interface AgentApplicationsProps {
   onApproveApplication: (applicationId: string) => void
   onRejectApplication: (applicationId: string) => void
   onVerifyPayment: (applicationId: string) => void
+  onDownloadReceipt?: (applicationId: string) => void
 }
 
-export default function AgentApplications({ 
-  applications, 
-  onApproveApplication, 
-  onRejectApplication, 
-  onVerifyPayment 
+export default function AgentApplications({
+  applications,
+  onApproveApplication,
+  onRejectApplication,
+  onVerifyPayment,
+  onDownloadReceipt
 }: AgentApplicationsProps) {
   if (applications.length === 0) {
     return (
@@ -36,9 +38,40 @@ export default function AgentApplications({
               <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
                 {application.property?.title}
               </h4>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Applicant: {application.tenant?.full_name || 'N/A'}
-              </p>
+
+              {/* Tenant Information Section */}
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-3">
+                <h5 className="font-semibold text-gray-900 dark:text-white text-sm mb-2">Applicant Details</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                    <span className="ml-2 text-gray-900 dark:text-white font-medium">
+                      {application.tenant?.full_name || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Gender:</span>
+                    <span className="ml-2 text-gray-900 dark:text-white">
+                      {application.tenant?.gender ?
+                        application.tenant.gender.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Student ID:</span>
+                    <span className="ml-2 text-gray-900 dark:text-white font-mono">
+                      {application.tenant?.registration_number || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">National ID:</span>
+                    <span className="ml-2 text-gray-900 dark:text-white font-mono">
+                      {application.tenant?.national_id || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Applied on {new Date(application.created_at).toLocaleDateString()}
               </p>
@@ -94,14 +127,27 @@ export default function AgentApplications({
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction Code:</p>
                     <p className="font-mono font-medium text-gray-800 dark:text-gray-200">{application.transaction_code}</p>
                   </div>
-                  {!application.payment_verified && (
-                    <button 
-                      onClick={() => onVerifyPayment(application.id)}
-                      className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
-                      Verify Payment
-                    </button>
-                  )}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {!application.payment_verified && (
+                      <button
+                        onClick={() => onVerifyPayment(application.id)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                      >
+                        Verify Payment
+                      </button>
+                    )}
+                    {application.payment_verified && (
+                      <button
+                        onClick={() => window.open(`/api/receipts/${application.id}`)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download Receipt
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-amber-600 dark:text-amber-400">

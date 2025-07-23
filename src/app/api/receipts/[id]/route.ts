@@ -12,13 +12,19 @@ export async function GET(
   const { id } = await params
   const applicationId = id
 
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  }
+
   const { data: application, error } = await supabase
     .from('applications')
     .select(
       `
       *,
       property:pads!inner(*, agent:profiles!pads_created_by_fkey(full_name, ecocash_number)),
-      tenant:profiles!inner(full_name, registration_number, national_id, id),
+      tenant:profiles!inner(full_name, registration_number, national_id, id, gender),
       bed:beds!inner(*, room:rooms!inner(name, price))
       `
     )
@@ -28,6 +34,19 @@ export async function GET(
   if (error || !application) {
     console.error('Error fetching application:', error)
     return NextResponse.json({ error: 'Receipt not found or you do not have permission to view it.' }, { status: 404 })
+  }
+
+  // Check if payment is verified before allowing receipt access
+  if (!application.payment_verified) {
+    return NextResponse.json({ error: 'Receipt not available. Payment must be verified first.' }, { status: 403 })
+  }
+
+  // Authorization check: User must be either the tenant or the agent who owns the property
+  const isOwner = application.tenant_id === user.id
+  const isAgent = application.property.created_by === user.id
+
+  if (!isOwner && !isAgent) {
+    return NextResponse.json({ error: 'You do not have permission to access this receipt.' }, { status: 403 })
   }
 
   const { property, tenant, bed, created_at, transaction_code } = application
@@ -72,6 +91,7 @@ export async function GET(
       <div class="details">
         <h2>Tenant Details</h2>
         <p><strong>Name:</strong> ${tenant.full_name}</p>
+        <p><strong>Gender:</strong> ${tenant.gender ? tenant.gender.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'N/A'}</p>
         <p><strong>Student ID:</strong> ${tenant.registration_number}</p>
         <p><strong>National ID:</strong> ${tenant.national_id}</p>
       </div>
