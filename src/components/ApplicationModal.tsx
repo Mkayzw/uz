@@ -12,7 +12,7 @@ interface ApplicationModalProps {
   isOpen: boolean
   beds: Bed[]
   onClose: () => void
-  onSubmit: (details: { registration_number: string; national_id: string; bed_id: string }) => void
+  onSubmit: (details: { registration_number: string; national_id: string; bed_id: string; gender: string }) => void
 }
 
 export default function ApplicationModal({ isOpen, beds, onClose, onSubmit }: ApplicationModalProps) {
@@ -20,6 +20,7 @@ export default function ApplicationModal({ isOpen, beds, onClose, onSubmit }: Ap
     registration_number: '',
     national_id: '',
     bed_id: '',
+    gender: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -67,6 +68,25 @@ export default function ApplicationModal({ isOpen, beds, onClose, onSubmit }: Ap
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               required
             />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Gender
+            </label>
+            <select
+              name="gender"
+              id="gender"
+              value={details.gender}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              required
+            >
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
           </div>
           <div className="mb-4">
             <label htmlFor="bed_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">

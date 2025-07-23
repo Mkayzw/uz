@@ -174,7 +174,8 @@ export async function submitApplication(
   propertyId: string,
   bedId: string,
   registrationNumber: string,
-  nationalId: string
+  nationalId: string,
+  gender: string
 ) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
@@ -200,7 +201,11 @@ export async function submitApplication(
     // Update profile
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ registration_number: registrationNumber, national_id: nationalId })
+      .update({
+        registration_number: registrationNumber,
+        national_id: nationalId,
+        gender: gender
+      })
       .eq('id', user.id)
 
     if (profileError) throw profileError

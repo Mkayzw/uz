@@ -573,7 +573,8 @@ export default function DashboardContent() {
             applicationModal.propertyId,
             details.bed_id,
             details.registration_number,
-            details.national_id
+            details.national_id,
+            details.gender
           )
           if (result.error) {
             showNotification({
