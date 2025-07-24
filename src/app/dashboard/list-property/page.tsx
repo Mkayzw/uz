@@ -261,7 +261,7 @@ const PropertyForm = () => {
           bedInserts.push({
             room_id: roomData.id,
             bed_number: i,
-            is_available: true
+            is_occupied: false
           });
         }
 

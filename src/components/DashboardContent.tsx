@@ -292,9 +292,9 @@ export default function DashboardContent() {
     const { data: beds, error } = await supabase
       .from('beds')
       .select('id, bed_number, room_id')
-      .eq('is_available', true)
+      .eq('is_occupied', false)
       .in('room_id',
-        (await supabase.from('rooms').select('id').eq('pad_id', propertyId)).data?.map(r => r.id) || []
+        (await supabase.from('rooms').select('id').eq('property_id', propertyId)).data?.map(r => r.id) || []
       )
 
     if (error) {

@@ -277,7 +277,7 @@ export default function EditPropertyPage() {
                             bedsToAdd.push({
                                 room_id: room.room_id,
                                 bed_number: i,
-                                is_available: true
+                                is_occupied: false
                             });
                         }
                     }
@@ -315,7 +315,7 @@ export default function EditPropertyPage() {
                         bedInserts.push({
                             room_id: roomData.id,
                             bed_number: i,
-                            is_available: true
+                            is_occupied: false
                         });
                     }
                     
