@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import AuthGuard from "@/components/AuthGuard";
 import PropertyImage from "@/components/PropertyImage";
+import { useSupabaseClient } from "@/hooks/useSupabaseClient";
 
 const PropertyForm = () => {
-  const supabase = createClient();
+  const supabase = useSupabaseClient();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -230,8 +230,8 @@ const PropertyForm = () => {
         .select()
         .single();
 
-      if (padError) {
-        throw new Error("Error creating property: " + padError.message);
+      if (propertyError) {
+        throw new Error("Error creating property: " + propertyError.message);
       }
 
       // 3. Insert rooms and beds
@@ -240,18 +240,18 @@ const PropertyForm = () => {
         // TODO: Individual room pricing should be implemented in the UI
         // For now, using property price divided by number of rooms as baseline
         const roomPrice = parseFloat(formData.price) / rooms.length;
-        
+
         const { data: roomData, error: roomError } = await supabase.from("rooms").insert({
-          pad_id: padData.id,
+          property_id: propertyData.id,
           name: room.name,
-          type: getRoomType(room.beds),
-          price: roomPrice, // Price per room, not total property price
+          room_type: getRoomType(room.beds),
+          price_per_bed: roomPrice, // Price per bed
           capacity: room.beds,
         }).select().single();
 
         if (roomError) {
-          // Consider deleting the pad if room creation fails
-          await supabase.from("pads").delete().eq("id", padData.id);
+          // Consider deleting the property if room creation fails
+          await supabase.from("properties").delete().eq("id", propertyData.id);
           throw new Error("Error creating room: " + roomError.message);
         }
 
@@ -268,8 +268,8 @@ const PropertyForm = () => {
         if (bedInserts.length > 0) {
           const { error: bedError } = await supabase.from("beds").insert(bedInserts);
           if (bedError) {
-            // Clean up: delete pad and rooms if bed creation fails
-            await supabase.from("pads").delete().eq("id", padData.id);
+            // Clean up: delete property and rooms if bed creation fails
+            await supabase.from("properties").delete().eq("id", propertyData.id);
             throw new Error("Error creating beds: " + bedError.message);
           }
         }
