@@ -200,7 +200,12 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
               <div className="p-4 sm:p-6 flex-grow flex flex-col">
                 <div className="flex-grow">
                   <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">{property.title}</h4>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{property.location}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{property.location}</p>
+                  {property.description && (
+                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                      {property.description}
+                    </p>
+                  )}
                 </div>
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-sm text-gray-500 dark:text-gray-400">
