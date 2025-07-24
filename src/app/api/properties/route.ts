@@ -43,7 +43,7 @@ export async function GET() {
 
     // Transform properties to match expected format
     const transformedProperties = properties?.map(prop => {
-      const amenities = prop.amenities as any || {}
+      const amenities = (prop.amenities as PropertyAmenities) || {}
       const totalRooms = prop.rooms?.length || 0
       const totalBeds = prop.rooms?.reduce((sum: number, room: any) => sum + (room.beds?.length || 0), 0) || 0
       const occupiedBeds = prop.rooms?.reduce((sum: number, room: any) =>
