@@ -60,11 +60,11 @@ export function useRealTimeSubscriptions({
     // Properties subscription (for agents)
     const propertiesChannel = supabase
       .channel(`properties:${user.id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'pads',
-        filter: `created_by=eq.${user.id}`
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'properties',
+        filter: `owner_id=eq.${user.id}`
       }, async () => {
         if (profile.role === 'agent' && profile.agent_status === 'active') {
           try {

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import AuthGuard from '@/components/AuthGuard';
 import BackButton from '@/components/BackButton';
 import { RoomRow, BedRow } from '@/types/database';
-import { addRoom, addBed, deleteBed, updateBedAvailability, deleteRoom, getRoomStats } from '@/app/dashboard/actions';
+import { addRoom, addBed, deleteBed, updateBedAvailability, deleteRoom, getPropertyStats } from '@/app/dashboard/actions';
 
 export default function ManageRoomsPage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
 
   const refreshStats = async () => {
     if (!id) return;
-    const statsResult = await getRoomStats(id);
+    const statsResult = await getPropertyStats(id);
     if (!statsResult.error) {
       setPropertyStats(statsResult);
     }
@@ -76,15 +76,15 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const handleToggleBedAvailability = async (bedId: string, currentAvailability: boolean, roomId: string) => {
-    const result = await updateBedAvailability(bedId, !currentAvailability);
+  const handleToggleBedOccupancy = async (bedId: string, currentOccupancy: boolean, roomId: string) => {
+    const result = await updateBedAvailability(bedId, !currentOccupancy);
     if (result.error) {
       setError(result.error);
     } else {
       setBeds({
         ...beds,
-        [roomId]: beds[roomId].map(bed => 
-          bed.id === bedId ? { ...bed, is_available: !currentAvailability } : bed
+        [roomId]: beds[roomId].map(bed =>
+          bed.id === bedId ? { ...bed, is_occupied: !currentOccupancy } : bed
         )
       });
       refreshStats();
@@ -110,7 +110,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
         const { data: roomsData, error: roomsError } = await supabase
           .from('rooms')
           .select('*')
-          .eq('pad_id', id);
+          .eq('property_id', id);
 
         if (roomsError) {
           throw roomsError;
@@ -133,7 +133,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
           setBeds(bedsByRoom);
 
           // Fetch property statistics
-          const statsResult = await getRoomStats(id);
+          const statsResult = await getPropertyStats(id);
           if (!statsResult.error) {
             setPropertyStats(statsResult);
           }
@@ -180,10 +180,11 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
 
     const roomData = {
       name: newRoomName.trim(),
-      type: newRoomType,
-      price: newRoomPrice,
+      room_type: newRoomType,
+      price_per_bed: newRoomPrice,
       capacity: newRoomCapacity,
-      available: true,
+      bathrooms: 0, // Default to 0, can be updated later
+      is_available: true,
     };
 
     const result = await addRoom(id, roomData);
@@ -210,7 +211,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
 
     const bedData = {
       bed_number: newBedNumber,
-      is_available: true,
+      is_occupied: false,
     };
     const result = await addBed(roomId, bedData);
     if (result.error) {
@@ -515,18 +516,18 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
                                 <div className="flex justify-between items-center">
                                   <div>
                                     <p className="font-medium text-gray-900 dark:text-white">Bed #{bed.bed_number}</p>
-                                    <p className={`text-xs ${bed.is_available ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                      {bed.is_available ? 'Available' : 'Occupied'}
+                                    <p className={`text-xs ${!bed.is_occupied ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                      {!bed.is_occupied ? 'Available' : 'Occupied'}
                                     </p>
                                   </div>
                                   <div className="flex gap-1">
                                     <button
-                                      onClick={() => handleToggleBedAvailability(bed.id, bed.is_available, room.id)}
-                                      className={`p-1 rounded ${bed.is_available ? 'text-red-600 hover:bg-red-100' : 'text-green-600 hover:bg-green-100'} transition-colors`}
-                                      title={bed.is_available ? 'Mark as Occupied' : 'Mark as Available'}
+                                      onClick={() => handleToggleBedOccupancy(bed.id, bed.is_occupied, room.id)}
+                                      className={`p-1 rounded ${!bed.is_occupied ? 'text-red-600 hover:bg-red-100' : 'text-green-600 hover:bg-green-100'} transition-colors`}
+                                      title={!bed.is_occupied ? 'Mark as Occupied' : 'Mark as Available'}
                                     >
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        {bed.is_available ? (
+                                        {!bed.is_occupied ? (
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         ) : (
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

@@ -5,13 +5,13 @@ import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { RoomRow, BedRow } from '@/types/database'
 
-export async function addRoom(padId: string, roomData: Omit<RoomRow, 'id' | 'pad_id' | 'created_at'>) {
+export async function addRoom(propertyId: string, roomData: Omit<RoomRow, 'id' | 'property_id' | 'created_at' | 'updated_at'>) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
     const { data, error } = await supabase
         .from('rooms')
-        .insert({ ...roomData, pad_id: padId })
+        .insert({ ...roomData, property_id: propertyId })
         .select()
         .single()
 
@@ -20,11 +20,11 @@ export async function addRoom(padId: string, roomData: Omit<RoomRow, 'id' | 'pad
         return { error: 'Failed to add room.' }
     }
 
-    revalidatePath(`/dashboard/manage-properties/${padId}/rooms`)
+    revalidatePath(`/dashboard/manage-properties/${propertyId}/rooms`)
     return { data }
 }
 
-export async function addBed(roomId: string, bedData: Omit<BedRow, 'id' | 'room_id'>) {
+export async function addBed(roomId: string, bedData: Omit<BedRow, 'id' | 'room_id' | 'created_at' | 'updated_at'>) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
@@ -78,20 +78,20 @@ export async function deleteBed(bedId: string) {
     return { success: true }
 }
 
-export async function updateBedAvailability(bedId: string, isAvailable: boolean) {
+export async function updateBedAvailability(bedId: string, isOccupied: boolean) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
     const { data, error } = await supabase
         .from('beds')
-        .update({ is_available: isAvailable })
+        .update({ is_occupied: isOccupied })
         .eq('id', bedId)
         .select()
         .single()
 
     if (error) {
-        console.error('Error updating bed availability:', error)
-        return { error: 'Failed to update bed availability.' }
+        console.error('Error updating bed occupancy:', error)
+        return { error: 'Failed to update bed occupancy.' }
     }
 
     revalidatePath(`/dashboard/manage-properties/*/rooms`)
@@ -171,11 +171,12 @@ export async function verifyPayment(applicationId: string) {
   return { data }
 }
 export async function submitApplication(
-  propertyId: string,
   bedId: string,
   registrationNumber: string,
   nationalId: string,
-  gender: string
+  gender: string,
+  message?: string,
+  transactionCode?: string
 ) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
@@ -186,16 +187,32 @@ export async function submitApplication(
   }
 
   try {
-    // Check if user has already applied to this property
+    // Check if user has already applied for this bed
     const { data: existingApplication } = await supabase
       .from('applications')
       .select('id')
-      .eq('property_id', propertyId)
+      .eq('bed_id', bedId)
       .eq('tenant_id', user.id)
       .single()
 
     if (existingApplication) {
-      return { error: 'You have already applied to this property.' }
+      return { error: 'You have already applied for this bed.' }
+    }
+
+    // Check if the bed is still available
+    const { data: bed, error: bedError } = await supabase
+      .from('beds')
+      .select('is_occupied')
+      .eq('id', bedId)
+      .single()
+
+    if (bedError) {
+      console.error('Error checking bed availability:', bedError)
+      return { error: 'Failed to verify bed availability.' }
+    }
+
+    if (bed.is_occupied) {
+      return { error: 'This bed is no longer available.' }
     }
 
     // Update profile
@@ -214,10 +231,11 @@ export async function submitApplication(
     const { data, error } = await supabase
       .from('applications')
       .insert({
-        property_id: propertyId,
-        tenant_id: user.id,
         bed_id: bedId,
+        tenant_id: user.id,
         status: 'pending',
+        message: message || null,
+        transaction_code: transactionCode || null
       })
       .select()
       .single()
@@ -230,22 +248,21 @@ export async function submitApplication(
     console.error('Error submitting application:', error)
 
     // Handle specific database constraint errors
-    if (error.code === '23505' && error.message.includes('applications_property_id_tenant_id_key')) {
-      return { error: 'You have already applied to this property.' }
+    if (error.code === '23505' && error.message.includes('applications_bed_id_tenant_id_key')) {
+      return { error: 'You have already applied for this bed.' }
     }
 
     return { error: 'Failed to submit application.' }
   }
 }
 
-export async function getRoomStats(padId: string) {
+export async function getPropertyStats(propertyId: string) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
 
+    // Use the new get_property_stats function
     const { data, error } = await supabase
-        .from('room_occupancy_stats')
-        .select('*')
-        .eq('pad_id', padId)
+        .rpc('get_property_stats', { property_uuid: propertyId })
 
     if (error) {
         console.error('Error fetching room stats:', error)
