@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 
+/**
+ * Handles GET requests to retrieve a list of published properties with aggregated room, bed, and amenity details.
+ *
+ * Queries the database for up to 12 most recently created published properties, including nested room and bed data. Each property is transformed to include summary statistics such as total rooms, total beds, available beds, occupancy rate, minimum price per bed, and extracted amenity flags. Returns the transformed property list as a JSON response. Responds with a 500 status code and error message if the query fails or an unexpected error occurs.
+ *
+ * @returns A JSON response containing an array of transformed property objects with detailed room, bed, and amenity information.
+ */
 export async function GET() {
   try {
     const cookieStore = cookies()

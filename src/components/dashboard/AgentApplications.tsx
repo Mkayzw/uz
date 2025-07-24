@@ -8,6 +8,18 @@ interface AgentApplicationsProps {
   onDownloadReceipt?: (applicationId: string) => void
 }
 
+/**
+ * Renders a list of property rental applications for agents, providing controls to approve, reject, verify payment, or download receipts for each application.
+ *
+ * Displays detailed applicant information, application status, and payment status. If no applications are present, shows a message indicating no applications have been received.
+ *
+ * @param applications - The array of application objects to display.
+ * @param onApproveApplication - Callback invoked when an application is approved.
+ * @param onRejectApplication - Callback invoked when an application is rejected.
+ * @param onVerifyPayment - Callback invoked to verify payment for an application.
+ * @param onDownloadReceipt - Optional callback to download the payment receipt for an application.
+ * @returns The rendered list of applications or a message if none exist.
+ */
 export default function AgentApplications({
   applications,
   onApproveApplication,

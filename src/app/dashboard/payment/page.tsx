@@ -17,6 +17,11 @@ interface Application {
   agent_ecocash?: string;
 }
 
+/**
+ * Displays and manages the payment submission form for rent payments or agent account activation.
+ *
+ * Handles user authentication, fetches relevant application and agent payment details, and processes transaction code submissions for payment verification. Provides user feedback on loading, errors, and successful submission.
+ */
 function PaymentPageContent() {
   const supabase = createClient()
   const router = useRouter()

@@ -153,6 +153,11 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
   )
 }
 
+/**
+ * Displays a searchable and filterable grid of property listings with interactive controls for applying, saving, and managing properties.
+ *
+ * Allows users to search properties by title or location, filter by property type and price range, and view detailed property information including images, amenities, and availability. Tenants can apply to or save properties, while agents can access management options for their own listings. If no properties match the current filters, a message is shown.
+ */
 export default function PropertiesBrowser({
   allProperties,
   applications,

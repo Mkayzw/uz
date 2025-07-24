@@ -23,6 +23,11 @@ interface UseRealTimeSubscriptionsProps {
   setSavedProperties: (savedProperties: SavedProperty[]) => void
 }
 
+/**
+ * Sets up and manages real-time Supabase subscriptions for user profiles, properties, applications, saved properties, and public property listings.
+ *
+ * This hook listens for changes in relevant database tables and updates React state accordingly. It also triggers contextual toast notifications for application status changes and payment verifications. All subscriptions are cleaned up automatically when dependencies change or the component unmounts.
+ */
 export function useRealTimeSubscriptions({
   user,
   profile,
