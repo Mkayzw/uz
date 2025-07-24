@@ -69,14 +69,6 @@ export default function AgentApplications({
                       {application.tenant?.national_id || 'N/A'}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Gender:</span>
-                    <span className="ml-2 text-gray-900 dark:text-white">
-                      {application.tenant?.gender ?
-                        application.tenant.gender.charAt(0).toUpperCase() + application.tenant.gender.slice(1).replace('_', ' ')
-                        : 'N/A'}
-                    </span>
-                  </div>
                 </div>
               </div>
 
