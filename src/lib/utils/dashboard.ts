@@ -9,6 +9,28 @@ export const getProfile = async (supabase: SupabaseClient, user: User) => {
     .single()
 
   if (error) {
+    // If profile doesn't exist, create one
+    if (error.code === 'PGRST116') {
+      console.log('Creating new profile for user:', user.id)
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: user.id,
+          full_name: user.user_metadata?.full_name || null,
+          role: 'tenant' as const,
+          agent_status: 'not_applicable' as const
+        }])
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating profile:', createError)
+        throw new Error('Failed to create user profile')
+      }
+
+      return newProfile
+    }
+    
     console.error('Error fetching profile:', error)
     throw new Error('Failed to load user profile')
   }

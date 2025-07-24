@@ -195,37 +195,37 @@ const PropertyForm = () => {
         formData.zipCode
       ].filter(Boolean).join(", ");
 
-      // 2. Insert into 'pads' table
-      const { data: padData, error: padError } = await supabase
-        .from("pads")
+      // 2. Insert into 'properties' table
+      const { data: propertyData, error: propertyError } = await supabase
+        .from("properties")
         .insert({
-          created_by: user.id,
+          owner_id: user.id,
           title: formData.title,
           description: formData.description,
-          location: fullAddress,
+          address: fullAddress,
           city: formData.city,
           state: formData.state,
           zip_code: formData.zipCode,
           property_type: formData.propertyType,
-          bedrooms: getTotalBeds(), // Total beds across all rooms
-          bathrooms: parseInt(formData.bathrooms), // Property-level bathrooms
-          image_urls: photoUrls,
-          image_url: photoUrls[0] || null, // Using the first image as the main one
-          available_from: formData.availableFrom || null,
-          available_to: formData.availableTo || null,
-          rules: formData.rules,
           contact_phone: formData.contactPhone,
           contact_email: formData.contactEmail || user.email,
-          has_internet: formData.amenities.wifi,
-          has_pool: formData.amenities.pool,
-          has_parking: formData.amenities.parking,
-          has_power: formData.amenities.power,
-          has_water: formData.amenities.water,
-          has_tv: formData.amenities.tv,
-          has_air_conditioning: formData.amenities.airConditioning,
-          is_furnished: formData.amenities.furnished,
-          has_laundry: formData.amenities.laundry,
-          has_security_system: formData.amenities.securitySystem,
+          rules: formData.rules,
+          images: photoUrls,
+          available_from: formData.availableFrom || null,
+          available_to: formData.availableTo || null,
+          amenities: {
+            wifi: formData.amenities.wifi,
+            pool: formData.amenities.pool,
+            parking: formData.amenities.parking,
+            power: formData.amenities.power,
+            water: formData.amenities.water,
+            tv: formData.amenities.tv,
+            airConditioning: formData.amenities.airConditioning,
+            furnished: formData.amenities.furnished,
+            laundry: formData.amenities.laundry,
+            securitySystem: formData.amenities.securitySystem,
+          },
+          status: 'published'
         })
         .select()
         .single();

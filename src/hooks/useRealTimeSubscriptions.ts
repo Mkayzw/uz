@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { UserProfile, Property, Application, SavedProperty } from '@/types/dashboard'
 import { useToast } from '@/components/ToastManager'
@@ -11,6 +10,7 @@ import {
   getSavedProperties,
   getAgentApplications,
 } from '@/lib/utils/dashboard'
+import { useSupabaseClient } from './useSupabaseClient'
 
 interface UseRealTimeSubscriptionsProps {
   user: User | null
@@ -33,7 +33,7 @@ export function useRealTimeSubscriptions({
   setAgentApplications,
   setSavedProperties
 }: UseRealTimeSubscriptionsProps) {
-  const supabase = createClient()
+  const supabase = useSupabaseClient()
   const { addToast } = useToast()
 
   useEffect(() => {
