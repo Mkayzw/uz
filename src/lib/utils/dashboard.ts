@@ -17,7 +17,7 @@ export const getProfile = async (supabase: SupabaseClient, user: User) => {
 }
 
 // Helper function to extract amenities
-const extractAmenities = (amenities: any) => {
+export const extractAmenities = (amenities: any) => {
   const amenitiesObj = amenities as PropertyAmenities || {}
   return {
     has_internet: amenitiesObj.utilities?.internet || false,

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
+import { extractAmenities } from '@/lib/utils/dashboard'
+import { PropertyAmenities } from '@/types/database'
 
 export async function GET() {
   try {
@@ -67,28 +69,8 @@ export async function GET() {
         image_url: prop.images?.[0] || null,
         image_urls: prop.images || [],
         // Extract amenities
-// At the top of src/app/api/properties/route.ts
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
-import { extractAmenities } from '@/lib/utils/dashboard'
-
-… 
-
-// In the part where you build the response payload
-return NextResponse.json({
-  properties: data.map((prop) => {
-    const amenities = prop.amenities
-
-    return {
-      id: prop.id,
-      name: prop.name,
-      // replace manual amenity mappings with the helper
-      ...extractAmenities(amenities),
-      view_count: prop.view_count,
-    }
-  }),
-})
+        ...extractAmenities(prop.amenities),
+        view_count: prop.view_count,
         created_at: prop.created_at,
         // Additional stats
         total_beds: totalBeds,
