@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import AuthGuard from "@/components/AuthGuard";
 import PropertyImage from "@/components/PropertyImage";
+import { useSupabaseClient } from "@/hooks/useSupabaseClient";
 
 const PropertyForm = () => {
-  const supabase = createClient();
+  const supabase = useSupabaseClient();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -195,43 +195,43 @@ const PropertyForm = () => {
         formData.zipCode
       ].filter(Boolean).join(", ");
 
-      // 2. Insert into 'pads' table
-      const { data: padData, error: padError } = await supabase
-        .from("pads")
+      // 2. Insert into 'properties' table
+      const { data: propertyData, error: propertyError } = await supabase
+        .from("properties")
         .insert({
-          created_by: user.id,
+          owner_id: user.id,
           title: formData.title,
           description: formData.description,
-          location: fullAddress,
+          address: fullAddress,
           city: formData.city,
           state: formData.state,
           zip_code: formData.zipCode,
           property_type: formData.propertyType,
-          bedrooms: getTotalBeds(), // Total beds across all rooms
-          bathrooms: parseInt(formData.bathrooms), // Property-level bathrooms
-          image_urls: photoUrls,
-          image_url: photoUrls[0] || null, // Using the first image as the main one
-          available_from: formData.availableFrom || null,
-          available_to: formData.availableTo || null,
-          rules: formData.rules,
           contact_phone: formData.contactPhone,
           contact_email: formData.contactEmail || user.email,
-          has_internet: formData.amenities.wifi,
-          has_pool: formData.amenities.pool,
-          has_parking: formData.amenities.parking,
-          has_power: formData.amenities.power,
-          has_water: formData.amenities.water,
-          has_tv: formData.amenities.tv,
-          has_air_conditioning: formData.amenities.airConditioning,
-          is_furnished: formData.amenities.furnished,
-          has_laundry: formData.amenities.laundry,
-          has_security_system: formData.amenities.securitySystem,
+          rules: formData.rules,
+          images: photoUrls,
+          available_from: formData.availableFrom || null,
+          available_to: formData.availableTo || null,
+          amenities: {
+            wifi: formData.amenities.wifi,
+            pool: formData.amenities.pool,
+            parking: formData.amenities.parking,
+            power: formData.amenities.power,
+            water: formData.amenities.water,
+            tv: formData.amenities.tv,
+            airConditioning: formData.amenities.airConditioning,
+            furnished: formData.amenities.furnished,
+            laundry: formData.amenities.laundry,
+            securitySystem: formData.amenities.securitySystem,
+          },
+          status: 'published'
         })
         .select()
         .single();
 
-      if (padError) {
-        throw new Error("Error creating property: " + padError.message);
+      if (propertyError) {
+        throw new Error("Error creating property: " + propertyError.message);
       }
 
       // 3. Insert rooms and beds
@@ -240,18 +240,18 @@ const PropertyForm = () => {
         // TODO: Individual room pricing should be implemented in the UI
         // For now, using property price divided by number of rooms as baseline
         const roomPrice = parseFloat(formData.price) / rooms.length;
-        
+
         const { data: roomData, error: roomError } = await supabase.from("rooms").insert({
-          pad_id: padData.id,
+          property_id: propertyData.id,
           name: room.name,
-          type: getRoomType(room.beds),
-          price: roomPrice, // Price per room, not total property price
+          room_type: getRoomType(room.beds),
+          price_per_bed: roomPrice, // Price per bed
           capacity: room.beds,
         }).select().single();
 
         if (roomError) {
-          // Consider deleting the pad if room creation fails
-          await supabase.from("pads").delete().eq("id", padData.id);
+          // Consider deleting the property if room creation fails
+          await supabase.from("properties").delete().eq("id", propertyData.id);
           throw new Error("Error creating room: " + roomError.message);
         }
 
@@ -268,8 +268,8 @@ const PropertyForm = () => {
         if (bedInserts.length > 0) {
           const { error: bedError } = await supabase.from("beds").insert(bedInserts);
           if (bedError) {
-            // Clean up: delete pad and rooms if bed creation fails
-            await supabase.from("pads").delete().eq("id", padData.id);
+            // Clean up: delete property and rooms if bed creation fails
+            await supabase.from("properties").delete().eq("id", propertyData.id);
             throw new Error("Error creating beds: " + bedError.message);
           }
         }

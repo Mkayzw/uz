@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Property, Application, SavedProperty, UserProfile } from '@/types/dashboard'
 import {
@@ -9,6 +8,7 @@ import {
   getSavedProperties,
   getAgentApplications,
 } from '@/lib/utils/dashboard'
+import { useSupabaseClient } from './useSupabaseClient'
 
 interface UseDashboardDataProps {
   user: User | null
@@ -16,7 +16,7 @@ interface UseDashboardDataProps {
 }
 
 export function useDashboardData({ user, profile }: UseDashboardDataProps) {
-  const supabase = createClient()
+  const supabase = useSupabaseClient()
   const [properties, setProperties] = useState<Property[]>([])
   const [allProperties, setAllProperties] = useState<Property[]>([])
   const [applications, setApplications] = useState<Application[]>([])
@@ -64,7 +64,7 @@ export function useDashboardData({ user, profile }: UseDashboardDataProps) {
     }
 
     loadData()
-  }, [user?.id, profile?.role, profile?.agent_status, supabase])
+  }, [user?.id, profile?.role, profile?.agent_status])
 
   const refreshData = async () => {
     if (!user || !profile) return

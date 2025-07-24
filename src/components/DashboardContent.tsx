@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NotificationModal from '@/components/NotificationModal'
@@ -21,6 +20,7 @@ import { useDashboardAuth } from '@/hooks/useDashboardAuth'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useRealTimeSubscriptions } from '@/hooks/useRealTimeSubscriptions'
 import { useNavigationState, restoreNavigationState } from '@/hooks/useNavigationState'
+import { useSupabaseClient } from '@/hooks/useSupabaseClient'
 import { updateApplicationStatus, verifyPayment, cancelApplication, submitApplication } from '@/app/dashboard/actions'
 import { 
   DashboardTab, 
@@ -32,7 +32,7 @@ import {
 } from '@/types/dashboard'
 
 export default function DashboardContent() {
-  const supabase = createClient()
+  const supabase = useSupabaseClient()
   const router = useRouter()
   const searchParams = useSearchParams()
   
