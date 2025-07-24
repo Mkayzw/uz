@@ -43,14 +43,15 @@ export async function GET() {
 
     // Transform properties to match expected format
     const transformedProperties = properties?.map(prop => {
-      const amenities = prop.amenities as any || {}
+      const amenities = (prop.amenities as PropertyAmenities) || {}
       const totalRooms = prop.rooms?.length || 0
       const totalBeds = prop.rooms?.reduce((sum: number, room: any) => sum + (room.beds?.length || 0), 0) || 0
       const occupiedBeds = prop.rooms?.reduce((sum: number, room: any) =>
         sum + (room.beds?.filter((bed: any) => bed.is_occupied).length || 0), 0) || 0
       const availableBeds = totalBeds - occupiedBeds
       const minPrice = prop.rooms?.reduce((min: number, room: any) =>
-        Math.min(min, room.price_per_bed), Infinity) || 0
+        Math.min(min, room.price_per_bed || 0), Infinity)
+      const finalMinPrice = minPrice === Infinity ? 0 : minPrice
 
       return {
         id: prop.id,
@@ -66,17 +67,28 @@ export async function GET() {
         image_url: prop.images?.[0] || null,
         image_urls: prop.images || [],
         // Extract amenities
-        has_internet: amenities.utilities?.internet || false,
-        has_parking: amenities.facilities?.parking || false,
-        has_air_conditioning: amenities.room_features?.air_conditioning || false,
-        is_furnished: amenities.room_features?.furnished || false,
-        has_pool: amenities.facilities?.pool || false,
-        has_power: amenities.utilities?.power || false,
-        has_water: amenities.utilities?.water || false,
-        has_tv: amenities.room_features?.tv || false,
-        has_laundry: amenities.facilities?.laundry || false,
-        has_security_system: amenities.facilities?.security_system || false,
-        view_count: prop.view_count,
+// At the top of src/app/api/properties/route.ts
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { extractAmenities } from '@/lib/utils/dashboard'
+
+… 
+
+// In the part where you build the response payload
+return NextResponse.json({
+  properties: data.map((prop) => {
+    const amenities = prop.amenities
+
+    return {
+      id: prop.id,
+      name: prop.name,
+      // replace manual amenity mappings with the helper
+      ...extractAmenities(amenities),
+      view_count: prop.view_count,
+    }
+  }),
+})
         created_at: prop.created_at,
         // Additional stats
         total_beds: totalBeds,
