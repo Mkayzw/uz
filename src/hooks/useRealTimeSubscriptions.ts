@@ -23,6 +23,11 @@ interface UseRealTimeSubscriptionsProps {
   setSavedProperties: (savedProperties: SavedProperty[]) => void
 }
 
+/**
+ * Establishes and manages real-time Supabase subscriptions for user dashboard data, updating state and triggering notifications in response to profile, property, application, and saved property changes.
+ *
+ * Sets up and cleans up subscriptions based on the current user's role and status, ensuring the UI reflects the latest data and users receive relevant notifications for application status and payment events.
+ */
 export function useRealTimeSubscriptions({
   user,
   profile,

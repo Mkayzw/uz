@@ -171,6 +171,14 @@ function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarousel
   )
 }
 
+/**
+ * Displays a list of property listings for an agent, including image carousels, property details, and management actions.
+ *
+ * Renders each property with an image carousel, title, location, optional description, view count, and buttons to edit or unpublish. If no properties are present, shows a prompt to add a new property. Provides navigation to add a property or view all properties.
+ *
+ * @param properties - Array of property objects to display
+ * @param onImageClick - Callback invoked when a property image is clicked
+ */
 export default function AgentProperties({ properties, onImageClick }: AgentPropertiesProps) {
   const router = useRouter()
 

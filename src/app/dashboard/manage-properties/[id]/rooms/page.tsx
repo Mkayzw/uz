@@ -9,6 +9,14 @@ import BackButton from '@/components/BackButton';
 import { RoomRow, BedRow } from '@/types/database';
 import { addRoom, addBed, deleteBed, updateBedAvailability, deleteRoom, getPropertyStats } from '@/app/dashboard/actions';
 
+/**
+ * React page component for managing rooms and beds within a property.
+ *
+ * Displays and allows management of rooms and beds for a property identified by the provided property ID. Supports adding and deleting rooms and beds, toggling bed occupancy, and displays real-time property statistics. Handles authentication, loading, and error states, and restricts access to users with the 'agent' role.
+ *
+ * @param params - A Promise resolving to an object containing the property ID to manage
+ * @returns The rendered management interface for rooms and beds in the specified property
+ */
 export default function ManageRoomsPage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
   const supabase = createClient();

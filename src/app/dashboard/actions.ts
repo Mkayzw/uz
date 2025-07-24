@@ -5,6 +5,15 @@ import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { RoomRow, BedRow } from '@/types/database'
 
+/**
+ * Adds a new room to a property in the database.
+ *
+ * Inserts a room associated with the specified property and returns the inserted room data or an error message if the operation fails. Triggers revalidation of the property's rooms management path.
+ *
+ * @param propertyId - The unique identifier of the property to which the room will be added
+ * @param roomData - The data for the new room, excluding auto-generated fields
+ * @returns An object containing the inserted room data or an error message
+ */
 export async function addRoom(propertyId: string, roomData: Omit<RoomRow, 'id' | 'property_id' | 'created_at' | 'updated_at'>) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
@@ -24,6 +33,15 @@ export async function addRoom(propertyId: string, roomData: Omit<RoomRow, 'id' |
     return { data }
 }
 
+/**
+ * Adds a new bed to a room if the room has not reached its capacity.
+ *
+ * Checks the current number of beds in the specified room and inserts a new bed if capacity allows. Returns the inserted bed data or an error message if the room is full or the operation fails.
+ *
+ * @param roomId - The ID of the room to add the bed to
+ * @param bedData - The data for the new bed, excluding ID, room ID, and timestamps
+ * @returns An object containing the inserted bed data or an error message
+ */
 export async function addBed(roomId: string, bedData: Omit<BedRow, 'id' | 'room_id' | 'created_at' | 'updated_at'>) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
@@ -60,6 +78,12 @@ export async function addBed(roomId: string, bedData: Omit<BedRow, 'id' | 'room_
     return { data }
 }
 
+/**
+ * Deletes a bed by its ID from the database.
+ *
+ * @param bedId - The unique identifier of the bed to delete
+ * @returns An object indicating success, or an error message if deletion fails
+ */
 export async function deleteBed(bedId: string) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
@@ -78,6 +102,13 @@ export async function deleteBed(bedId: string) {
     return { success: true }
 }
 
+/**
+ * Updates the occupancy status of a bed by its ID.
+ *
+ * @param bedId - The unique identifier of the bed to update
+ * @param isOccupied - Whether the bed is currently occupied
+ * @returns The updated bed data, or an error message if the update fails
+ */
 export async function updateBedAvailability(bedId: string, isOccupied: boolean) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
@@ -151,6 +182,14 @@ export async function cancelApplication(applicationId: string) {
   return updateApplicationStatus(applicationId, 'cancelled')
 }
 
+/**
+ * Marks an application's payment as verified.
+ *
+ * Updates the `payment_verified` status to true for the specified application and returns the updated application data or an error message if the update fails. Triggers revalidation of the dashboard path.
+ *
+ * @param applicationId - The unique identifier of the application to update
+ * @returns An object containing the updated application data or an error message
+ */
 export async function verifyPayment(applicationId: string) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
@@ -170,6 +209,19 @@ export async function verifyPayment(applicationId: string) {
   revalidatePath('/dashboard')
   return { data }
 }
+/**
+ * Submits a new application for a specific bed on behalf of the authenticated user.
+ *
+ * Checks if the user is logged in, verifies that they have not already applied for the bed, and ensures the bed is available. Updates the user's profile with the provided registration number, national ID, and gender before creating the application. Optionally includes a message and transaction code. Returns the created application data or an error message if the operation fails.
+ *
+ * @param bedId - The ID of the bed to apply for
+ * @param registrationNumber - The applicant's registration number
+ * @param nationalId - The applicant's national ID
+ * @param gender - The applicant's gender
+ * @param message - Optional message to include with the application
+ * @param transactionCode - Optional transaction code for payment verification
+ * @returns An object containing the created application data or an error message
+ */
 export async function submitApplication(
   bedId: string,
   registrationNumber: string,
@@ -256,6 +308,14 @@ export async function submitApplication(
   }
 }
 
+/**
+ * Retrieves and summarizes room and bed statistics for a property.
+ *
+ * Calls a stored procedure to fetch detailed room statistics for the specified property, then calculates summary metrics such as total rooms, capacity, beds, available and occupied beds, number of full rooms, occupancy rate, and capacity utilization.
+ *
+ * @param propertyId - The unique identifier of the property to retrieve statistics for
+ * @returns An object containing detailed room data and summary statistics, or an error message if retrieval fails
+ */
 export async function getPropertyStats(propertyId: string) {
     const cookieStore = cookies()
     const supabase = createClient(cookieStore)
