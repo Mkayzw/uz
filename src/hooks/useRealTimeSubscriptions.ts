@@ -153,8 +153,8 @@ export function useRealTimeSubscriptions({
               const oldPaymentVerified = payload.old.payment_verified
 
               // Check if this application belongs to this agent's properties
-              const agentPropertyIds = updatedAgentApplications.map(app => app.property_id)
-              if (agentPropertyIds.includes(payload.new.property_id) &&
+              const agentBedIds = updatedAgentApplications.map(app => app.bed_id)
+              if (agentBedIds.includes(payload.new.bed_id) &&
                   newPaymentVerified !== oldPaymentVerified && newPaymentVerified) {
                 addToast({
                   title: '💰 Payment Verified!',

@@ -71,9 +71,9 @@ export default function DashboardContent() {
   const [activeTab, setActiveTab] = useState<DashboardTab>((searchParams.get('tab') as DashboardTab) || 'overview')
   const [applicationModal, setApplicationModal] = useState<ApplicationModalType>({
     isOpen: false,
-    propertyId: null,
-    beds: []
+    bedId: null
   })
+  const [availableBeds, setAvailableBeds] = useState<any[]>([])
 
   // Modal states
   const [confirmationModal, setConfirmationModal] = useState<ConfirmationModalType>({
@@ -172,7 +172,7 @@ export default function DashboardContent() {
       const { data, error } = await supabase
         .from('saved_properties')
         .insert({
-          property_id: propertyId,
+          bed_id: propertyId,
           user_id: user.id
         })
         .select()
@@ -213,7 +213,7 @@ export default function DashboardContent() {
           const { error } = await supabase
             .from('saved_properties')
             .delete()
-            .eq('property_id', propertyId)
+            .eq('bed_id', propertyId)
             .eq('user_id', user.id)
           
           if (error) throw error
@@ -263,7 +263,7 @@ export default function DashboardContent() {
     const { data: existingApp } = await supabase
       .from('applications')
       .select('id')
-      .eq('property_id', propertyId)
+      .eq('bed_id', propertyId)
       .eq('tenant_id', user.id)
       .single()
 
@@ -278,7 +278,7 @@ export default function DashboardContent() {
     }
 
     // Also check local applications array as backup
-    if (applications.some(app => app.property_id === propertyId)) {
+    if (applications.some(app => app.bed_id === propertyId)) {
       showNotification({
         title: 'Already Applied',
         message: 'You have already applied to this property.',
@@ -304,9 +304,9 @@ export default function DashboardContent() {
 
     setApplicationModal({
       isOpen: true,
-      propertyId,
-      beds: beds || [],
+      bedId: null // Will be selected in the modal
     })
+    setAvailableBeds(beds || [])
   }
 
   const handleApproveApplication = (applicationId: string) => {
@@ -564,13 +564,12 @@ export default function DashboardContent() {
 
       <ApplicationModal
         isOpen={applicationModal.isOpen}
-        onClose={() => setApplicationModal({ isOpen: false, propertyId: null, beds: [] })}
-        beds={applicationModal.beds}
+        onClose={() => setApplicationModal({ isOpen: false, bedId: null })}
+        beds={availableBeds}
         onSubmit={async (details) => {
-          if (!applicationModal.propertyId) return
+          if (!details.bed_id) return
 
           const result = await submitApplication(
-            applicationModal.propertyId,
             details.bed_id,
             details.registration_number,
             details.national_id,
@@ -588,7 +587,8 @@ export default function DashboardContent() {
               message: 'Application submitted successfully!',
               type: 'success'
             })
-            setApplicationModal({ isOpen: false, propertyId: null, beds: [] })
+            setApplicationModal({ isOpen: false, bedId: null })
+            setAvailableBeds([])
             refreshData()
           }
         }}

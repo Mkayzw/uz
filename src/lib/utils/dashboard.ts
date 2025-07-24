@@ -255,7 +255,7 @@ export const getTenantApplications = async (supabase: SupabaseClient, userId: st
       created_at: app.created_at,
       updated_at: app.updated_at,
       property: {
-        id: app.property_id,
+        id: app.bed_id,
         title: app.property_title,
         description: null, // Not available in view
         location: app.address,
@@ -365,7 +365,7 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
   const { data, error } = await supabase
     .from('application_details')
     .select('*')
-    .in('property_id', propertyIds)
+    .in('bed_id', propertyIds)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -417,7 +417,7 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
     created_at: app.created_at,
     updated_at: app.updated_at,
     property: {
-      id: app.property_id,
+      id: app.bed_id,
       title: app.property_title,
       address: app.address,
       city: app.city

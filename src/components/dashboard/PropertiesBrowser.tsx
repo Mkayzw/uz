@@ -180,16 +180,16 @@ export default function PropertiesBrowser({
   }, [allProperties, searchTerm, priceRange, typeFilter])
 
   const isPropertySaved = (propertyId: string) => {
-    return savedProperties.some(sp => sp.property_id === propertyId)
+    return savedProperties.some(sp => sp.bed_id === propertyId)
   }
 
   const hasAppliedToProperty = (propertyId: string) => {
-    return applications.some(app => app.property_id === propertyId && app.status !== 'cancelled')
+    return applications.some(app => app.bed_id === propertyId && app.status !== 'cancelled')
   }
 
   const handleApplyClick = (property: Property) => {
     if (hasAppliedToProperty(property.id)) {
-      const application = applications.find(app => app.property_id === property.id)
+      const application = applications.find(app => app.bed_id === property.id)
       if (application) {
         onCancelApplication(application.id)
       }

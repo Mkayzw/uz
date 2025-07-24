@@ -3,7 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { RoomRow, BedRow } from '@/types/database'
+import { RoomRow, BedRow, Database } from '@/types/database'
+
+type PropertyStatsRow = Database['public']['Functions']['get_property_stats']['Returns'][0]
 
 export async function addRoom(propertyId: string, roomData: Omit<RoomRow, 'id' | 'property_id' | 'created_at' | 'updated_at'>) {
     const cookieStore = cookies()
@@ -271,25 +273,21 @@ export async function getPropertyStats(propertyId: string) {
 
     // Calculate summary statistics
     const totalRooms = data.length
-    const totalCapacity = data.reduce((sum, room) => sum + room.capacity, 0)
-    const totalBeds = data.reduce((sum, room) => sum + room.total_beds, 0)
-    const availableBeds = data.reduce((sum, room) => sum + room.available_beds, 0)
-    const occupiedBeds = data.reduce((sum, room) => sum + room.occupied_beds, 0)
-    const fullRooms = data.filter(room => room.total_beds > 0 && room.available_beds === 0).length
+    const totalBeds = data.reduce((sum: number, room: PropertyStatsRow) => sum + room.total_beds, 0)
+    const availableBeds = data.reduce((sum: number, room: PropertyStatsRow) => sum + room.available_beds, 0)
+    const occupiedBeds = data.reduce((sum: number, room: PropertyStatsRow) => sum + room.occupied_beds, 0)
+    const fullRooms = data.filter((room: PropertyStatsRow) => room.total_beds > 0 && room.available_beds === 0).length
     const occupancyRate = totalBeds > 0 ? (occupiedBeds / totalBeds) * 100 : 0
-    const capacityUtilization = totalCapacity > 0 ? (totalBeds / totalCapacity) * 100 : 0
 
     return {
         data,
         summary: {
             totalRooms,
-            totalCapacity,
             totalBeds,
             availableBeds,
             occupiedBeds,
             fullRooms,
-            occupancyRate: Math.round(occupancyRate * 100) / 100,
-            capacityUtilization: Math.round(capacityUtilization * 100) / 100
+            occupancyRate: Math.round(occupancyRate * 100) / 100
         }
     }
 }

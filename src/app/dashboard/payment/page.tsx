@@ -7,7 +7,7 @@ import { User } from '@supabase/supabase-js'
 
 interface Application {
   id: string;
-  property_id: string;
+  bed_id: string;
   status: 'pending' | 'approved' | 'rejected';
   property: {
     title: string;
@@ -46,7 +46,7 @@ function PaymentPageContent() {
           .from('applications')
           .select(`
             id,
-            property_id,
+            bed_id,
             status,
             property:pads(
               title,

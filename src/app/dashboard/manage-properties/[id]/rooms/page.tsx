@@ -433,7 +433,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
               <div className="grid gap-6">
                 {rooms.map(room => {
                   const roomBeds = beds[room.id] || [];
-                  const availableBeds = roomBeds.filter(bed => bed.is_available).length;
+                  const availableBeds = roomBeds.filter(bed => !bed.is_occupied).length;
                   const occupiedBeds = roomBeds.length - availableBeds;
                   const isFull = roomBeds.length > 0 && availableBeds === 0;
 
@@ -453,7 +453,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{room.type} Room</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{room.room_type} Room</p>
                         </div>
                         <button
                           onClick={() => handleDeleteRoom(room.id)}
@@ -473,7 +473,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">Price:</span>
-                          <span className="ml-1 font-medium text-gray-900 dark:text-white">${room.price}</span>
+                          <span className="ml-1 font-medium text-gray-900 dark:text-white">${room.price_per_bed}</span>
                         </div>
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">Available:</span>
@@ -512,7 +512,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
                         {roomBeds.length > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                             {roomBeds.map(bed => (
-                              <div key={bed.id} className={`p-3 rounded-lg border-2 ${bed.is_available ? 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}`}>
+                              <div key={bed.id} className={`p-3 rounded-lg border-2 ${!bed.is_occupied ? 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}`}>
                                 <div className="flex justify-between items-center">
                                   <div>
                                     <p className="font-medium text-gray-900 dark:text-white">Bed #{bed.bed_number}</p>
