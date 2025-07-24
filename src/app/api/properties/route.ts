@@ -50,7 +50,8 @@ export async function GET() {
         sum + (room.beds?.filter((bed: any) => bed.is_occupied).length || 0), 0) || 0
       const availableBeds = totalBeds - occupiedBeds
       const minPrice = prop.rooms?.reduce((min: number, room: any) =>
-        Math.min(min, room.price_per_bed), Infinity) || 0
+        Math.min(min, room.price_per_bed || 0), Infinity)
+      const finalMinPrice = minPrice === Infinity ? 0 : minPrice
 
       return {
         id: prop.id,
