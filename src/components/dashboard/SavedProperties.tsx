@@ -21,17 +21,17 @@ export default function SavedProperties({
   setActiveTab
 }: SavedPropertiesProps) {
   const hasAppliedToProperty = (propertyId: string) => {
-    return applications.some(app => app.property_id === propertyId && app.status !== 'cancelled')
+    return applications.some(app => app.bed_id === propertyId && app.status !== 'cancelled')
   }
 
   const handleApplyClick = (savedProperty: SavedProperty) => {
-    if (hasAppliedToProperty(savedProperty.property_id)) {
-      const application = applications.find(app => app.property_id === savedProperty.property_id)
+    if (hasAppliedToProperty(savedProperty.bed_id)) {
+      const application = applications.find(app => app.bed_id === savedProperty.bed_id)
       if (application) {
         onCancelApplication(application.id)
       }
     } else {
-      onApplyToProperty(savedProperty.property_id)
+      onApplyToProperty(savedProperty.bed_id)
     }
   }
 
@@ -95,15 +95,15 @@ export default function SavedProperties({
                   onClick={() => handleApplyClick(savedProperty)}
                   disabled={false}
                   className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    hasAppliedToProperty(savedProperty.property_id)
+                    hasAppliedToProperty(savedProperty.bed_id)
                       ? 'bg-red-600 text-white hover:bg-red-700'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {hasAppliedToProperty(savedProperty.property_id) ? 'Cancel Application' : 'Apply'}
+                  {hasAppliedToProperty(savedProperty.bed_id) ? 'Cancel Application' : 'Apply'}
                 </button>
                 <button
-                  onClick={() => onUnsaveProperty(savedProperty.property_id)}
+                  onClick={() => onUnsaveProperty(savedProperty.bed_id)}
                   className="px-3 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Remove

@@ -2,17 +2,24 @@ export interface Bed {
   id: string
   bed_number: number
   room_id: string
+  is_occupied: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface UserProfile {
   id: string
   full_name: string | null
-  role: 'tenant' | 'agent'
+  role: 'tenant' | 'agent' | 'admin'
+  phone_number?: string | null
   agent_status: 'not_applicable' | 'pending_payment' | 'pending_verification' | 'active'
+  is_verified_agent: boolean
   ecocash_number?: string | null
   registration_number?: string | null
   national_id?: string | null
   gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Property {
@@ -54,14 +61,17 @@ export interface Property {
 
 export interface Application {
   id: string;
-  property_id: string;
+  bed_id: string;
   tenant_id: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
-  created_at: string;
+  message?: string | null;
   transaction_code?: string | null;
   payment_verified?: boolean;
+  created_at: string;
+  updated_at: string;
   property?: Property;
   tenant?: {
+    id?: string;
     full_name?: string | null
     ecocash_number?: string | null
     registration_number?: string | null
@@ -69,16 +79,20 @@ export interface Application {
     gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null
   }
   bed?: {
+    id?: string;
     bed_number?: number | null
     room?: {
+      id?: string;
       name?: string | null
+      room_type?: 'single' | 'double' | 'triple' | 'quad'
+      price_per_bed?: number
     } | null
   } | null
 }
 
 export interface SavedProperty {
   id: string;
-  property_id: string;
+  bed_id: string;
   user_id: string;
   created_at: string;
   property?: Property;
@@ -110,8 +124,11 @@ export interface ImageModal {
 
 export interface ApplicationModal {
   isOpen: boolean;
-  propertyId: string | null;
-  beds: Bed[];
+  bedId: string | null;
+  propertyTitle?: string | null;
+  roomName?: string | null;
+  bedNumber?: number | null;
+  pricePerBed?: number | null;
 }
 
 export type DashboardTab = 'overview' | 'browse' | 'properties' | 'applications' | 'saved' | 'account' | 'commission';

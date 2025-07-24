@@ -7,7 +7,7 @@ import { User } from '@supabase/supabase-js'
 
 interface Application {
   id: string;
-  property_id: string;
+  bed_id: string;
   status: 'pending' | 'approved' | 'rejected';
   property: {
     title: string;
@@ -46,7 +46,7 @@ function PaymentPageContent() {
           .from('applications')
           .select(`
             id,
-            property_id,
+            bed_id,
             status,
             property:pads(
               title,
@@ -164,7 +164,7 @@ function PaymentPageContent() {
   ) : (
     <>
       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        To activate your agent account, please send the subscription fee of <strong>$10.00</strong> via EcoCash to the UniStay activation number below:
+        To activate your agent account, please send the subscription fee of <strong>$15.00</strong> via EcoCash to the UniStay activation number below:
       </p>
     </>
   )

@@ -180,16 +180,16 @@ export default function PropertiesBrowser({
   }, [allProperties, searchTerm, priceRange, typeFilter])
 
   const isPropertySaved = (propertyId: string) => {
-    return savedProperties.some(sp => sp.property_id === propertyId)
+    return savedProperties.some(sp => sp.bed_id === propertyId)
   }
 
   const hasAppliedToProperty = (propertyId: string) => {
-    return applications.some(app => app.property_id === propertyId && app.status !== 'cancelled')
+    return applications.some(app => app.bed_id === propertyId && app.status !== 'cancelled')
   }
 
   const handleApplyClick = (property: Property) => {
     if (hasAppliedToProperty(property.id)) {
-      const application = applications.find(app => app.property_id === property.id)
+      const application = applications.find(app => app.bed_id === property.id)
       if (application) {
         onCancelApplication(application.id)
       }
@@ -276,6 +276,13 @@ export default function PropertiesBrowser({
             <div className="p-4 sm:p-6">
               <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{property.title}</h4>
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{property.location}</p>
+
+              {property.description && (
+                <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                  {property.description}
+                </p>
+              )}
+
               {property.price && (
                 <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
                   ${property.price}/month
@@ -310,7 +317,27 @@ export default function PropertiesBrowser({
                 )}
                 {property.has_internet && (
                   <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    WiFi
+                    📶 WiFi
+                  </span>
+                )}
+                {property.has_parking && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                    🅿️ Parking
+                  </span>
+                )}
+                {property.has_power && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                    ⚡ Power
+                  </span>
+                )}
+                {property.has_water && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                    💧 Water
+                  </span>
+                )}
+                {property.is_furnished && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                    🛋️ Furnished
                   </span>
                 )}
                 {property.has_parking && (

@@ -35,7 +35,7 @@ interface Property {
 
 interface Application {
   id: string;
-  property_id: string;
+  bed_id: string;
   tenant_id: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
@@ -44,7 +44,7 @@ interface Application {
 
 interface SavedProperty {
   id: string;
-  property_id: string;
+  bed_id: string;
   user_id: string;
   created_at: string;
   property?: Property;

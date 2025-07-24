@@ -60,11 +60,11 @@ export function useRealTimeSubscriptions({
     // Properties subscription (for agents)
     const propertiesChannel = supabase
       .channel(`properties:${user.id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'pads',
-        filter: `created_by=eq.${user.id}`
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'properties',
+        filter: `owner_id=eq.${user.id}`
       }, async () => {
         if (profile.role === 'agent' && profile.agent_status === 'active') {
           try {
@@ -153,8 +153,8 @@ export function useRealTimeSubscriptions({
               const oldPaymentVerified = payload.old.payment_verified
 
               // Check if this application belongs to this agent's properties
-              const agentPropertyIds = updatedAgentApplications.map(app => app.property_id)
-              if (agentPropertyIds.includes(payload.new.property_id) &&
+              const agentBedIds = updatedAgentApplications.map(app => app.bed_id)
+              if (agentBedIds.includes(payload.new.bed_id) &&
                   newPaymentVerified !== oldPaymentVerified && newPaymentVerified) {
                 addToast({
                   title: '💰 Payment Verified!',
