@@ -1,4 +1,5 @@
 import { Application } from '@/types/dashboard'
+import { downloadReceipt } from '@/lib/utils/downloadHelpers'
 
 interface TenantApplicationsProps {
   applications: Application[]
@@ -60,7 +61,16 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                           </svg>
                           <span className="text-xs font-medium">Payment verified</span>
                           <button
-                            onClick={() => window.open(`/api/receipts/${application.id}`)}
+                            onClick={() => downloadReceipt(
+                              application.id,
+                              (error: string) => {
+                                console.error('Download failed:', error)
+                                alert('Failed to download receipt. Please try again.')
+                              },
+                              () => {
+                                console.log('Receipt downloaded successfully')
+                              }
+                            )}
                             className="ml-4 px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                           >
                             Download Receipt

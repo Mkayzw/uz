@@ -11,6 +11,7 @@ import {
   getAgentApplications,
 } from '@/lib/utils/dashboard'
 import { useSupabaseClient } from './useSupabaseClient'
+import { downloadReceipt } from '@/lib/utils/downloadHelpers'
 
 interface UseRealTimeSubscriptionsProps {
   user: User | null
@@ -136,7 +137,12 @@ export function useRealTimeSubscriptions({
                     actionButton: {
                       text: 'Download Receipt',
                       onClick: () => {
-                        window.open(`/api/receipts/${payload.new.id}`)
+                        downloadReceipt(
+                          payload.new.id,
+                          (error: string) => {
+                            console.error('Download failed:', error)
+                          }
+                        )
                       }
                     }
                   })
