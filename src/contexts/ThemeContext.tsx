@@ -19,14 +19,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (storedTheme) {
       setTheme(storedTheme)
     } else {
-      setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      // Detect system preference and save it to localStorage
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      setTheme(systemTheme)
+      localStorage.setItem('theme', systemTheme)
     }
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = (e: MediaQueryListEvent) => {
       if (!localStorage.getItem('theme')) {
-        setTheme(e.matches ? 'dark' : 'light')
+        const newTheme = e.matches ? 'dark' : 'light'
+        setTheme(newTheme)
+        localStorage.setItem('theme', newTheme)
       }
     }
 
