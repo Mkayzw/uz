@@ -1,5 +1,3 @@
-import ThemeToggle from '@/components/ThemeToggle'
-
 interface DashboardHeaderProps {
   onSignOut: () => void
 }
