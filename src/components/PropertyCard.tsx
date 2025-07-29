@@ -192,10 +192,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
                 {currentImageIndex + 1} / {allImages.length}
               </div>
 
-              {/* Swipe indicator for mobile */}
-              <div className="absolute bottom-3 left-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs z-10 md:hidden">
-                👈 Swipe 👉
-              </div>
+
             </>
           )}
         </div>

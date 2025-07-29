@@ -6,9 +6,9 @@ import { AcademicCapIcon, HomeIcon } from '@heroicons/react/24/outline'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+      <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
@@ -17,33 +17,22 @@ export default function Home() {
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                   <span className="text-white font-bold text-lg">U</span>
                 </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-500">
                   UniStay
                 </span>
               </Link>
             </div>
 
-            {/* Navigation Links */}
+            {/* Navigation Links - Removed non-existent pages */}
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/properties" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 relative group">
-                Properties
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-200 group-hover:w-full"></span>
-              </Link>
-              <Link href="/about" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 relative group">
-                About
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-200 group-hover:w-full"></span>
-              </Link>
-              <Link href="/contact" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 relative group">
-                Contact
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-200 group-hover:w-full"></span>
-              </Link>
+              {/* Navigation items removed as pages don't exist yet */}
             </nav>
 
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
               <Link
                 href="/auth/login"
-                className="hidden sm:inline-flex items-center px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
+                className="hidden sm:inline-flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors duration-200"
               >
                 Sign In
               </Link>
@@ -59,19 +48,19 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
         <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-gray-900 dark:text-white mb-6">
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-8">
             Find Your <span className="text-blue-600 dark:text-blue-400">UZ</span> Home, Faster.
           </h1>
-          <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-10">
+          <p className="max-w-3xl mx-auto text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 leading-relaxed">
             The #1 platform for University of Zimbabwe students to discover safe, affordable, and convenient off-campus housing.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#properties" className="inline-block px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <a href="#properties" className="inline-flex items-center justify-center px-10 py-4 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200">
               Browse Properties
             </a>
-            <Link href="/auth/signup?role=agent" className="inline-block px-8 py-4 text-lg font-medium text-blue-600 bg-white border-2 border-blue-600 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:-translate-y-1">
+            <Link href="/auth/signup?role=agent" className="inline-flex items-center justify-center px-10 py-4 text-lg font-semibold text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 border-2 border-blue-600 dark:border-blue-400 rounded-xl shadow-lg hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200">
               List a Property
             </Link>
           </div>
@@ -79,31 +68,31 @@ export default function Home() {
       </main>
 
       {/* Features Grid */}
-      <section className="py-16 md:py-24 bg-gray-100 dark:bg-gray-800">
+      <section className="py-20 md:py-32 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">A Platform for Everyone</h2>
-            <p className="max-w-xl mx-auto mt-4 text-gray-600 dark:text-gray-300">Whether you&apos;re a student or agent, UniStay is built for you.</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">A Platform for Everyone</h2>
+            <p className="max-w-2xl mx-auto text-xl text-gray-600 dark:text-gray-300">Whether you&apos;re a student or agent, UniStay is built for you.</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-10 text-left max-w-5xl mx-auto">
             {/* Card 1: For UZ Students */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-blue-500">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center mb-5">
-                <AcademicCapIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-500 group">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <AcademicCapIcon className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Students</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">For Students</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
                 Secure your ideal room with verified listings, advanced search filters, and direct communication with agents.
               </p>
             </div>
 
             {/* Card 2: For Property Agents */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-green-500">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center mb-5">
-                <HomeIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:border-green-200 dark:hover:border-green-500 group">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <HomeIcon className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Agents</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">For Agents</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
                 Connect with responsible UZ students, manage property listings efficiently, and fill vacancies faster than ever.
               </p>
             </div>
@@ -117,11 +106,17 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <p>&copy; {new Date().getFullYear()} UniStay. All rights reserved.</p>
-            <p>Built for the UZ community.</p>
+      <footer className="bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">U</span>
+              </div>
+              <span className="text-2xl font-bold">UniStay</span>
+            </div>
+            <p className="text-gray-400 mb-2">&copy; {new Date().getFullYear()} UniStay. All rights reserved.</p>
+            <p className="text-gray-400">Built for the UZ community.</p>
           </div>
         </div>
       </footer>
