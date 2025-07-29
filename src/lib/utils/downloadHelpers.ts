@@ -93,11 +93,17 @@ async function downloadPDFMobile(
     
     // For iOS, we need to handle downloads differently
     if (isIOS()) {
-      // On iOS, we open in a new window which allows the user to save
       const newWindow = window.open(downloadUrl, '_blank')
       if (!newWindow) {
         throw new Error('Unable to open download. Please allow popups and try again.')
       }
+      // On iOS, provide user guidance
+      setTimeout(() => {
+        alert(
+          'PDF opened in new tab. ' +
+          'Tap the share icon and select "Save to Files" to download.'
+        )
+      }, 500)
     } else {
       // For other mobile browsers, trigger download
       document.body.appendChild(link)
