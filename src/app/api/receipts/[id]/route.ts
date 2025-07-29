@@ -18,21 +18,15 @@ export async function GET(
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   }
 
-  const { data: application, error } = await supabase
+  // First get the application
+  const { data: application, error: appError } = await supabase
     .from('applications')
-    .select(
-      `
-      *,
-      property:pads!inner(*, agent:profiles!pads_created_by_fkey(full_name, ecocash_number)),
-      tenant:profiles!inner(full_name, registration_number, national_id, id, gender),
-      bed:beds!inner(*, room:rooms!inner(name, price))
-      `
-    )
+    .select('*')
     .eq('id', applicationId)
     .single()
 
-  if (error || !application) {
-    console.error('Error fetching application:', error)
+  if (appError || !application) {
+    console.error('Error fetching application:', appError)
     return NextResponse.json({ error: 'Receipt not found or you do not have permission to view it.' }, { status: 404 })
   }
 
@@ -41,17 +35,53 @@ export async function GET(
     return NextResponse.json({ error: 'Receipt not available. Payment must be verified first.' }, { status: 403 })
   }
 
+  // Get bed details
+  const { data: bed, error: bedError } = await supabase
+    .from('beds')
+    .select('*, room:rooms!inner(*, property:properties!inner(*))')
+    .eq('id', application.bed_id)
+    .single()
+
+  if (bedError || !bed) {
+    console.error('Error fetching bed details:', bedError)
+    return NextResponse.json({ error: 'Receipt data not found.' }, { status: 404 })
+  }
+
+  // Get tenant details
+  const { data: tenant, error: tenantError } = await supabase
+    .from('profiles')
+    .select('full_name, registration_number, national_id, id, gender')
+    .eq('id', application.tenant_id)
+    .single()
+
+  if (tenantError || !tenant) {
+    console.error('Error fetching tenant details:', tenantError)
+    return NextResponse.json({ error: 'Receipt data not found.' }, { status: 404 })
+  }
+
+  // Get agent details
+  const { data: agent, error: agentError } = await supabase
+    .from('profiles')
+    .select('full_name, ecocash_number')
+    .eq('id', bed.room.property.owner_id)
+    .single()
+
+  if (agentError || !agent) {
+    console.error('Error fetching agent details:', agentError)
+    return NextResponse.json({ error: 'Receipt data not found.' }, { status: 404 })
+  }
+
   // Authorization check: User must be either the tenant or the agent who owns the property
   const isOwner = application.tenant_id === user.id
-  const isAgent = application.property.created_by === user.id
+  const isAgent = bed.room.property.owner_id === user.id
 
   if (!isOwner && !isAgent) {
     return NextResponse.json({ error: 'You do not have permission to access this receipt.' }, { status: 403 })
   }
 
-  const { property, tenant, bed, created_at, transaction_code } = application
-  const { agent } = property
-  const { room } = bed
+  const property = bed.room.property
+  const room = bed.room
+  const { created_at, transaction_code } = application
 
   const htmlContent = `
   <!DOCTYPE html>
@@ -110,7 +140,7 @@ export async function GET(
             <tr>
               <td>Property</td>
               <td>${property.title}</td>
-              <td>$${room.price.toFixed(2)}</td>
+              <td>$${room.price_per_bed.toFixed(2)}</td>
             </tr>
             <tr>
               <td>Room</td>
@@ -124,7 +154,7 @@ export async function GET(
             </tr>
             <tr>
               <td colspan="2" class="total">Total Paid</td>
-              <td class="total">$${room.price.toFixed(2)}</td>
+              <td class="total">$${room.price_per_bed.toFixed(2)}</td>
             </tr>
           </tbody>
         </table>

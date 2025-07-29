@@ -366,6 +366,8 @@ export const getSavedProperties = async (supabase: SupabaseClient, userId: strin
 }
 
 export const getAgentApplications = async (supabase: SupabaseClient, userId: string) => {
+  console.log('Fetching agent applications for user:', userId)
+
   // First get agent's properties
   const { data: agentProperties, error: propertiesError } = await supabase
     .from('properties')
@@ -377,9 +379,59 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
     return []
   }
 
-  const propertyIds = agentProperties.map(p => p.id)
+  console.log('Agent properties found:', agentProperties?.length || 0)
+  const propertyIds = agentProperties?.map(p => p.id) || []
 
   if (propertyIds.length === 0) {
+    console.log('No properties found for agent')
+    return []
+  }
+
+  // Get bed IDs that belong to the agent's properties
+  // First get rooms for the properties
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select('id')
+    .in('property_id', propertyIds)
+
+  if (roomsError) {
+    console.error('Error fetching rooms for agent properties:', {
+      error: roomsError,
+      message: roomsError.message,
+      propertyIds: propertyIds
+    })
+    return []
+  }
+
+  const roomIds = rooms?.map(room => room.id) || []
+
+  // Then get beds for those rooms
+  const { data: beds, error: bedsError } = await supabase
+    .from('beds')
+    .select('id')
+    .in('room_id', roomIds)
+  if (bedsError) {
+    console.error('Error fetching beds for agent properties:', {
+      error: bedsError,
+      message: bedsError.message,
+      details: bedsError.details,
+      hint: bedsError.hint,
+      code: bedsError.code,
+      propertyIds: propertyIds
+    })
+    return []
+  }
+
+  const bedIds = beds?.map(bed => bed.id) || []
+  console.log('Bed IDs found for agent properties:', {
+    bedCount: bedIds.length,
+    propertyCount: propertyIds.length,
+    bedIds: bedIds.slice(0, 5), // Log first 5 bed IDs for debugging
+    propertyIds: propertyIds
+  })
+
+  if (bedIds.length === 0) {
+    console.log('No beds found for agent properties')
     return []
   }
 
@@ -387,11 +439,19 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
   const { data, error } = await supabase
     .from('application_details')
     .select('*')
-    .in('bed_id', propertyIds)
+    .in('bed_id', bedIds)
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching agent applications:', error)
+    console.error('Error fetching agent applications:', {
+      error: error,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      bedIds: bedIds.slice(0, 5), // Log first 5 bed IDs for debugging
+      bedCount: bedIds.length
+    })
 
     // Fallback: manual join query
     const { data: fallbackData, error: fallbackError } = await supabase
@@ -417,15 +477,18 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
         ),
         tenant:profiles(*)
       `)
-      .in('bed_id', []) // We need to get bed_ids first
+      .in('bed_id', bedIds)
 
     if (fallbackError) {
       console.error('Fallback query also failed:', fallbackError)
       return []
     }
 
+    console.log('Fallback query returned applications:', fallbackData?.length || 0)
     return fallbackData || []
   }
+
+  console.log('Applications found for agent:', data?.length || 0)
 
   // Transform application_details view data to match expected format
   return data?.map(app => ({
@@ -462,4 +525,111 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
       }
     }
   })) || []
+}
+
+// Diagnostic function to help troubleshoot application detection issues
+export const diagnoseApplicationDetection = async (supabase: SupabaseClient, userId: string) => {
+  console.log('🔍 Starting application detection diagnosis for user:', userId)
+
+  try {
+    // Check if user exists and get their profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (profileError) {
+      console.error('❌ Profile fetch error:', profileError)
+      return { success: false, error: 'Profile not found' }
+    }
+
+    console.log('✅ Profile found:', { role: profile.role, agent_status: profile.agent_status })
+
+    if (profile.role !== 'agent') {
+      console.log('ℹ️ User is not an agent, skipping agent-specific checks')
+      return { success: true, message: 'User is not an agent' }
+    }
+
+    // Check agent's properties
+    const { data: properties, error: propertiesError } = await supabase
+      .from('properties')
+      .select('id, title, status')
+      .eq('owner_id', userId)
+
+    if (propertiesError) {
+      console.error('❌ Properties fetch error:', propertiesError)
+      return { success: false, error: 'Failed to fetch properties' }
+    }
+
+    console.log('🏠 Properties found:', properties?.length || 0)
+    properties?.forEach(prop => {
+      console.log(`  - ${prop.title} (${prop.status})`)
+    })
+
+    if (!properties || properties.length === 0) {
+      console.log('ℹ️ No properties found for agent')
+      return { success: true, message: 'No properties found' }
+    }
+
+    // Check rooms for each property
+    const propertyIds = properties.map(p => p.id)
+    const { data: rooms, error: roomsError } = await supabase
+      .from('rooms')
+      .select('id, name, property_id')
+      .in('property_id', propertyIds)
+
+    if (roomsError) {
+      console.error('❌ Rooms fetch error:', roomsError)
+      return { success: false, error: 'Failed to fetch rooms' }
+    }
+
+    console.log('🛏️ Rooms found:', rooms?.length || 0)
+
+    // Check beds for each room
+    const roomIds = rooms?.map(r => r.id) || []
+    const { data: beds, error: bedsError } = await supabase
+      .from('beds')
+      .select('id, bed_number, room_id')
+      .in('room_id', roomIds)
+
+    if (bedsError) {
+      console.error('❌ Beds fetch error:', bedsError)
+      return { success: false, error: 'Failed to fetch beds' }
+    }
+
+    console.log('🛏️ Beds found:', beds?.length || 0)
+
+    // Check applications for these beds
+    const bedIds = beds?.map(b => b.id) || []
+    const { data: applications, error: applicationsError } = await supabase
+      .from('applications')
+      .select('id, status, bed_id, tenant_id')
+      .in('bed_id', bedIds)
+
+    if (applicationsError) {
+      console.error('❌ Applications fetch error:', applicationsError)
+      return { success: false, error: 'Failed to fetch applications' }
+    }
+
+    console.log('📝 Applications found:', applications?.length || 0)
+    applications?.forEach(app => {
+      console.log(`  - Application ${app.id} (${app.status}) for bed ${app.bed_id}`)
+    })
+
+    return {
+      success: true,
+      data: {
+        profile,
+        properties: properties?.length || 0,
+        rooms: rooms?.length || 0,
+        beds: beds?.length || 0,
+        applications: applications?.length || 0
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Diagnosis failed:', error)
+    return { success: false, error: 'Diagnosis failed' }
+  }
 }
