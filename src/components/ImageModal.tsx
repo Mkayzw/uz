@@ -190,10 +190,7 @@ export default function ImageModal({ isOpen, onClose, src, alt, allImages, initi
               ))}
             </div>
 
-            {/* Mobile swipe hint */}
-            <div className="sm:hidden absolute top-6 left-1/2 -translate-x-1/2 bg-black bg-opacity-70 text-white text-sm px-4 py-2 rounded-full animate-pulse">
-              Swipe to navigate
-            </div>
+
           </>
         )}
       </div>
