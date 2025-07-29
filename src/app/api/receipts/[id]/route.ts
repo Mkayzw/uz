@@ -23,9 +23,18 @@ export async function GET(
     .select(
       `
       *,
-      property:pads!inner(*, agent:profiles!pads_created_by_fkey(full_name, ecocash_number)),
-      tenant:profiles!inner(full_name, registration_number, national_id, id, gender),
-      bed:beds!inner(*, room:rooms!inner(name, price))
+      bed:beds!inner(
+        *,
+        room:rooms!inner(
+          name,
+          price_per_bed,
+          property:properties!inner(
+            *,
+            agent:profiles!properties_owner_id_fkey(full_name, ecocash_number)
+          )
+        )
+      ),
+      tenant:profiles!inner(full_name, registration_number, national_id, id, gender)
       `
     )
     .eq('id', applicationId)
