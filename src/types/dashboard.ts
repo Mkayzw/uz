@@ -134,7 +134,7 @@ export interface ApplicationModal {
 export type DashboardTab = 'overview' | 'browse' | 'properties' | 'applications' | 'saved' | 'account' | 'commission';
 
 export interface RoleInfo {
-  icon: string;
+  icon: React.ReactNode;
   color: string;
   title: string;
   description: string;

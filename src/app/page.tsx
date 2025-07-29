@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import ThemeToggle from '@/components/ThemeToggle'
 import PropertyListing from '@/components/PropertyListing'
+import { AcademicCapIcon, HomeIcon } from '@heroicons/react/24/outline'
 
 export default function Home() {
   return (
@@ -17,7 +17,6 @@ export default function Home() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <ThemeToggle />
               <Link href="/changelog" className="hidden md:inline-block text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 Changelog
               </Link>
@@ -63,18 +62,18 @@ export default function Home() {
             {/* Card 1: For UZ Students */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-blue-500">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center mb-5">
-                <span className="text-2xl">🎓</span>
+                <AcademicCapIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Students</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Secure your ideal room with verified listings, advanced search filters, and direct communication with agents.
               </p>
             </div>
-            
+
             {/* Card 2: For Property Agents */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-md hover:shadow-2xl transition-shadow duration-300 border border-transparent hover:border-green-500">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center mb-5">
-                <span className="text-2xl">🏠</span>
+                <HomeIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">For Agents</h3>
               <p className="text-gray-600 dark:text-gray-400">

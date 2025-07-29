@@ -1,5 +1,6 @@
 import { useRouter } from 'next/navigation'
 import { UserProfile, Property, Application, RoleInfo, DashboardTab } from '@/types/dashboard'
+import { AcademicCapIcon, BuildingOfficeIcon, UserIcon } from '@heroicons/react/24/outline'
 
 interface DashboardOverviewProps {
   profile: UserProfile | null
@@ -21,9 +22,9 @@ export default function DashboardOverview({
   const getRoleInfo = (role: string, agentStatus?: string): RoleInfo => {
     switch (role) {
       case 'tenant':
-        return { 
-          icon: '🎓', 
-          color: 'blue', 
+        return {
+          icon: <AcademicCapIcon className="w-10 h-10 text-blue-600 dark:text-blue-400" />,
+          color: 'blue',
           title: 'Tenant',
           description: 'You can browse and apply for accommodation.',
           actions: ['Browse Properties', 'My Applications', 'Saved Properties']
@@ -31,25 +32,25 @@ export default function DashboardOverview({
       case 'agent':
         const isActive = agentStatus === 'active'
         const isPendingVerification = agentStatus === 'pending_verification'
-        return { 
-          icon: '🤝', 
-          color: isActive ? 'purple' : 'yellow', 
+        return {
+          icon: <BuildingOfficeIcon className={`w-10 h-10 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-yellow-600 dark:text-yellow-400'}`} />,
+          color: isActive ? 'purple' : 'yellow',
           title: 'Agent',
-          description: isActive 
-            ? 'You can manage property listings for clients.' 
+          description: isActive
+            ? 'You can manage property listings for clients.'
             : isPendingVerification
             ? 'Your payment is being verified. This may take up to 24 hours.'
             : 'Complete payment to activate your agent account.',
-          actions: isActive 
+          actions: isActive
             ? ['Manage Client Properties', 'Commission Tracking', 'Client Management']
             : isPendingVerification
             ? ['View Payment Status', 'Contact Support']
             : ['Complete Payment', 'View Pricing', 'Contact Support']
         }
       default:
-        return { 
-          icon: '👤', 
-          color: 'gray', 
+        return {
+          icon: <UserIcon className="w-10 h-10 text-gray-600 dark:text-gray-400" />,
+          color: 'gray',
           title: 'User',
           description: 'Your dashboard is ready.',
           actions: ['Update Profile']
@@ -105,7 +106,7 @@ export default function DashboardOverview({
         'bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700'
       }`}>
         <div className="flex items-center">
-          <div className="text-4xl mr-4">{roleInfo.icon}</div>
+          <div className="mr-4">{roleInfo.icon}</div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">

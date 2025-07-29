@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react'
 import Modal from './Modal'
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline'
 
 interface NotificationModalProps {
   isOpen: boolean
@@ -60,14 +66,32 @@ export default function NotificationModal({
 
   const currentStyle = typeStyles[type]
 
+  const getIcon = () => {
+    if (icon) {
+      return <span className={`text-2xl ${currentStyle.iconColor}`}>{icon}</span>
+    }
+
+    const iconClass = `w-6 h-6 ${currentStyle.iconColor}`
+
+    switch (type) {
+      case 'success':
+        return <CheckCircleIcon className={iconClass} />
+      case 'error':
+        return <XCircleIcon className={iconClass} />
+      case 'warning':
+        return <ExclamationTriangleIcon className={iconClass} />
+      case 'info':
+      default:
+        return <InformationCircleIcon className={iconClass} />
+    }
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="text-center">
         {/* Icon */}
         <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full ${currentStyle.iconBg} mb-4`}>
-          <span className={`text-2xl ${currentStyle.iconColor}`}>
-            {icon || (type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️')}
-          </span>
+          {getIcon()}
         </div>
         
         {/* Message */}
