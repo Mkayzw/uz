@@ -388,16 +388,28 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
   }
 
   // Get bed IDs that belong to the agent's properties
+  // First get rooms for the properties
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select('id')
+    .in('property_id', propertyIds)
+
+  if (roomsError) {
+    console.error('Error fetching rooms for agent properties:', {
+      error: roomsError,
+      message: roomsError.message,
+      propertyIds: propertyIds
+    })
+    return []
+  }
+
+  const roomIds = rooms?.map(room => room.id) || []
+
+  // Then get beds for those rooms
   const { data: beds, error: bedsError } = await supabase
     .from('beds')
-    .select(`
-      id,
-      room:rooms!inner(
-        property_id
-      )
-    `)
-    .in('room.property_id', propertyIds)
-
+    .select('id')
+    .in('room_id', roomIds)
   if (bedsError) {
     console.error('Error fetching beds for agent properties:', {
       error: bedsError,
