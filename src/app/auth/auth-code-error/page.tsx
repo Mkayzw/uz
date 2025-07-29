@@ -1,14 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import ThemeToggle from '@/components/ThemeToggle'
+import { XCircleIcon } from '@heroicons/react/24/outline'
 
 export default function AuthCodeErrorPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center p-4">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <Link href="/">
@@ -18,7 +15,9 @@ export default function AuthCodeErrorPage() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
-          <div className="text-red-500 text-5xl mb-4">❌</div>
+          <div className="flex justify-center mb-4">
+            <XCircleIcon className="w-16 h-16 text-red-500" />
+          </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Activation Link Expired or Invalid
           </h2>

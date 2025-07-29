@@ -38,7 +38,6 @@ export default function DashboardApplications({
           onApproveApplication={onApproveApplication}
           onRejectApplication={onRejectApplication}
           onVerifyPayment={onVerifyPayment}
-          onDownloadReceipt={(applicationId) => window.open(`/api/receipts/${applicationId}`)}
         />
       )}
     </div>

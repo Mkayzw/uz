@@ -3,6 +3,18 @@
 import { useState, useRef } from 'react'
 import PropertyImage from './PropertyImage'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
+import {
+  WifiIcon,
+  TruckIcon,
+  SunIcon,
+  HomeIcon,
+  BuildingOfficeIcon,
+  BoltIcon,
+  BeakerIcon,
+  TvIcon,
+  SparklesIcon,
+  ShieldCheckIcon
+} from '@heroicons/react/24/outline'
 
 interface Property {
   id: string
@@ -104,16 +116,16 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
   }
 
   const amenities = [
-    { key: 'has_internet', label: 'WiFi', icon: '📶' },
-    { key: 'has_parking', label: 'Parking', icon: '🅿️' },
-    { key: 'has_air_conditioning', label: 'AC', icon: '❄️' },
-    { key: 'is_furnished', label: 'Furnished', icon: '🛋️' },
-    { key: 'has_pool', label: 'Pool', icon: '🏊' },
-    { key: 'has_power', label: 'Power', icon: '⚡' },
-    { key: 'has_water', label: 'Water', icon: '💧' },
-    { key: 'has_tv', label: 'TV', icon: '📺' },
-    { key: 'has_laundry', label: 'Laundry', icon: '🧺' },
-    { key: 'has_security_system', label: 'Security', icon: '🔒' },
+    { key: 'has_internet', label: 'WiFi', icon: <WifiIcon className="w-4 h-4" /> },
+    { key: 'has_parking', label: 'Parking', icon: <TruckIcon className="w-4 h-4" /> },
+    { key: 'has_air_conditioning', label: 'AC', icon: <SunIcon className="w-4 h-4" /> },
+    { key: 'is_furnished', label: 'Furnished', icon: <HomeIcon className="w-4 h-4" /> },
+    { key: 'has_pool', label: 'Pool', icon: <BuildingOfficeIcon className="w-4 h-4" /> },
+    { key: 'has_power', label: 'Power', icon: <BoltIcon className="w-4 h-4" /> },
+    { key: 'has_water', label: 'Water', icon: <BeakerIcon className="w-4 h-4" /> },
+    { key: 'has_tv', label: 'TV', icon: <TvIcon className="w-4 h-4" /> },
+    { key: 'has_laundry', label: 'Laundry', icon: <SparklesIcon className="w-4 h-4" /> },
+    { key: 'has_security_system', label: 'Security', icon: <ShieldCheckIcon className="w-4 h-4" /> },
   ]
 
   const availableAmenities = amenities.filter(amenity => 
@@ -192,10 +204,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
                 {currentImageIndex + 1} / {allImages.length}
               </div>
 
-              {/* Swipe indicator for mobile */}
-              <div className="absolute bottom-3 left-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs z-10 md:hidden">
-                👈 Swipe 👉
-              </div>
+
             </>
           )}
         </div>
@@ -237,7 +246,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               <div className="flex flex-wrap gap-2">
                 {availableAmenities.slice(0, 4).map(amenity => (
                   <span key={amenity.key} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                    <span>{amenity.icon}</span>
+                    {amenity.icon}
                     {amenity.label}
                   </span>
                 ))}

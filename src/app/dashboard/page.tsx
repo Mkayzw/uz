@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
-import ThemeToggle from '@/components/ThemeToggle'
 import PropertyImage from '@/components/PropertyImage'
 import DashboardWrapper from '@/components/DashboardWrapper'
 

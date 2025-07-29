@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ThemeToggle from '@/components/ThemeToggle'
 
 export default function SignupFormContent() {
   const supabase = createClient()
@@ -68,14 +67,18 @@ export default function SignupFormContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center p-4">
-       <div className="absolute top-4 right-4">
-          <ThemeToggle />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-            <Link href="/">
-                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">UniStay</h1>
+            <Link href="/" className="inline-block group">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                  <span className="text-white font-bold text-xl">U</span>
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-500">
+                  UniStay
+                </h1>
+              </div>
             </Link>
           <p className="text-gray-600 dark:text-gray-300">
             {intent === 'apply' ? 'Sign up to apply for this property' : 'Create your account'}

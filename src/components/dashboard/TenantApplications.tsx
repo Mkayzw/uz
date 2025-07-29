@@ -1,4 +1,6 @@
 import { Application } from '@/types/dashboard'
+import { downloadReceipt } from '@/lib/utils/downloadHelpers'
+import { useToast } from '@/components/ToastManager'
 
 interface TenantApplicationsProps {
   applications: Application[]
@@ -6,6 +8,7 @@ interface TenantApplicationsProps {
 }
 
 export default function TenantApplications({ applications, onVerifyPayment }: TenantApplicationsProps) {
+  const { addToast } = useToast()
   if (applications.length === 0) {
     return (
       <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
@@ -60,7 +63,27 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                           </svg>
                           <span className="text-xs font-medium">Payment verified</span>
                           <button
-                            onClick={() => window.open(`/api/receipts/${application.id}`)}
+                            onClick={() => downloadReceipt(
+                              application.id,
+                              (error: string) => {
+                                console.error('Download failed:', error)
+                                addToast({
+                                  title: 'Download Failed',
+                                  message: 'Failed to download receipt. Please try again.',
+                                  type: 'error',
+                                  duration: 5000
+                                })
+                              },
+                              () => {
+                                console.log('Receipt downloaded successfully')
+                                addToast({
+                                  title: 'Download Successful',
+                                  message: 'Receipt downloaded successfully.',
+                                  type: 'success',
+                                  duration: 3000
+                                })
+                              }
+                            )}
                             className="ml-4 px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                           >
                             Download Receipt

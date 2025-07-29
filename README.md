@@ -2,9 +2,9 @@
 
 A modern Next.js application for University of Zimbabwe students to find off-campus accommodation, built with Supabase and Tailwind CSS.
 
-## 🚀 Features
+## Features
 
-### Phase 1 - Foundation & Authentication ✅
+### Phase 1 - Foundation & Authentication
 - **Clean Next.js Setup**: Modern React 18+ with App Router
 - **Tailwind CSS**: Responsive design with dark mode support
 - **Supabase Integration**: Complete backend with authentication
@@ -12,20 +12,20 @@ A modern Next.js application for University of Zimbabwe students to find off-cam
 - **Database Schema**: Tables for users, profiles, properties, and bookings
 - **Row Level Security**: Secure data access policies
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript
 - **Styling**: Tailwind CSS with dark mode
 - **Backend**: Supabase (PostgreSQL, Auth, Storage)
 - **Package Manager**: pnpm
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 18+ 
 - pnpm
 - Supabase account
 
-## 🔧 Installation
+## Installation
 
 1. **Install dependencies**
    ```bash
@@ -47,7 +47,7 @@ A modern Next.js application for University of Zimbabwe students to find off-cam
 4. **Open your browser**
    Visit [http://localhost:3000](http://localhost:3000)
 
-## 🗄 Database Schema
+## Database Schema
 
 The application uses these main tables:
 
@@ -56,23 +56,23 @@ The application uses these main tables:
 - **rooms** - Individual bookable units within properties  
 - **bookings** - Booking requests from tenants
 
-## 👥 User Roles
+## User Roles
 
 - **Tenant**: Browse properties, apply for rooms, track applications
 - **Agent**: Manage client properties, track commissions (requires payment)
 
-## 🔐 Authentication
+## Authentication
 
 1. Sign up with role selection
 2. Automatic profile creation via database trigger
 3. Role-specific dashboard access
 4. Row Level Security for data protection
 
-## 🎨 Dark Mode
+## Dark Mode
 
 Full dark mode support across all pages and components using Tailwind CSS dark mode classes.
 
-## 📝 Environment Variables
+## Environment Variables
 
 Required for `.env.local`:
 ```env

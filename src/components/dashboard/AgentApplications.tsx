@@ -1,20 +1,21 @@
 import { Application } from '@/types/dashboard'
+import { downloadReceipt } from '@/lib/utils/downloadHelpers'
+import { useToast } from '@/components/ToastManager'
 
 interface AgentApplicationsProps {
   applications: Application[]
   onApproveApplication: (applicationId: string) => void
   onRejectApplication: (applicationId: string) => void
   onVerifyPayment: (applicationId: string) => void
-  onDownloadReceipt?: (applicationId: string) => void
 }
 
 export default function AgentApplications({
   applications,
   onApproveApplication,
   onRejectApplication,
-  onVerifyPayment,
-  onDownloadReceipt
+  onVerifyPayment
 }: AgentApplicationsProps) {
+  const { addToast } = useToast()
   if (applications.length === 0) {
     return (
       <div className="text-center bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
@@ -138,7 +139,27 @@ export default function AgentApplications({
                     )}
                     {application.payment_verified && (
                       <button
-                        onClick={() => window.open(`/api/receipts/${application.id}`)}
+                        onClick={() => downloadReceipt(
+                          application.id,
+                          (error) => {
+                            console.error('Download failed:', error)
+                            addToast({
+                              title: 'Download Failed',
+                              message: 'Failed to download receipt. Please try again.',
+                              type: 'error',
+                              duration: 5000
+                            })
+                          },
+                          () => {
+                            console.log('Receipt downloaded successfully')
+                            addToast({
+                              title: 'Download Successful',
+                              message: 'Receipt downloaded successfully.',
+                              type: 'success',
+                              duration: 3000
+                            })
+                          }
+                        )}
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

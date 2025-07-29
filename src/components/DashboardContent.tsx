@@ -207,7 +207,7 @@ export default function DashboardContent() {
       message: `Remove "${property?.title}" from saved properties?`,
       type: 'warning',
       confirmText: 'Remove',
-      icon: '🗑️',
+
       onConfirm: async () => {
         try {
           const { error } = await supabase
@@ -222,7 +222,7 @@ export default function DashboardContent() {
             title: 'Property Removed',
             message: 'Property removed from saved list successfully!',
             type: 'success',
-            icon: '✅'
+
           })
         } catch (error: any) {
           showNotification({
@@ -315,14 +315,14 @@ export default function DashboardContent() {
         message: 'Are you sure you want to approve this application? The tenant will be notified.',
         type: 'success',
         confirmText: 'Approve',
-        icon: '✅',
+
         onConfirm: async () => {
             const result = await updateApplicationStatus(applicationId, 'approved');
             if (result.error) {
                 showNotification({ title: 'Error', message: result.error, type: 'error' });
             } else {
                 showNotification({
-                    title: 'Application Approved! 🎉',
+                    title: 'Application Approved!',
                     message: 'The tenant has been notified and can now proceed with payment.',
                     type: 'success'
                 });

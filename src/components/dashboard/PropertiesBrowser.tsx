@@ -143,12 +143,7 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
         </div>
       )}
 
-      {/* Mobile swipe hint - only show on first load */}
-      {allImages.length > 1 && currentImageIndex === 0 && (
-        <div className="sm:hidden absolute bottom-8 left-1/2 -translate-x-1/2 bg-black bg-opacity-70 text-white text-xs px-3 py-1 rounded-full animate-pulse">
-          Swipe to see more
-        </div>
-      )}
+
     </div>
   )
 }

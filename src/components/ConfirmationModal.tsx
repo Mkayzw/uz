@@ -1,6 +1,11 @@
 'use client'
 
 import Modal from './Modal'
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline'
 
 interface ConfirmationModalProps {
   isOpen: boolean
@@ -55,14 +60,31 @@ export default function ConfirmationModal({
 
   const currentStyle = typeStyles[type]
 
+  const getIcon = () => {
+    if (icon) {
+      return <span className={`text-2xl ${currentStyle.iconColor}`}>{icon}</span>
+    }
+
+    const iconClass = `w-6 h-6 ${currentStyle.iconColor}`
+
+    switch (type) {
+      case 'danger':
+      case 'warning':
+        return <ExclamationTriangleIcon className={iconClass} />
+      case 'success':
+        return <CheckCircleIcon className={iconClass} />
+      case 'info':
+      default:
+        return <InformationCircleIcon className={iconClass} />
+    }
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="text-center">
         {/* Icon */}
         <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full ${currentStyle.iconBg} mb-4`}>
-          <span className={`text-2xl ${currentStyle.iconColor}`}>
-            {icon || (type === 'danger' ? '⚠️' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️')}
-          </span>
+          {getIcon()}
         </div>
         
         {/* Message */}

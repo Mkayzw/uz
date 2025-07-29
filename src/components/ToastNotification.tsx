@@ -1,6 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline'
 
 interface ToastNotificationProps {
   id: string
@@ -64,16 +70,18 @@ export default function ToastNotification({
   }
 
   const getIcon = () => {
+    const iconClass = "w-5 h-5 text-white"
+
     switch (type) {
       case 'success':
-        return '✅'
+        return <CheckCircleIcon className={iconClass} />
       case 'error':
-        return '❌'
+        return <XCircleIcon className={iconClass} />
       case 'warning':
-        return '⚠️'
+        return <ExclamationTriangleIcon className={iconClass} />
       case 'info':
       default:
-        return 'ℹ️'
+        return <InformationCircleIcon className={iconClass} />
     }
   }
 
@@ -88,7 +96,7 @@ export default function ToastNotification({
       <div className="p-4">
         <div className="flex items-start">
           <div className="flex-shrink-0">
-            <span className="text-lg">{getIcon()}</span>
+            {getIcon()}
           </div>
           <div className="ml-3 w-0 flex-1">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
