@@ -5,13 +5,22 @@
 
 /**
  * Detect if the user is on a mobile device
+ * Combines user agent parsing with feature detection for better reliability
  */
 export function isMobileDevice(): boolean {
   if (typeof window === 'undefined') return false
-  
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+
+  // User agent detection
+  const userAgentMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   )
+
+  // Feature detection: touch support and screen width
+  const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  const isSmallScreen = window.innerWidth <= 768
+
+  // Combine checks: user agent OR (touch support AND small screen)
+  return userAgentMobile || (hasTouchSupport && isSmallScreen)
 }
 
 /**
@@ -43,11 +52,24 @@ export async function downloadPDF(
     } else {
       // For desktop, try window.open first, fallback to blob approach
       const opened = window.open(url, '_blank')
-      if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+      if (!opened) {
         // Popup was blocked, fallback to blob approach
         await downloadPDFMobile(url, filename, onError, onSuccess)
       } else {
-        onSuccess?.()
+        // Add delayed validation to check if popup was actually blocked
+        setTimeout(() => {
+          try {
+            if (opened.closed) {
+              // Popup was closed immediately, likely blocked
+              downloadPDFMobile(url, filename, onError, onSuccess)
+            } else {
+              onSuccess?.()
+            }
+          } catch (error) {
+            // Cross-origin error or popup blocked
+            downloadPDFMobile(url, filename, onError, onSuccess)
+          }
+        }, 100)
       }
     }
   } catch (error) {
@@ -79,10 +101,29 @@ async function downloadPDFMobile(
     }
 
     const blob = await response.blob()
-    
-    // Check if the response is actually a PDF
-    if (blob.type !== 'application/pdf' && !blob.type.includes('pdf')) {
-      throw new Error('Invalid file type received')
+
+    // Check file size limit (50MB max)
+    const maxSizeBytes = 50 * 1024 * 1024 // 50MB
+    if (blob.size > maxSizeBytes) {
+      throw new Error('File too large. Maximum size is 50MB.')
+    }
+
+    // Enhanced PDF content type validation
+    const validPdfTypes = [
+      'application/pdf',
+      'application/x-pdf',
+      'application/acrobat',
+      'applications/vnd.pdf',
+      'text/pdf',
+      'text/x-pdf'
+    ]
+
+    const isValidPdfType = validPdfTypes.includes(blob.type.toLowerCase()) ||
+                          blob.type.includes('pdf') ||
+                          response.headers.get('content-type')?.toLowerCase().includes('pdf')
+
+    if (!isValidPdfType) {
+      throw new Error('Invalid file type received. Expected PDF format.')
     }
 
     // Create download link
@@ -112,9 +153,11 @@ async function downloadPDFMobile(
     }
     
     // Clean up the blob URL after download starts or reasonable timeout
+    // iOS needs more time for user interaction, other platforms can cleanup faster
+    const cleanupDelay = isIOS() ? 30000 : 1000 // 30 seconds for iOS, 1 second for others
     setTimeout(() => {
       window.URL.revokeObjectURL(downloadUrl)
-    }, 3000)
+    }, cleanupDelay)
     
     onSuccess?.()
   } catch (error) {

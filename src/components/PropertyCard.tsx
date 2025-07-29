@@ -8,11 +8,11 @@ import {
   TruckIcon,
   SunIcon,
   HomeIcon,
-  BuildingOfficeIcon,
+  CircleStackIcon,
   BoltIcon,
   BeakerIcon,
   TvIcon,
-  SparklesIcon,
+  ArrowPathIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline'
 
@@ -120,11 +120,11 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
     { key: 'has_parking', label: 'Parking', icon: <TruckIcon className="w-4 h-4" /> },
     { key: 'has_air_conditioning', label: 'AC', icon: <SunIcon className="w-4 h-4" /> },
     { key: 'is_furnished', label: 'Furnished', icon: <HomeIcon className="w-4 h-4" /> },
-    { key: 'has_pool', label: 'Pool', icon: <BuildingOfficeIcon className="w-4 h-4" /> },
+    { key: 'has_pool', label: 'Pool', icon: <CircleStackIcon className="w-4 h-4" /> },
     { key: 'has_power', label: 'Power', icon: <BoltIcon className="w-4 h-4" /> },
     { key: 'has_water', label: 'Water', icon: <BeakerIcon className="w-4 h-4" /> },
     { key: 'has_tv', label: 'TV', icon: <TvIcon className="w-4 h-4" /> },
-    { key: 'has_laundry', label: 'Laundry', icon: <SparklesIcon className="w-4 h-4" /> },
+    { key: 'has_laundry', label: 'Laundry', icon: <ArrowPathIcon className="w-4 h-4" /> },
     { key: 'has_security_system', label: 'Security', icon: <ShieldCheckIcon className="w-4 h-4" /> },
   ]
 
