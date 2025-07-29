@@ -105,10 +105,10 @@ async function downloadPDFMobile(
       document.body.removeChild(link)
     }
     
-    // Clean up the blob URL
+    // Clean up the blob URL after download starts or reasonable timeout
     setTimeout(() => {
       window.URL.revokeObjectURL(downloadUrl)
-    }, 1000)
+    }, 3000)
     
     onSuccess?.()
   } catch (error) {
