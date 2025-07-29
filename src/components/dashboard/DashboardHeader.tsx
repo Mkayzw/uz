@@ -11,7 +11,6 @@ export default function DashboardHeader({ onSignOut }: DashboardHeaderProps) {
             <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">UniStay</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
             <button
               onClick={onSignOut}
               className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"

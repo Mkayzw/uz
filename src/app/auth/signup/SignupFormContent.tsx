@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ThemeToggle from '@/components/ThemeToggle'
 
 export default function SignupFormContent() {
   const supabase = createClient()

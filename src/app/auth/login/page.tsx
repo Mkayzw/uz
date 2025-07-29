@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import ThemeToggle from '@/components/ThemeToggle'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -60,9 +59,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center p-4">
-        <div className="absolute top-4 right-4">
-          <ThemeToggle />
-        </div>
       <div className="max-w-md w-full">
          <div className="text-center mb-8">
             <Link href="/">
