@@ -259,10 +259,10 @@ export default function AgentProperties({ properties, onImageClick, onRefreshDat
                       {property.view_count || 0} {property.view_count === 1 ? 'view' : 'views'}
                     </span>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      property.active
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
+                        property.active 
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                      }`}>
                       {property.active ? 'Published' : 'Unpublished'}
                     </span>
                   </div>

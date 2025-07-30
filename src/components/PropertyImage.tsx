@@ -56,7 +56,12 @@ export default function PropertyImage({
     setIsLoading(true);
     // Force reload by adding timestamp
     const imageUrl = getImageUrl(src);
-    setImageSrc(`${imageUrl}?t=${Date.now()}`);
+    if (imageUrl && imageUrl !== '/file.svg') {
+      setImageSrc(`${imageUrl}?t=${Date.now()}`);
+    } else {
+      setImageSrc(fallbackSrc);
+      setIsLoading(false);
+    }
   };
 
   return (
