@@ -101,7 +101,7 @@ export default function SignupFormContent() {
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/30 dark:border-red-500/50 dark:text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+            <div className="bg-blue-100 border border-blue-400 text-blue-700 dark:bg-blue-900/30 dark:border-blue-500/50 dark:text-blue-400 px-4 py-3 rounded-lg mb-6 text-sm">
               {error}
             </div>
           )}

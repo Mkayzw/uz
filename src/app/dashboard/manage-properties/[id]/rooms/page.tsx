@@ -512,11 +512,11 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
                         {roomBeds.length > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                             {roomBeds.map(bed => (
-                              <div key={bed.id} className={`p-3 rounded-lg border-2 ${!bed.is_occupied ? 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}`}>
+                              <div key={bed.id} className={`p-3 rounded-lg border-2 ${!bed.is_occupied ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800' : 'border-gray-200 bg-gray-50 dark:bg-gray-900/20 dark:border-gray-800'}`}>
                                 <div className="flex justify-between items-center">
                                   <div>
                                     <p className="font-medium text-gray-900 dark:text-white">Bed #{bed.bed_number}</p>
-                                    <p className={`text-xs ${!bed.is_occupied ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    <p className={`text-xs ${!bed.is_occupied ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}>
                                       {!bed.is_occupied ? 'Available' : 'Occupied'}
                                     </p>
                                   </div>

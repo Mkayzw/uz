@@ -33,8 +33,8 @@ export default function DashboardOverview({
         const isActive = agentStatus === 'active'
         const isPendingVerification = agentStatus === 'pending_verification'
         return {
-          icon: <BuildingOfficeIcon className={`w-10 h-10 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-yellow-600 dark:text-yellow-400'}`} />,
-          color: isActive ? 'purple' : 'yellow',
+          icon: <BuildingOfficeIcon className={`w-10 h-10 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-blue-500 dark:text-blue-300'}`} />,
+          color: isActive ? 'blue' : 'blue',
           title: 'Agent',
           description: isActive
             ? 'You can manage property listings for clients.'
@@ -98,13 +98,7 @@ export default function DashboardOverview({
   return (
     <div>
       {/* Role Status Card */}
-      <div className={`rounded-2xl p-6 mb-8 ${
-        roleInfo.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700' :
-        roleInfo.color === 'green' ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700' :
-        roleInfo.color === 'purple' ? 'bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700' :
-        roleInfo.color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700' :
-        'bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700'
-      }`}>
+      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-2xl p-6 mb-8">
         <div className="flex items-center">
           <div className="mr-4">{roleInfo.icon}</div>
           <div className="flex-1">
@@ -115,10 +109,10 @@ export default function DashboardOverview({
               {profile?.role === 'agent' && (
                 <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                   profile.agent_status === 'active'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                     : profile.agent_status === 'pending_verification'
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
                 }`}>
                   {profile.agent_status === 'active' ? 'Active' : 
                    profile.agent_status === 'pending_verification' ? 'Pending Verification' : 
@@ -159,15 +153,15 @@ export default function DashboardOverview({
               <div className="text-sm text-gray-600 dark:text-gray-400">Active Listings</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 dark:text-green-400">0</div>
+              <div className="text-3xl font-bold text-blue-500 dark:text-blue-300">0</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Views</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{pendingApplicationsCount}</div>
+              <div className="text-3xl font-bold text-blue-700 dark:text-blue-500">{pendingApplicationsCount}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Applications</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{bookingsCount}</div>
+              <div className="text-3xl font-bold text-blue-800 dark:text-blue-600">{bookingsCount}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Bookings</div>
             </div>
           </div>

@@ -58,11 +58,11 @@ export default function ToastNotification({
   const getTypeStyles = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-500 border-green-600'
+        return 'bg-blue-500 border-blue-600'
       case 'error':
-        return 'bg-red-500 border-red-600'
+        return 'bg-blue-500 border-blue-600'
       case 'warning':
-        return 'bg-yellow-500 border-yellow-600'
+        return 'bg-blue-500 border-blue-600'
       case 'info':
       default:
         return 'bg-blue-500 border-blue-600'

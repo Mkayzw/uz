@@ -22,13 +22,13 @@ export default function CommissionTracking({ agentApplications }: CommissionTrac
             <div className="text-sm text-gray-600 dark:text-gray-400">Total Earned</div>
           </div>
           <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
               ${paidOut.toFixed(2)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Paid Out</div>
           </div>
           <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+            <div className="text-3xl font-bold text-blue-700 dark:text-blue-500">
               ${pending.toFixed(2)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
