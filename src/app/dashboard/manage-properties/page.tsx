@@ -48,9 +48,9 @@ export default function ManagePropertiesPage() {
 
         // Fetch user's properties
         const { data, error: propertiesError } = await supabase
-          .from('pads')
+          .from('properties')
           .select('*')
-          .eq('created_by', user.id)
+          .eq('owner_id', user.id)
           .order('created_at', { ascending: false });
 
         if (propertiesError) {

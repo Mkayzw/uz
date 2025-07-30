@@ -53,10 +53,10 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
         }
 
         const { data, error: propertyError } = await supabase
-          .from('pads')
+          .from('properties')
           .select('*')
           .eq('id', propertyId)
-          .eq('created_by', user.id)
+          .eq('owner_id', user.id)
           .single();
 
         if (propertyError) {

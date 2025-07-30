@@ -96,7 +96,7 @@ export default function EditPropertyPage() {
         try {
             // Fetch property data
             const { data, error } = await supabase
-                .from('pads')
+                .from('properties')
                 .select('*')
                 .eq('id', propertyId)
                 .single();
@@ -106,20 +106,20 @@ export default function EditPropertyPage() {
                 setFormData({
                     title: data.title || '',
                     description: data.description || '',
-                    location: data.location || '',
-                    price: data.price?.toString() || '0',
-                    bathrooms: data.bathrooms?.toString() || '1',
+                    location: data.address || '',
+                    price: '0', // Price is now per bed in rooms
+                    bathrooms: '1', // Bathrooms are now per room
                     propertyType: data.property_type || 'apartment',
-                    amenities: Array.isArray(data.amenities) ? data.amenities : [],
-                    rules: Array.isArray(data.rules) ? data.rules : [],
-                    image_urls: Array.isArray(data.image_urls) ? data.image_urls : [],
+                    amenities: [], // Amenities are now in JSONB format
+                    rules: Array.isArray(data.rules) ? [data.rules] : (data.rules ? [data.rules] : []),
+                    image_urls: Array.isArray(data.images) ? data.images : [],
                 });
 
                 // Fetch rooms for this property
                 const { data: roomsData, error: roomsError } = await supabase
                     .from('rooms')
                     .select('*')
-                    .eq('pad_id', propertyId);
+                    .eq('property_id', propertyId);
 
                 if (roomsError) throw roomsError;
 
@@ -215,19 +215,15 @@ export default function EditPropertyPage() {
 
             // 1. Update property data
             const { error: updateError } = await supabase
-                .from('pads')
+                .from('properties')
                 .update({
                     title: formData.title,
                     description: formData.description,
-                    location: formData.location,
-                    price: parseFloat(formData.price),
-                    bedrooms: totalBeds, // Calculated from rooms
-                    bathrooms: parseInt(formData.bathrooms),
+                    address: formData.location,
                     property_type: formData.propertyType,
-                    amenities: formData.amenities,
-                    rules: formData.rules,
-                    image_urls: uploadedImageUrls,
-                    image_url: uploadedImageUrls[0] || null
+                    rules: formData.rules.join('\n'), // Convert array to string
+                    images: uploadedImageUrls,
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id', propertyId);
 
@@ -239,7 +235,7 @@ export default function EditPropertyPage() {
             const { data: existingRoomsData } = await supabase
                 .from('rooms')
                 .select('id')
-                .eq('pad_id', propertyId);
+                .eq('property_id', propertyId);
                 
             const existingRoomIds = new Set((existingRoomsData || []).map(r => r.id));
             
@@ -256,8 +252,8 @@ export default function EditPropertyPage() {
                         .from('rooms')
                         .update({
                             name: room.name,
-                            type: getRoomType(room.beds),
-                            price: roomPrice,
+                            room_type: getRoomType(room.beds),
+                            price_per_bed: roomPrice,
                             capacity: room.beds
                         })
                         .eq('id', room.room_id);
@@ -300,10 +296,10 @@ export default function EditPropertyPage() {
                 else {
                     // Insert room
                     const { data: roomData, error: roomError } = await supabase.from('rooms').insert({
-                        pad_id: propertyId,
+                        property_id: propertyId,
                         name: room.name,
-                        type: getRoomType(room.beds),
-                        price: roomPrice,
+                        room_type: getRoomType(room.beds),
+                        price_per_bed: roomPrice,
                         capacity: room.beds,
                     }).select().single();
                     
