@@ -202,11 +202,11 @@ export function useRealTimeSubscriptions({
 
     // Public properties subscription
     const propChannelPublic = supabase
-      .channel('public:pads')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'pads' 
+      .channel('public:properties')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'properties'
       }, async () => {
         try {
           const updatedAllProperties = await getAllActiveProperties(supabase)

@@ -22,9 +22,9 @@ export default function PropertyDiagnostic() {
 
       // Get user's properties
       const { data: properties, error: propertiesError } = await supabase
-        .from('pads')
-        .select('id, title, image_url, image_urls, created_at')
-        .eq('created_by', user.id);
+        .from('properties')
+        .select('id, title, images, created_at')
+        .eq('owner_id', user.id);
 
       // Get storage buckets
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
@@ -38,16 +38,18 @@ export default function PropertyDiagnostic() {
       const imageTests = [];
       if (properties && properties.length > 0) {
         for (const property of properties.slice(0, 3)) {
-          if (property.image_url) {
+          if (property.images && property.images.length > 0) {
+            const firstImagePath = property.images[0];
             const { data } = supabase.storage
               .from('property-images')
-              .getPublicUrl(property.image_url);
-            
+              .getPublicUrl(firstImagePath);
+
             imageTests.push({
               propertyId: property.id,
               propertyTitle: property.title,
-              imagePath: property.image_url,
-              publicUrl: data.publicUrl
+              imagePath: firstImagePath,
+              publicUrl: data.publicUrl,
+              totalImages: property.images.length
             });
           }
         }
