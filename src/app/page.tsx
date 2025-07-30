@@ -23,9 +23,14 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Navigation Links - Removed non-existent pages */}
+            {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
-              {/* Navigation items removed as pages don't exist yet */}
+              <Link
+                href="/merchant-agreement"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors duration-200"
+              >
+                Terms
+              </Link>
             </nav>
 
             {/* Auth Buttons */}
@@ -115,6 +120,23 @@ export default function Home() {
               </div>
               <span className="text-2xl font-bold">UniStay</span>
             </div>
+
+            {/* Footer Links */}
+            <div className="flex justify-center space-x-6 mb-6">
+              <Link
+                href="/merchant-agreement"
+                className="text-gray-400 hover:text-white transition-colors duration-200"
+              >
+                Merchant Agreement
+              </Link>
+              <Link
+                href="/changelog"
+                className="text-gray-400 hover:text-white transition-colors duration-200"
+              >
+                Changelog
+              </Link>
+            </div>
+
             <p className="text-gray-400 mb-2">&copy; {new Date().getFullYear()} UniStay. All rights reserved.</p>
             <p className="text-gray-400">Built for the UZ community.</p>
           </div>

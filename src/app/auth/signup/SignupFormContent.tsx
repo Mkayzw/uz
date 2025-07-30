@@ -14,6 +14,7 @@ export default function SignupFormContent() {
     password: '',
     role: 'tenant' // Default role
   })
+  const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [intent, setIntent] = useState<string | null>(null)
@@ -35,6 +36,12 @@ export default function SignupFormContent() {
 
     if (!formData.role) {
         setError('Please select a role.')
+        setLoading(false)
+        return
+    }
+
+    if (!agreeToTerms) {
+        setError('Please agree to the Merchant Agreement to continue.')
         setLoading(false)
         return
     }
@@ -165,9 +172,32 @@ export default function SignupFormContent() {
               </select>
             </div>
 
+            {/* Terms Agreement Checkbox */}
+            <div className="flex items-start space-x-3">
+              <input
+                id="agreeToTerms"
+                type="checkbox"
+                checked={agreeToTerms}
+                onChange={(e) => setAgreeToTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                required
+              />
+              <label htmlFor="agreeToTerms" className="text-sm text-gray-700 dark:text-gray-300">
+                I agree to the{' '}
+                <Link
+                  href="/merchant-agreement"
+                  target="_blank"
+                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                >
+                  Merchant Agreement
+                </Link>
+                {' '}and understand the terms of service.
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreeToTerms}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:bg-blue-400 dark:disabled:bg-blue-800 disabled:cursor-not-allowed transition-colors duration-200"
             >
               {loading ? 'Creating Account...' : 'Create Account'}
