@@ -12,17 +12,18 @@ import { getImageUrl } from '@/lib/utils/imageHelpers';
 interface Property {
   id: string;
   title: string;
-  description: string;
-  location: string;
-  image_url: string | null;
-  image_urls: string[] | null;
-  price: number;
-  bedrooms: number;
-  bathrooms: number;
+  description: string | null;
+  address: string;
+  city: string;
+  images: string[];
+  status: string;
   created_at: string;
-  updated_at: string;
-  active: boolean;
   view_count: number;
+  // Optional fields that might not be present
+  property_type?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  amenities?: any;
 }
 
 export default function ManagePropertyPage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,7 +55,7 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
 
         const { data, error: propertyError } = await supabase
           .from('properties')
-          .select('*')
+          .select('id, title, description, address, city, images, status, created_at, view_count, property_type, contact_phone, contact_email, amenities')
           .eq('id', propertyId)
           .eq('owner_id', user.id)
           .single();
@@ -123,7 +124,7 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="p-6">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{property.title}</h1>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{property.location}</p>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{property.address}, {property.city}</p>
               
               <div className="mt-4">
                 <Link href={`/dashboard/manage-properties/${property.id}/rooms`} className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">

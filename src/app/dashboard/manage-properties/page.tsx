@@ -16,17 +16,18 @@ import { getImageUrl } from '@/lib/utils/imageHelpers';
 interface Property {
   id: string;
   title: string;
-  description: string;
-  location: string;
-  image_url: string | null;
-  image_urls: string[] | null;
-  price: number;
-  bedrooms: number;
-  bathrooms: number;
+  description: string | null;
+  address: string;
+  city: string;
+  images: string[];
+  status: string;
   created_at: string;
-  updated_at: string;
-  active: boolean;
   view_count: number;
+  // Optional fields that might not be present
+  property_type?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  amenities?: any;
 }
 
 export default function ManagePropertiesPage() {
@@ -49,7 +50,7 @@ export default function ManagePropertiesPage() {
         // Fetch user's properties
         const { data, error: propertiesError } = await supabase
           .from('properties')
-          .select('*')
+          .select('id, title, description, address, city, images, status, created_at, view_count, property_type, contact_phone, contact_email, amenities')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -131,7 +132,7 @@ export default function ManagePropertiesPage() {
                   <div className="md:flex">
                     <div className="md:flex-shrink-0 w-full md:w-80">
                       <PropertyImage
-                        src={getImageUrl(property.image_url || (property.image_urls && property.image_urls[0]))}
+                        src={getImageUrl(property.images && property.images[0])}
                         alt={property.title}
                         className="h-48 w-full object-cover"
                       />
@@ -140,7 +141,7 @@ export default function ManagePropertiesPage() {
                       <div className="flex justify-between">
                         <div>
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white">{property.title}</h3>
-                          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{property.location}</p>
+                          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{property.address}, {property.city}</p>
                         </div>
                         <div className="mt-2 sm:mt-0 flex space-x-2">
                           <Link
