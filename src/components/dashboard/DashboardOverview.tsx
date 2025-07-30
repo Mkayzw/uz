@@ -1,11 +1,35 @@
 import { useRouter } from 'next/navigation'
 import { UserProfile, Property, Application, RoleInfo, DashboardTab } from '@/types/dashboard'
-import { AcademicCapIcon, BuildingOfficeIcon, UserIcon } from '@heroicons/react/24/outline'
+import { 
+  AcademicCapIcon, 
+  BuildingOfficeIcon, 
+  UserIcon,
+  HomeIcon,
+  DocumentTextIcon,
+  HeartIcon,
+  ChatBubbleLeftRightIcon,
+  EyeIcon,
+  CurrencyDollarIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  ArrowRightIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  MapPinIcon,
+  StarIcon
+} from '@heroicons/react/24/outline'
+import { 
+  HeartIcon as HeartSolidIcon,
+  CheckCircleIcon as CheckCircleSolidIcon 
+} from '@heroicons/react/24/solid'
 
 interface DashboardOverviewProps {
   profile: UserProfile | null
   properties: Property[]
   agentApplications: Application[]
+  tenantApplications?: Application[]
+  savedProperties?: any[]
   setActiveTab: (tab: DashboardTab) => void
   onBrowseProperties: () => void
 }
@@ -13,11 +37,92 @@ interface DashboardOverviewProps {
 export default function DashboardOverview({ 
   profile, 
   properties, 
-  agentApplications, 
+  agentApplications,
+  tenantApplications = [],
+  savedProperties = [],
   setActiveTab,
   onBrowseProperties 
 }: DashboardOverviewProps) {
   const router = useRouter()
+
+  // Mock data for demonstration - replace with real API data
+  const recentActivity = [
+    {
+      id: '1',
+      type: 'application',
+      title: 'Application submitted',
+      description: 'Modern Apartment Downtown',
+      timestamp: '2025-07-30T10:30:00Z',
+      status: 'pending'
+    },
+    {
+      id: '2',
+      type: 'property',
+      title: 'Property viewed',
+      description: 'Cozy Studio Near Campus',
+      timestamp: '2025-07-30T09:15:00Z',
+      status: 'viewed'
+    },
+    {
+      id: '3',
+      type: 'message',
+      title: 'New message',
+      description: 'From John Smith (Agent)',
+      timestamp: '2025-07-29T16:45:00Z',
+      status: 'unread'
+    }
+  ]
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+
+    if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`
+    } else {
+      return `${Math.floor(diffInHours / 24)}d ago`
+    }
+  }
+
+  const getStatusIcon = (type: string, status: string) => {
+    switch (type) {
+      case 'application':
+        return status === 'approved' ? 
+          <CheckCircleSolidIcon className="w-4 h-4 text-blue-600" /> :
+          <ClockIcon className="w-4 h-4 text-blue-500" />
+      case 'property':
+        return <EyeIcon className="w-4 h-4 text-blue-500" />
+      case 'message':
+        return <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-500" />
+      default:
+        return <InformationCircleIcon className="w-4 h-4 text-gray-500" />
+    }
+  }
+
+  // Enhanced role-specific stats
+  const getStats = () => {
+    if (profile?.role === 'tenant') {
+      return {
+        applications: tenantApplications.length,
+        pending: tenantApplications.filter(app => app.status === 'pending').length,
+        approved: tenantApplications.filter(app => app.status === 'approved').length,
+        saved: savedProperties.length
+      }
+    } else if (profile?.role === 'agent') {
+      const totalViews = properties.reduce((sum, prop) => sum + (prop.view_count || 0), 0)
+      return {
+        properties: properties.length,
+        applications: agentApplications.length,
+        pending: agentApplications.filter(app => app.status === 'pending').length,
+        views: totalViews,
+        bookings: agentApplications.filter(app => app.status === 'approved').length
+      }
+    }
+    return {}
+  }
+
+  const stats = getStats()
 
   const getRoleInfo = (role: string, agentStatus?: string): RoleInfo => {
     switch (role) {
@@ -59,114 +164,251 @@ export default function DashboardOverview({
   }
 
   const roleInfo = getRoleInfo(profile?.role || 'tenant', profile?.agent_status)
-  const pendingApplicationsCount = agentApplications.filter(app => app.status === 'pending').length
-  const bookingsCount = agentApplications.filter(app => app.status === 'approved').length
 
-  const handleActionClick = (action: string) => {
-    if (action.includes('Browse')) {
-      onBrowseProperties()
-    } else if (action.includes('Add')) {
-      router.push('/dashboard/list-property')
-    } else if (action.includes('Manage')) {
-      router.push('/dashboard/manage-properties')
-    } else if (action.includes('Payment')) {
-      router.push('/dashboard/payment')
-    } else if (action.includes('Applications')) {
-      setActiveTab('applications')
-    } else if (action.includes('Saved')) {
-      setActiveTab('saved')
-    } else if (action.includes('Commission')) {
-      setActiveTab('commission')
+  const StatCard = ({ title, value, icon, trend, color = 'blue' }: {
+    title: string
+    value: number | string
+    icon: React.ReactNode
+    trend?: { value: number; direction: 'up' | 'down' }
+    color?: string
+  }) => {
+    const colorClasses = {
+      blue: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30',
+      white: 'text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800'
     }
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`p-3 rounded-lg ${colorClasses[color as keyof typeof colorClasses] || colorClasses.blue}`}>
+            {icon}
+          </div>
+          {trend && (
+            <span className={`text-xs font-medium ${
+              trend.direction === 'up' ? 'text-blue-600' : 'text-gray-600'
+            }`}>
+              {trend.direction === 'up' ? '+' : '-'}{trend.value}%
+            </span>
+          )}
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{value}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{title}</div>
+        </div>
+      </div>
+    )
   }
 
-  const getActionDescription = (action: string) => {
-    if (action.includes('Browse')) return 'Discover available properties near UZ campus.'
-    if (action.includes('Add')) return 'List a new property for students.'
-    if (action.includes('Manage')) return 'View and update your existing listings.'
-    if (action.includes('Applications')) return 'Track your property applications.'
-    if (action.includes('Payment')) return 'Activate your agent account.'
-    if (action.includes('Profile')) return 'Update your account information.'
-    if (action.includes('Commission')) return 'Track your earnings and payments.'
-    if (action.includes('Client')) return 'Manage your client relationships.'
-    if (action.includes('Pricing')) return 'View agent subscription plans.'
-    if (action.includes('Support')) return 'Get help with your account.'
-    if (action.includes('Saved')) return 'View your bookmarked properties.'
-    return ''
+  if (profile?.role === 'tenant') {
+    return (
+      <div className="space-y-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            title="Applications"
+            value={stats.applications || 0}
+            icon={<DocumentTextIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Pending"
+            value={stats.pending || 0}
+            icon={<ClockIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Approved"
+            value={stats.approved || 0}
+            icon={<CheckCircleIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Saved"
+            value={stats.saved || 0}
+            icon={<HeartIcon className="w-6 h-6" />}
+            color="blue"
+          />
+        </div>
+
+        {/* Recent Activity */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            {recentActivity.length > 0 ? (
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className="flex items-start space-x-4">
+                      <div className="flex-shrink-0 mt-1">
+                        {getStatusIcon(activity.type, activity.status)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {activity.title}
+                          </p>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {formatTime(activity.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {activity.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <ClockIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
+  if (profile?.role === 'agent') {
+    const isActive = profile.agent_status === 'active'
+    
+    if (!isActive) {
+      return (
+        <div className="space-y-8">
+          {/* Agent Status Banner */}
+          <div className={`rounded-2xl p-8 ${
+            profile.agent_status === 'pending_verification' 
+              ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
+              : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
+          }`}>
+            <div className="flex items-center">
+              <div className="mr-6">
+                {profile.agent_status === 'pending_verification' ? (
+                  <ExclamationTriangleIcon className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                ) : (
+                  <BuildingOfficeIcon className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {profile.agent_status === 'pending_verification' ? 'Verification in Progress' : 'Activate Your Agent Account'}
+                </h1>
+                <p className="text-gray-700 dark:text-gray-300 text-lg">
+                  {profile.agent_status === 'pending_verification' 
+                    ? 'Your payment is being verified. This may take up to 24 hours.'
+                    : 'Complete payment to start managing property listings for clients.'
+                  }
+                </p>
+                {profile.agent_status !== 'pending_verification' && (
+                  <button
+                    onClick={() => router.push('/dashboard/payment')}
+                    className="mt-4 inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Complete Payment
+                    <ArrowRightIcon className="w-4 h-4 ml-2" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-8">
+        {/* Agent Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard
+            title="Properties"
+            value={stats.properties || 0}
+            icon={<HomeIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Applications"
+            value={stats.applications || 0}
+            icon={<DocumentTextIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Pending"
+            value={stats.pending || 0}
+            icon={<ClockIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Total Views"
+            value={stats.views || 0}
+            icon={<EyeIcon className="w-6 h-6" />}
+            color="blue"
+          />
+          <StatCard
+            title="Bookings"
+            value={stats.bookings || 0}
+            icon={<CheckCircleIcon className="w-6 h-6" />}
+            color="blue"
+          />
+        </div>
+
+        {/* Property Performance */}
+        {properties.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Top Performing Properties</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {properties.slice(0, 3).map((property) => (
+                  <div key={property.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white">{property.title}</h3>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          <div className="flex items-center">
+                            <MapPinIcon className="w-4 h-4 mr-1" />
+                            {property.location}
+                          </div>
+                          <div className="flex items-center">
+                            <EyeIcon className="w-4 h-4 mr-1" />
+                            {property.view_count || 0} views
+                          </div>
+                          <div className="flex items-center">
+                            <CurrencyDollarIcon className="w-4 h-4 mr-1" />
+                            ${property.price}/month
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
+                        className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        Manage
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Default case for other roles
   return (
-    <div>
-      {/* Role Status Card */}
-      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-2xl p-6 mb-8">
-        <div className="flex items-center">
-          <div className="mr-4">{roleInfo.icon}</div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                {roleInfo.title}
-              </h3>
-              {profile?.role === 'agent' && (
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                  profile.agent_status === 'active'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                    : profile.agent_status === 'pending_verification'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                }`}>
-                  {profile.agent_status === 'active' ? 'Active' : 
-                   profile.agent_status === 'pending_verification' ? 'Pending Verification' : 
-                   'Pending Payment'}
-                </span>
-              )}
-            </div>
-            <p className="text-gray-700 dark:text-gray-300">{roleInfo.description}</p>
-          </div>
-        </div>
+    <div className="space-y-8">
+      {/* Default Overview */}
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
+        <UserIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Welcome to UniStay
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Your dashboard is ready. Please update your profile to get started.
+        </p>
       </div>
-
-      {/* Quick Actions */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {roleInfo.actions.map((action, index) => (
-          <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow">
-            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-3">{action}</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {getActionDescription(action)}
-            </p>
-            <button
-              onClick={() => handleActionClick(action)}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {action}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Stats Section for Agents */}
-      {(profile?.role === 'agent' && profile?.agent_status === 'active') && (
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Your Statistics</h3>
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{properties.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Active Listings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-500 dark:text-blue-300">0</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Views</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-700 dark:text-blue-500">{pendingApplicationsCount}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Applications</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-800 dark:text-blue-600">{bookingsCount}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Bookings</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

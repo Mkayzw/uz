@@ -3,6 +3,16 @@ import { useRouter } from 'next/navigation'
 import { Property, Application, SavedProperty, UserProfile } from '@/types/dashboard'
 import PropertyImage from '@/components/PropertyImage'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
+import {
+  MagnifyingGlassIcon,
+  MapPinIcon,
+  HeartIcon,
+  EyeIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  HomeIcon
+} from '@heroicons/react/24/outline'
+import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid'
 
 interface PropertiesBrowserProps {
   allProperties: Property[]
@@ -163,6 +173,10 @@ export default function PropertiesBrowser({
   const [searchTerm, setSearchTerm] = useState('')
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
   const [typeFilter, setTypeFilter] = useState<string>('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [amenityFilters, setAmenityFilters] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high' | 'popular'>('newest')
+  const [showFilters, setShowFilters] = useState(false)
 
   const filteredProperties = useMemo(() => {
     return allProperties.filter(property => {
@@ -203,48 +217,83 @@ export default function PropertiesBrowser({
 
   return (
     <div>
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Browse Properties</h3>
-        
-        {/* Search and Filter Controls */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      {/* Header with Search and View Toggle */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Browse Properties</h3>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} available
+            </p>
+          </div>
+
+          {/* View Toggle */}
+          <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <Squares2X2Icon className="w-4 h-4" />
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <ListBulletIcon className="w-4 h-4" />
+              List
+            </button>
+          </div>
+        </div>
+
+        {/* Enhanced Search and Filter Controls */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search Properties
-              </label>
-              <input
-                type="text"
-                id="search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by title or location..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
+            {/* Search Input */}
+            <div className="md:col-span-2">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by title, location, or description..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+              </div>
             </div>
-            
+
+            {/* Property Type Filter */}
             <div>
-              <label htmlFor="property-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Property Type
-              </label>
               <select
-                id="property-type"
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">All Types</option>
+                <option value="">All Property Types</option>
                 <option value="apartment">Apartment</option>
                 <option value="house">House</option>
-                <option value="room">Room</option>
-                <option value="studio">Studio</option>
+                <option value="hostel">Hostel</option>
+                <option value="lodge">Lodge</option>
+                <option value="cottage">Cottage</option>
               </select>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Price Range: ${priceRange[0]} - ${priceRange[1]}
-              </label>
+          </div>
+
+          {/* Price Range */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Price Range: ${priceRange[0]} - ${priceRange[1]} per month
+            </label>
+            <div className="px-2">
               <input
                 type="range"
                 min="0"
@@ -254,146 +303,215 @@ export default function PropertiesBrowser({
                 onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
               />
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span>$0</span>
+                <span>$5000+</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Properties Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      {/* Properties Display */}
+      <div className={viewMode === 'grid'
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        : "space-y-6"
+      }>
         {filteredProperties.map((property) => (
-          <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-            <PropertyImageCarousel
-              property={property}
-              onImageClick={onImageClick}
-              height="h-48"
-            />
-            <div className="p-4 sm:p-6">
-              <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{property.title}</h4>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{property.location}</p>
-
-              {property.description && (
-                <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                  {property.description}
-                </p>
-              )}
-
-              {property.price && (
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                  ${property.price}/month
-                </p>
-              )}
-              
-              <div className="flex flex-wrap gap-2 mb-4">
-                {property.bedrooms && (
-                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
-                    {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
-                  </span>
-                )}
-                {property.bathrooms && (
-                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
-                    {property.bathrooms} bath{property.bathrooms > 1 ? 's' : ''}
-                  </span>
-                )}
-                {/* Room availability status */}
-                {property.total_rooms && property.total_rooms > 0 && (
-                  <>
-                    {property.full_rooms && property.full_rooms > 0 && (
-                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full font-bold">
-                        {property.full_rooms} FULL
-                      </span>
+          viewMode === 'grid' ? (
+            // Grid View Card
+            <div key={property.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-700 overflow-hidden group">
+              <PropertyImageCarousel
+                property={property}
+                onImageClick={onImageClick}
+                height="h-48"
+              />
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <h4 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {property.title}
+                  </h4>
+                  <button
+                    onClick={() => handleSaveClick(property.id)}
+                    className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {isPropertySaved(property.id) ? (
+                      <HeartSolidIcon className="w-5 h-5 text-blue-500" />
+                    ) : (
+                      <HeartIcon className="w-5 h-5 text-gray-400 hover:text-blue-500" />
                     )}
-                    {property.available_rooms && property.available_rooms > 0 && (
-                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                        {property.available_rooms} Available
-                      </span>
-                    )}
-                  </>
+                  </button>
+                </div>
+
+                <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-3">
+                  <MapPinIcon className="w-4 h-4 mr-1" />
+                  {property.location}
+                </div>
+
+                {property.description && (
+                  <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                    {property.description}
+                  </p>
                 )}
-                {property.has_internet && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    📶 WiFi
-                  </span>
+
+                {property.price && (
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+                    ${property.price}/month
+                  </p>
                 )}
-                {property.has_parking && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    🅿️ Parking
-                  </span>
-                )}
-                {property.has_power && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    ⚡ Power
-                  </span>
-                )}
-                {property.has_water && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    💧 Water
-                  </span>
-                )}
-                {property.is_furnished && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    🛋️ Furnished
-                  </span>
-                )}
-                {property.has_parking && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    Parking
-                  </span>
-                )}
-                {property.is_furnished && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                    Furnished
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                {profile?.role === 'tenant' && (
-                  <>
+
+                {/* Amenities */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {property.bedrooms && (
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
+                      {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {property.bathrooms && (
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
+                      {property.bathrooms} bath{property.bathrooms > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {property.available_rooms && property.available_rooms > 0 && (
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                      {property.available_rooms} Available
+                    </span>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  {profile?.role === 'tenant' && (
                     <button
                       onClick={() => handleApplyClick(property)}
-                      disabled={false}
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      disabled={hasAppliedToProperty(property.id)}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         hasAppliedToProperty(property.id)
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
                       }`}
                     >
-                      {hasAppliedToProperty(property.id) ? 'Cancel Application' : 'Apply'}
+                      {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
                     </button>
+                  )}
+
+                  {profile?.role === 'agent' && property.created_by === profile.id && (
                     <button
-                      onClick={() => handleSaveClick(property.id)}
-                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        isPropertySaved(property.id)
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-gray-600 text-white hover:bg-gray-700'
-                      }`}
+                      onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
+                      className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      {isPropertySaved(property.id) ? 'Unsave' : 'Save'}
+                      Manage
                     </button>
-                  </>
-                )}
-                {profile?.role === 'agent' && property.created_by === profile.id && (
-                  <button
-                    onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
-                    className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    View Details
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            // List View Card
+            <div key={property.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-700 overflow-hidden group">
+              <div className="flex flex-col sm:flex-row">
+                <div className="sm:w-64 h-48 sm:h-32 flex-shrink-0">
+                  <PropertyImageCarousel
+                    property={property}
+                    onImageClick={onImageClick}
+                    height="h-full"
+                  />
+                </div>
+
+                <div className="flex-1 p-6">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {property.title}
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      {property.price && (
+                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                          ${property.price}/month
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleSaveClick(property.id)}
+                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        {isPropertySaved(property.id) ? (
+                          <HeartSolidIcon className="w-5 h-5 text-blue-500" />
+                        ) : (
+                          <HeartIcon className="w-5 h-5 text-gray-400 hover:text-blue-500" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-2">
+                    <MapPinIcon className="w-4 h-4 mr-1" />
+                    {property.location}
+                  </div>
+
+                  {property.description && (
+                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-1">
+                      {property.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2">
+                      {property.bedrooms && (
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
+                          {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {property.bathrooms && (
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full">
+                          {property.bathrooms} bath{property.bathrooms > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {property.available_rooms && property.available_rooms > 0 && (
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                          {property.available_rooms} Available
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      {profile?.role === 'tenant' && (
+                        <button
+                          onClick={() => handleApplyClick(property)}
+                          disabled={hasAppliedToProperty(property.id)}
+                          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            hasAppliedToProperty(property.id)
+                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
+                        </button>
+                      )}
+
+                      {profile?.role === 'agent' && property.created_by === profile.id && (
+                        <button
+                          onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
+                          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Manage
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
         ))}
       </div>
-      
+
+      {/* Empty State */}
       {filteredProperties.length === 0 && (
-        <div className="text-center py-12">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No properties found</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-center py-16">
+          <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <HomeIcon className="w-12 h-12 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No properties found</h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
             Try adjusting your search criteria or check back later for new listings.
           </p>
         </div>

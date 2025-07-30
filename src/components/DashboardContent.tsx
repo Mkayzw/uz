@@ -476,6 +476,8 @@ export default function DashboardContent() {
             profile={profile}
             properties={properties}
             agentApplications={agentApplications}
+            tenantApplications={applications}
+            savedProperties={savedProperties}
             setActiveTab={setActiveTab}
             onBrowseProperties={handleBrowseProperties}
           />
