@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { Property } from '@/types/dashboard'
 import PropertyImage from '@/components/PropertyImage'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
+import { unpublishProperty, publishProperty } from '@/app/dashboard/actions'
 
 interface AgentPropertiesProps {
   properties: Property[]
@@ -168,6 +169,47 @@ function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarousel
 
 export default function AgentProperties({ properties, onImageClick }: AgentPropertiesProps) {
   const router = useRouter()
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
+
+  const handleUnpublish = async (propertyId: string) => {
+    if (loadingStates[propertyId]) return
+
+    setLoadingStates(prev => ({ ...prev, [propertyId]: true }))
+
+    try {
+      const result = await unpublishProperty(propertyId)
+      if (result.error) {
+        alert('Failed to unpublish property: ' + result.error)
+      } else {
+        // Refresh the page to show updated status
+        window.location.reload()
+      }
+    } catch (error) {
+      alert('Failed to unpublish property')
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [propertyId]: false }))
+    }
+  }
+
+  const handlePublish = async (propertyId: string) => {
+    if (loadingStates[propertyId]) return
+
+    setLoadingStates(prev => ({ ...prev, [propertyId]: true }))
+
+    try {
+      const result = await publishProperty(propertyId)
+      if (result.error) {
+        alert('Failed to publish property: ' + result.error)
+      } else {
+        // Refresh the page to show updated status
+        window.location.reload()
+      }
+    } catch (error) {
+      alert('Failed to publish property')
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [propertyId]: false }))
+    }
+  }
 
   return (
     <div>
@@ -203,9 +245,18 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
                   )}
                 </div>
                 <div className="flex justify-between items-center mt-4">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {property.view_count || 0} {property.view_count === 1 ? 'view' : 'views'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {property.view_count || 0} {property.view_count === 1 ? 'view' : 'views'}
+                    </span>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      property.active
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
+                      {property.active ? 'Published' : 'Unpublished'}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
                       onClick={() => router.push(`/dashboard/edit-property/${property.id}`)}
@@ -213,11 +264,23 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
                     >
                       Edit
                     </button>
-                    <button
-                      className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors touch-manipulation"
-                    >
-                      Unpublish
-                    </button>
+                    {property.active ? (
+                      <button
+                        onClick={() => handleUnpublish(property.id)}
+                        disabled={loadingStates[property.id]}
+                        className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingStates[property.id] ? 'Unpublishing...' : 'Unpublish'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handlePublish(property.id)}
+                        disabled={loadingStates[property.id]}
+                        className="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loadingStates[property.id] ? 'Publishing...' : 'Publish'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
