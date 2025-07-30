@@ -8,6 +8,7 @@ import { unpublishProperty, publishProperty } from '@/app/dashboard/actions'
 interface AgentPropertiesProps {
   properties: Property[]
   onImageClick: (src: string | null, alt: string, allImages?: string[], index?: number) => void
+  onRefreshData?: () => void
 }
 
 interface PropertyImageCarouselProps {
@@ -167,7 +168,7 @@ function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarousel
   )
 }
 
-export default function AgentProperties({ properties, onImageClick }: AgentPropertiesProps) {
+export default function AgentProperties({ properties, onImageClick, onRefreshData }: AgentPropertiesProps) {
   const router = useRouter()
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
 
@@ -181,8 +182,12 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
       if (result.error) {
         alert('Failed to unpublish property: ' + result.error)
       } else {
-        // Refresh the page to show updated status
-        window.location.reload()
+        // Use Next.js router refresh for better UX
+        if (onRefreshData) {
+          onRefreshData()
+        } else {
+          router.refresh()
+        }
       }
     } catch (error) {
       alert('Failed to unpublish property')
@@ -201,8 +206,12 @@ export default function AgentProperties({ properties, onImageClick }: AgentPrope
       if (result.error) {
         alert('Failed to publish property: ' + result.error)
       } else {
-        // Refresh the page to show updated status
-        window.location.reload()
+        // Use Next.js router refresh for better UX
+        if (onRefreshData) {
+          onRefreshData()
+        } else {
+          router.refresh()
+        }
       }
     } catch (error) {
       alert('Failed to publish property')
