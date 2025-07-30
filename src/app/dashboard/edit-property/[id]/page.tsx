@@ -111,7 +111,7 @@ export default function EditPropertyPage() {
                     bathrooms: '1', // Bathrooms are now per room
                     propertyType: data.property_type || 'apartment',
                     amenities: [], // Amenities are now in JSONB format
-                    rules: Array.isArray(data.rules) ? [data.rules] : (data.rules ? [data.rules] : []),
+                    rules: Array.isArray(data.rules) ? data.rules : (data.rules ? [data.rules] : []),
                     image_urls: Array.isArray(data.images) ? data.images : [],
                 });
 
