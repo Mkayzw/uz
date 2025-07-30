@@ -1,5 +1,5 @@
 import { Application } from '@/types/dashboard'
-import { downloadReceipt } from '@/lib/utils/downloadHelpers'
+import { downloadReceipt, isIOS } from '@/lib/utils/downloadHelpers'
 import { useToast } from '@/components/ToastManager'
 
 interface AgentApplicationsProps {
@@ -152,11 +152,14 @@ export default function AgentApplications({
                           },
                           () => {
                             console.log('Receipt downloaded successfully')
+                            const isiOS = isIOS()
                             addToast({
                               title: 'Download Successful',
-                              message: 'Receipt downloaded successfully.',
+                              message: isiOS
+                                ? 'Receipt opened in Safari. Tap the share button to save to Files.'
+                                : 'Receipt downloaded successfully.',
                               type: 'success',
-                              duration: 3000
+                              duration: isiOS ? 6000 : 3000
                             })
                           }
                         )}
