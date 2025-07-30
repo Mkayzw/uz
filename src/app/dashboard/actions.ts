@@ -153,6 +153,46 @@ export async function cancelApplication(applicationId: string) {
   return updateApplicationStatus(applicationId, 'cancelled')
 }
 
+export async function updatePropertyStatus(propertyId: string, status: 'draft' | 'published' | 'unpublished') {
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
+
+  // Get the current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { error: 'Authentication required' }
+  }
+
+  // Update the property status
+  const { data, error } = await supabase
+    .from('properties')
+    .update({
+      status,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', propertyId)
+    .eq('owner_id', user.id) // Ensure user owns the property
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating property status:', error)
+    return { error: 'Failed to update property status.' }
+  }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/manage-properties')
+  return { data }
+}
+
+export async function unpublishProperty(propertyId: string) {
+  return updatePropertyStatus(propertyId, 'unpublished')
+}
+
+export async function publishProperty(propertyId: string) {
+  return updatePropertyStatus(propertyId, 'published')
+}
+
 export async function verifyPayment(applicationId: string) {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)

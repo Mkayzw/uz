@@ -1,5 +1,5 @@
 import { Application } from '@/types/dashboard'
-import { downloadReceipt } from '@/lib/utils/downloadHelpers'
+import { downloadReceipt, isIOS } from '@/lib/utils/downloadHelpers'
 import { useToast } from '@/components/ToastManager'
 
 interface AgentApplicationsProps {
@@ -79,11 +79,11 @@ export default function AgentApplications({
             </div>
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                application.status === 'pending' 
-                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                application.status === 'pending'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                   : application.status === 'approved'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
               }`}>
                 {application.status}
               </span>
@@ -112,11 +112,11 @@ export default function AgentApplications({
               <div className="flex justify-between items-center mb-2">
                 <h5 className="font-semibold text-gray-900 dark:text-white">Payment Status</h5>
                 {application.payment_verified ? (
-                  <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded-full">
                     Verified
                   </span>
                 ) : (
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs rounded-full">
+                  <span className="px-3 py-1 bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 text-xs rounded-full">
                     Pending Verification
                   </span>
                 )}
@@ -152,11 +152,14 @@ export default function AgentApplications({
                           },
                           () => {
                             console.log('Receipt downloaded successfully')
+                            const isiOS = isIOS()
                             addToast({
                               title: 'Download Successful',
-                              message: 'Receipt downloaded successfully.',
+                              message: isiOS
+                                ? 'Receipt opened in Safari. Tap the share button to save to Files.'
+                                : 'Receipt downloaded successfully.',
                               type: 'success',
-                              duration: 3000
+                              duration: isiOS ? 6000 : 3000
                             })
                           }
                         )}

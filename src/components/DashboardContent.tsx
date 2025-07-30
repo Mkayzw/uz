@@ -427,8 +427,15 @@ export default function DashboardContent() {
             <div className="text-red-500 text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error Loading Dashboard</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => {
+                // Try to refresh data first, fallback to router refresh
+                if (refreshData) {
+                  refreshData()
+                } else {
+                  router.refresh()
+                }
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Try Again
@@ -492,6 +499,7 @@ export default function DashboardContent() {
           <AgentProperties
             properties={properties}
             onImageClick={openImageModal}
+            onRefreshData={refreshData}
           />
         )}
 

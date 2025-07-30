@@ -299,12 +299,12 @@ export default function PropertiesBrowser({
                 {property.total_rooms && property.total_rooms > 0 && (
                   <>
                     {property.full_rooms && property.full_rooms > 0 && (
-                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs rounded-full font-bold">
+                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full font-bold">
                         {property.full_rooms} FULL
                       </span>
                     )}
                     {property.available_rooms && property.available_rooms > 0 && (
-                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
                         {property.available_rooms} Available
                       </span>
                     )}

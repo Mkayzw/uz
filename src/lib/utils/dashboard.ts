@@ -73,7 +73,6 @@ export const getAgentProperties = async (supabase: SupabaseClient, userId: strin
       )
     `)
     .eq('owner_id', userId)
-    .eq('status', 'published')
 
   if (propertiesError) {
     console.error('Error fetching properties:', propertiesError)

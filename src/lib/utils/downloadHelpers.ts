@@ -40,19 +40,25 @@ export function isIOS(): boolean {
  * @param onSuccess - Optional success callback
  */
 export async function downloadPDF(
-  url: string, 
+  url: string,
   filename: string,
   onError?: (error: string) => void,
   onSuccess?: () => void
 ): Promise<void> {
   try {
-    // For mobile devices, use fetch + blob approach
-    if (isMobileDevice()) {
+    console.log('Starting PDF download:', { url, filename, isIOS: isIOS(), isMobile: isMobileDevice() })
+
+    // For iOS, use direct navigation approach (most reliable)
+    if (isIOS()) {
+      await downloadPDFiOS(url, filename, onError, onSuccess)
+    } else if (isMobileDevice()) {
+      // For other mobile devices, use fetch + blob approach
       await downloadPDFMobile(url, filename, onError, onSuccess)
     } else {
       // For desktop, try window.open first, fallback to blob approach
       const opened = window.open(url, '_blank')
       if (!opened) {
+        console.log('Desktop popup blocked, falling back to blob approach')
         // Popup was blocked, fallback to blob approach
         await downloadPDFMobile(url, filename, onError, onSuccess)
       } else {
@@ -60,12 +66,15 @@ export async function downloadPDF(
         setTimeout(() => {
           try {
             if (opened.closed) {
+              console.log('Desktop popup was closed, falling back to blob approach')
               // Popup was closed immediately, likely blocked
               downloadPDFMobile(url, filename, onError, onSuccess)
             } else {
+              console.log('Desktop download successful via popup')
               onSuccess?.()
             }
           } catch (error) {
+            console.log('Desktop popup error, falling back to blob approach:', error)
             // Cross-origin error or popup blocked
             downloadPDFMobile(url, filename, onError, onSuccess)
           }
@@ -79,15 +88,80 @@ export async function downloadPDF(
 }
 
 /**
- * Download PDF using fetch + blob approach (mobile-friendly)
+ * Download PDF on iOS using direct navigation (most reliable for iOS)
  */
-async function downloadPDFMobile(
-  url: string, 
+async function downloadPDFiOS(
+  url: string,
   filename: string,
   onError?: (error: string) => void,
   onSuccess?: () => void
 ): Promise<void> {
   try {
+    console.log('iOS download: Starting direct navigation approach')
+
+    // First, verify the PDF is accessible
+    const response = await fetch(url, {
+      method: 'HEAD', // Just check headers, don't download content
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`PDF not accessible: ${response.status} ${response.statusText}`)
+    }
+
+    console.log('iOS download: PDF is accessible, navigating to URL')
+
+    // For iOS, direct navigation works best
+    // This will open the PDF in Safari's built-in PDF viewer
+    window.location.href = url
+
+    // Show user-friendly instructions
+    setTimeout(() => {
+      // Use a more modern approach than alert
+      if (onSuccess) {
+        onSuccess()
+      }
+
+      // You could also show a toast notification here instead of alert
+      console.log('iOS download: PDF should be opening in Safari. Users can tap the share button to save.')
+    }, 500)
+
+  } catch (error) {
+    console.error('iOS download error:', error)
+
+    // Fallback: try opening in new tab
+    try {
+      console.log('iOS download: Trying fallback - new tab approach')
+      const newTab = window.open(url, '_blank')
+      if (newTab) {
+        console.log('iOS download: Fallback successful - opened in new tab')
+        setTimeout(() => {
+          onSuccess?.()
+        }, 500)
+      } else {
+        throw new Error('Unable to open PDF. Please check your popup settings.')
+      }
+    } catch (fallbackError) {
+      console.error('iOS download fallback failed:', fallbackError)
+      onError?.(error instanceof Error ? error.message : 'Failed to download receipt on iOS')
+    }
+  }
+}
+
+/**
+ * Download PDF using fetch + blob approach (mobile-friendly)
+ */
+async function downloadPDFMobile(
+  url: string,
+  filename: string,
+  onError?: (error: string) => void,
+  onSuccess?: () => void
+): Promise<void> {
+  try {
+    console.log('Mobile download: Starting fetch + blob approach')
+
     // Fetch the PDF as a blob
     const response = await fetch(url, {
       method: 'GET',
@@ -100,6 +174,7 @@ async function downloadPDFMobile(
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
+    console.log('Mobile download: Fetch successful, creating blob')
     const blob = await response.blob()
 
     // Check file size limit (50MB max)
@@ -123,42 +198,31 @@ async function downloadPDFMobile(
                           response.headers.get('content-type')?.toLowerCase().includes('pdf')
 
     if (!isValidPdfType) {
+      console.log('Mobile download: Invalid content type:', blob.type)
       throw new Error('Invalid file type received. Expected PDF format.')
     }
+
+    console.log('Mobile download: Creating download link')
 
     // Create download link
     const downloadUrl = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = downloadUrl
     link.download = filename
-    
-    // For iOS, we need to handle downloads differently
-    if (isIOS()) {
-      const newWindow = window.open(downloadUrl, '_blank')
-      if (!newWindow) {
-        throw new Error('Unable to open download. Please allow popups and try again.')
-      }
-      // On iOS, provide user guidance
-      setTimeout(() => {
-        alert(
-          'PDF opened in new tab. ' +
-          'Tap the share icon and select "Save to Files" to download.'
-        )
-      }, 500)
-    } else {
-      // For other mobile browsers, trigger download
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-    
-    // Clean up the blob URL after download starts or reasonable timeout
-    // iOS needs more time for user interaction, other platforms can cleanup faster
-    const cleanupDelay = isIOS() ? 30000 : 1000 // 30 seconds for iOS, 1 second for others
+
+    // For non-iOS mobile browsers, trigger download
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    console.log('Mobile download: Download triggered')
+
+    // Clean up the blob URL after download starts
     setTimeout(() => {
       window.URL.revokeObjectURL(downloadUrl)
-    }, cleanupDelay)
-    
+      console.log('Mobile download: Blob URL cleaned up')
+    }, 1000)
+
     onSuccess?.()
   } catch (error) {
     console.error('Mobile download error:', error)

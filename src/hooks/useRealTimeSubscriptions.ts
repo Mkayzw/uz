@@ -11,7 +11,7 @@ import {
   getAgentApplications,
 } from '@/lib/utils/dashboard'
 import { useSupabaseClient } from './useSupabaseClient'
-import { downloadReceipt } from '@/lib/utils/downloadHelpers'
+import { downloadReceipt, isIOS } from '@/lib/utils/downloadHelpers'
 
 interface UseRealTimeSubscriptionsProps {
   user: User | null
@@ -129,9 +129,12 @@ export function useRealTimeSubscriptions({
 
                 // Payment verification notification
                 if (newPaymentVerified !== oldPaymentVerified && newPaymentVerified) {
+                  const isiOS = isIOS()
                   addToast({
                     title: '✅ Payment Verified!',
-                    message: 'Your payment has been verified. You can now download your receipt.',
+                    message: isiOS
+                      ? 'Your payment has been verified. Tap below to open your receipt in Safari.'
+                      : 'Your payment has been verified. You can now download your receipt.',
                     type: 'success',
                     duration: 8000,
                     actionButton: {

@@ -1,5 +1,5 @@
 import { Application } from '@/types/dashboard'
-import { downloadReceipt } from '@/lib/utils/downloadHelpers'
+import { downloadReceipt, isIOS } from '@/lib/utils/downloadHelpers'
 import { useToast } from '@/components/ToastManager'
 
 interface TenantApplicationsProps {
@@ -42,10 +42,10 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
             <div className="flex items-center gap-4">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                 application.status === 'pending' 
-                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                   : application.status === 'approved'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
               }`}>
                 {application.status}
               </span>
@@ -57,7 +57,7 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                         <span className="font-medium">Transaction Code:</span> {application.transaction_code}
                       </p>
                       {application.payment_verified ? (
-                        <div className="flex items-center mt-2 text-green-600 dark:text-green-400">
+                        <div className="flex items-center mt-2 text-blue-600 dark:text-blue-400">
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
@@ -76,11 +76,14 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                               },
                               () => {
                                 console.log('Receipt downloaded successfully')
+                                const isiOS = isIOS()
                                 addToast({
                                   title: 'Download Successful',
-                                  message: 'Receipt downloaded successfully.',
+                                  message: isiOS
+                                    ? 'Receipt opened in Safari. Tap the share button to save to Files.'
+                                    : 'Receipt downloaded successfully.',
                                   type: 'success',
-                                  duration: 3000
+                                  duration: isiOS ? 6000 : 3000
                                 })
                               }
                             )}
