@@ -214,16 +214,22 @@ const PropertyForm = () => {
           available_from: formData.availableFrom || null,
           available_to: formData.availableTo || null,
           amenities: {
-            wifi: formData.amenities.wifi,
-            pool: formData.amenities.pool,
-            parking: formData.amenities.parking,
-            power: formData.amenities.power,
-            water: formData.amenities.water,
-            tv: formData.amenities.tv,
-            airConditioning: formData.amenities.airConditioning,
-            furnished: formData.amenities.furnished,
-            laundry: formData.amenities.laundry,
-            securitySystem: formData.amenities.securitySystem,
+            utilities: {
+              internet: formData.amenities.wifi, // Match "internet" field as expected by extractAmenities
+              power: formData.amenities.power,
+              water: formData.amenities.water,
+            },
+            facilities: {
+              pool: formData.amenities.pool,
+              parking: formData.amenities.parking,
+              laundry: formData.amenities.laundry,
+              security_system: formData.amenities.securitySystem, // Use snake_case to match PropertyAmenities
+            },
+            room_features: {
+              air_conditioning: formData.amenities.airConditioning, // Use snake_case to match PropertyAmenities
+              tv: formData.amenities.tv,
+              furnished: formData.amenities.furnished,
+            },
           },
           status: 'published'
         })

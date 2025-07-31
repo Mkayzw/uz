@@ -86,7 +86,7 @@ export default function SavedProperties({
               </p>
               {savedProperty.property?.price && (
                 <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                  ${savedProperty.property.price}/month
+                  ${Number(savedProperty.property.price).toFixed(2)}/month
                 </p>
               )}
               
