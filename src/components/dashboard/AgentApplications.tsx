@@ -126,16 +126,16 @@ export default function AgentApplications({
               
               {application.transaction_code ? (
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 flex-1">
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction Code:</p>
-                      <p className="font-mono font-medium text-gray-800 dark:text-gray-200">{application.transaction_code}</p>
+                      <p className="font-mono font-medium text-gray-800 dark:text-gray-200 break-all">{application.transaction_code}</p>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                       {!application.payment_verified && (
                         <button
                           onClick={() => onVerifyPayment(application.id)}
-                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 whitespace-nowrap"
                         >
                           Verify Payment
                         </button>

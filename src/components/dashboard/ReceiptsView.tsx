@@ -244,9 +244,9 @@ export default function ReceiptsView() {
   }, [supabase, addToast])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Payment Receipts</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Payment Receipts</h2>
       </div>
       
       {loading ? (
@@ -254,7 +254,7 @@ export default function ReceiptsView() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       ) : applications.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {applications.map(application => (
             <ReceiptCard 
               key={application.id} 

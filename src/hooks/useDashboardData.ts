@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { Property, Application, SavedProperty, UserProfile } from '@/types/dashboard'
 import {
@@ -64,7 +64,7 @@ export function useDashboardData({ user, profile }: UseDashboardDataProps) {
     }
 
     loadData()
-  }, [user?.id, profile?.role, profile?.agent_status])
+  }, [user?.id, profile?.role, profile?.agent_status, supabase])
 
   const refreshData = async () => {
     if (!user || !profile) return
@@ -98,6 +98,13 @@ export function useDashboardData({ user, profile }: UseDashboardDataProps) {
     }
   }
 
+  // Memoize setter functions to prevent unnecessary re-renders
+  const memoizedSetProperties = useCallback(setProperties, [])
+  const memoizedSetAllProperties = useCallback(setAllProperties, [])
+  const memoizedSetApplications = useCallback(setApplications, [])
+  const memoizedSetAgentApplications = useCallback(setAgentApplications, [])
+  const memoizedSetSavedProperties = useCallback(setSavedProperties, [])
+
   return {
     properties,
     allProperties,
@@ -107,10 +114,10 @@ export function useDashboardData({ user, profile }: UseDashboardDataProps) {
     loading,
     error,
     refreshData,
-    setProperties,
-    setAllProperties,
-    setApplications,
-    setAgentApplications,
-    setSavedProperties
+    setProperties: memoizedSetProperties,
+    setAllProperties: memoizedSetAllProperties,
+    setApplications: memoizedSetApplications,
+    setAgentApplications: memoizedSetAgentApplications,
+    setSavedProperties: memoizedSetSavedProperties
   }
 }

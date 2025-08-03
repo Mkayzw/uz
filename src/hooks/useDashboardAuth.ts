@@ -83,7 +83,7 @@ export function useDashboardAuth() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase, router])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
