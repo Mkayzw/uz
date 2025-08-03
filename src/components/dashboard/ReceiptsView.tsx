@@ -35,7 +35,6 @@ export default function ReceiptsView() {
 
         if (profileError) throw profileError
         const userRole = profileData?.role
-        console.log('User profile data:', { userRole, userId: user.user.id })
 
         let query = supabase
           .from('applications')
