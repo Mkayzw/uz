@@ -554,7 +554,7 @@ export default function DashboardLayout() {
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {profile?.role === 'agent' 
                   ? 'Manage your property portfolio and client relationships'
-                  : 'Find your perfect accommodation near UZ campus'
+                  : 'Find your perfect accommodation'
                 }
               </p>
             </div>

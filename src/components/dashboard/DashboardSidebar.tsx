@@ -17,7 +17,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
-  BellIcon
+  BellIcon,
+  ReceiptPercentIcon
 } from '@heroicons/react/24/outline'
 import {
   MagnifyingGlassIcon as MagnifyingGlassIconSolid,
@@ -30,7 +31,8 @@ import {
   ChartBarIcon as ChartBarIconSolid,
   CurrencyDollarIcon as CurrencyDollarIconSolid,
   HomeIcon as HomeIconSolid,
-  BellIcon as BellIconSolid
+  BellIcon as BellIconSolid,
+  ReceiptPercentIcon as ReceiptPercentIconSolid
 } from '@heroicons/react/24/solid'
 
 interface DashboardSidebarProps {
@@ -101,6 +103,14 @@ export default function DashboardSidebar({
       icon: HeartIcon,
       iconSolid: HeartIconSolid,
       show: true
+    },
+    {
+      id: 'receipts',
+      label: 'Receipts',
+      icon: ReceiptPercentIcon,
+      iconSolid: ReceiptPercentIconSolid,
+      show: true,
+      description: 'View your payment receipts'
     },
     {
       id: 'account',

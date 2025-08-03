@@ -26,7 +26,8 @@ export interface Property {
   id: string;
   title: string;
   description?: string | null;
-  location: string | null;
+  address?: string | null; // From database schema
+  location?: string | null; // For backward compatibility
   city?: string | null;
   state?: string | null;
   zip_code?: string | null;
@@ -34,7 +35,7 @@ export interface Property {
   price?: number;
   bedrooms?: number | null;
   bathrooms?: number | null;
-  image_url: string | null;
+  image_url?: string | null;
   image_urls?: string[] | null;
   has_internet?: boolean;
   has_parking?: boolean;
@@ -48,7 +49,9 @@ export interface Property {
   has_security_system?: boolean;
   view_count: number;
   created_at: string;
+  owner_id?: string | null; // From database schema
   created_by?: string | null;
+  owner?: UserProfile; // Agent details from owner_id
   active?: boolean;
   // Room status fields
   total_rooms?: number;

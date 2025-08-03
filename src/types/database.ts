@@ -1,5 +1,5 @@
 // =====================================================
-// New Clean Database Types for UZOCA
+// New Clean Database Types
 // Generated for the rebuilt schema
 // =====================================================
 

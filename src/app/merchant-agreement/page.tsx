@@ -65,7 +65,7 @@ export default function MerchantAgreementPage() {
                 <div>
                   <strong className="text-gray-900 dark:text-white">Tenant:</strong>
                   <span className="text-gray-700 dark:text-gray-300 ml-2">
-                    A verified student from the University of Zimbabwe who uses the platform to find and book accommodation.
+                    A verified student who uses the platform to find and book accommodation.
                   </span>
                 </div>
                 <div>
@@ -92,7 +92,7 @@ export default function MerchantAgreementPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">2. PLATFORM USE</h2>
               <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                <li>Access to Unistay is restricted to registered University of Zimbabwe students and approved Agents.</li>
+                <li>Access to Unistay is restricted to registered students and approved Agents.</li>
                 <li>Agents are responsible for the accuracy of all property details submitted.</li>
                 <li>Tenants are responsible for verifying property suitability before committing to a booking.</li>
               </ul>
@@ -112,7 +112,7 @@ export default function MerchantAgreementPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">4. TENANT TERMS</h2>
               <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                <li>Only verified UZ students may use Unistay to book accommodation.</li>
+                <li>Only verified students may use Unistay to book accommodation.</li>
                 <li>Tenants are expected to contact Agents directly through provided information to finalize bookings.</li>
                 <li>All payments (including rent and agent fees) are made directly to the Agent via EcoCash or other offline methods. Unistay does not process payments on behalf of Agents.</li>
                 <li>Tenants are encouraged to verify listings in person before making payments.</li>

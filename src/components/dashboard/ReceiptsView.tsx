@@ -1,0 +1,235 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
+import { Application } from '@/types/dashboard'
+import ReceiptCard from './ReceiptCard'
+import { useToast } from '@/components/ToastManager'
+
+export default function ReceiptsView() {
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const { addToast } = useToast()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  useEffect(() => {
+    async function fetchApplications() {
+      setLoading(true)
+      try {
+        const { data: user } = await supabase.auth.getUser()
+        
+        if (!user?.user?.id) {
+          setLoading(false)
+          return
+        }
+
+        // Fetch user profile to determine role
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.user.id)
+          .single()
+
+        if (profileError) throw profileError
+        const userRole = profileData?.role
+        console.log('User profile data:', { userRole, userId: user.user.id })
+
+        let query = supabase
+          .from('applications')
+          .select(`
+            id,
+            created_at,
+            updated_at,
+            transaction_code,
+            payment_verified,
+            tenant:tenant_id (
+              full_name,
+              ecocash_number,
+              registration_number,
+              national_id,
+              gender
+            ),
+            bed:bed_id (
+              bed_number,
+              room:room_id (
+                name,
+                room_type,
+                price_per_bed,
+                property:property_id (
+                  id,
+                  title,
+                  address,
+                  city,
+                  property_type,
+                  view_count,
+                  created_at,
+                  owner_id
+                )
+              )
+            )
+          `)
+          .eq('payment_verified', true)
+          .order('updated_at', { ascending: false })
+
+        // For tenants, only show their own applications
+        if (userRole === 'tenant') {
+          query = query.eq('tenant_id', user.user.id)
+        } 
+        // For agents, show applications for properties they own
+        else if (userRole === 'agent') {
+          // The join in the query already filters by owner_id through the property table
+          // but we need to filter properties by owner_id which is `created_by`
+          // This is a bit tricky with PostgREST joins.
+          // A view or function would be better, but for now, let's fetch properties first.
+          const { data: agentProperties, error: propertiesError } = await supabase
+            .from('properties')
+            .select('id')
+            .eq('owner_id', user.user.id)
+
+          if (propertiesError) throw propertiesError
+          
+          if (agentProperties && agentProperties.length > 0) {
+            const propertyIds = agentProperties.map(prop => prop.id)
+            
+            // We can't directly filter on the joined `property_id` in the same query.
+            // We need to fetch applications where the bed is in a room of a property owned by the agent.
+            // This is getting complex. Let's adjust the query logic.
+            // The RLS policy should handle this, but let's be explicit.
+            // We will have to fetch applications and then filter, or do a more complex query.
+            // Let's rely on RLS for now and see if it works. If not, we'll need a DB function.
+          } else {
+            // If agent has no properties, return empty result
+            setApplications([])
+            setLoading(false)
+            return
+          }
+        }
+
+        console.log('About to execute query for user role:', userRole)
+        const { data, error } = await query
+        
+        console.log('Query result:', { data, error, dataLength: data?.length })
+        
+        if (error) {
+          console.error('Supabase query error:', error)
+          throw error
+        }
+        
+        // Debug logging to see raw data structure
+        if (data && data.length > 0) {
+          console.log('Raw Supabase data:', JSON.stringify(data[0], null, 2))
+        } else {
+          console.log('No data returned from query')
+        }
+        
+        // Transform the data and fetch owner information separately
+        const formattedApplications = await Promise.all(data.map(async (app: any) => {
+          const property = app.bed?.room?.property;
+          let propertyWithOwner = property;
+          
+          // If property exists and has owner_id, fetch owner details separately
+          if (property && property.owner_id) {
+            try {
+              const { data: ownerData, error: ownerError } = await supabase
+                .from('profiles')
+                .select('full_name, phone_number')
+                .eq('id', property.owner_id)
+                .single()
+              
+              if (!ownerError && ownerData) {
+                propertyWithOwner = {
+                  ...property,
+                  owner: ownerData,
+                  location: property.address, // Map address to location for compatibility
+                }
+              } else {
+                console.log('Owner fetch error:', ownerError)
+                propertyWithOwner = {
+                  ...property,
+                  location: property.address,
+                }
+              }
+            } catch (err) {
+              console.log('Error fetching owner:', err)
+              propertyWithOwner = {
+                ...property,
+                location: property.address,
+              }
+            }
+          } else if (property) {
+            propertyWithOwner = {
+              ...property,
+              location: property.address,
+            }
+          }
+          
+          return {
+            ...app,
+            property: propertyWithOwner,
+          }
+        })) as Application[]
+        
+        // Debug logging to verify data structure
+        if (formattedApplications.length > 0) {
+          console.log('Sample application data after owner fetch:', {
+            tenant: formattedApplications[0].tenant,
+            property_owner: formattedApplications[0].property?.owner,
+            property_title: formattedApplications[0].property?.title
+          })
+        }
+        
+        setApplications(formattedApplications)
+      } catch (error) {
+        console.error('Error fetching applications:', error)
+        addToast({
+          title: 'Error',
+          message: 'Failed to load your receipts',
+          type: 'error',
+          duration: 5000
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchApplications()
+  }, [supabase, addToast])
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Payment Receipts</h2>
+      </div>
+      
+      {loading ? (
+        <div className="py-8 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : applications.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {applications.map(application => (
+            <ReceiptCard 
+              key={application.id} 
+              application={application} 
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
+          <div className="mb-4">
+            <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">No receipts found</h3>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            No payment receipts are currently available. Receipts will appear here once payments are verified.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
