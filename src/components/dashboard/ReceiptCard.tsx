@@ -13,13 +13,7 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
   const [isExpanded, setIsExpanded] = useState(false)
   const receiptRef = useRef<HTMLDivElement>(null)
 
-  // Debug logging to verify data structure
-  console.log('ReceiptCard application data:', {
-    tenant_gender: application.tenant?.gender,
-    agent_name: application.property?.owner?.full_name,
-    agent_phone: application.property?.owner?.phone_number,
-    property_title: application.property?.title
-  })
+
 
   if (!application.payment_verified) {
     return null
@@ -35,16 +29,8 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
     ? format(new Date(application.created_at), 'MMMM dd, yyyy')
     : 'N/A'
     
-  // Format gender properly - from the profiles table, gender values are: 'male', 'female', 'other', 'prefer_not_to_say'
-  const formattedGender = application.tenant?.gender 
-    ? application.tenant.gender.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
-    : 'N/A'
-  
   // Generate receipt number from application ID
   const receiptNumber = `R-${application.id.substring(0, 8).toUpperCase()}`
-  
-  // Get tenant name - based on the Application interface
-  const tenantName = application.tenant?.full_name || 'N/A'
   
   // Get property details
   const propertyTitle = application.property?.title || 'N/A'
@@ -214,11 +200,10 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
           
           <div class="tenant-info">
             <h4>Tenant Information</h4>
-            <p style="font-weight: bold;">${tenantName}</p>
+            <p style="font-weight: bold;">${application.tenant?.full_name || 'N/A'}</p>
             <p>EcoCash: ${application.tenant?.ecocash_number || 'N/A'}</p>
             <p>Student ID: ${application.tenant?.registration_number || 'N/A'}</p>
             <p>National ID: ${application.tenant?.national_id || 'N/A'}</p>
-            <p>Gender: ${formattedGender}</p>
           </div>
           
           <div class="payment-info">
@@ -272,11 +257,10 @@ Transaction Code: ${application.transaction_code || 'N/A'}
 Transaction Date: ${transactionDate}
 
 Tenant Information:
-Name: ${tenantName}
+Name: ${application.tenant?.full_name || 'N/A'}
 EcoCash: ${application.tenant?.ecocash_number || 'N/A'}
 Student ID: ${application.tenant?.registration_number || 'N/A'}
 National ID: ${application.tenant?.national_id || 'N/A'}
-Gender: ${formattedGender}
 
 Agent Information:
 Name: ${agentName}
@@ -348,7 +332,7 @@ Generated via Unistay Platform
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
             <div>
               <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Tenant Information</h4>
-              <p className="text-gray-900 dark:text-white">{tenantName}</p>
+              <p className="text-gray-900 dark:text-white">{application.tenant?.full_name || 'N/A'}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 EcoCash: {application.tenant?.ecocash_number || 'N/A'}
               </p>
@@ -358,7 +342,6 @@ Generated via Unistay Platform
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 National ID: {application.tenant?.national_id || 'N/A'}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Gender: {formattedGender}</p>
             </div>
 
             <div>

@@ -50,7 +50,7 @@ export async function GET(
   // Get tenant details
   const { data: tenant, error: tenantError } = await supabase
     .from('profiles')
-    .select('full_name, registration_number, national_id, id, gender')
+    .select('full_name, registration_number, national_id, id, gender, ecocash_number')
     .eq('id', application.tenant_id)
     .single()
 
@@ -62,7 +62,7 @@ export async function GET(
   // Get agent details
   const { data: agent, error: agentError } = await supabase
     .from('profiles')
-    .select('full_name, ecocash_number')
+    .select('full_name, ecocash_number, gender')
     .eq('id', bed.room.property.owner_id)
     .single()
 
@@ -121,9 +121,10 @@ export async function GET(
       <div class="details">
         <h2>Tenant Details</h2>
         <p><strong>Name:</strong> ${tenant.full_name}</p>
-        <p><strong>Gender:</strong> ${tenant.gender ? tenant.gender.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'N/A'}</p>
+        <p><strong>EcoCash:</strong> ${tenant.ecocash_number ? tenant.ecocash_number : 'N/A'}</p>
         <p><strong>Student ID:</strong> ${tenant.registration_number}</p>
         <p><strong>National ID:</strong> ${tenant.national_id}</p>
+        <p><strong>Gender:</strong> ${tenant.gender ? tenant.gender.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'N/A'}</p>
       </div>
 
       <div class="summary">
@@ -166,6 +167,7 @@ export async function GET(
         <p><strong>Payment Date:</strong> ${new Date(created_at).toLocaleDateString()}</p>
         <p><strong>Paid to:</strong> ${agent.full_name}</p>
         <p><strong>Agent EcoCash:</strong> ${agent.ecocash_number}</p>
+        <p><strong>Agent Gender:</strong> ${agent.gender ? agent.gender.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'N/A'}</p>
       </div>
     </div>
   </body>

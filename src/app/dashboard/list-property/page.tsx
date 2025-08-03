@@ -214,24 +214,24 @@ const PropertyForm = () => {
           available_from: formData.availableFrom || null,
           available_to: formData.availableTo || null,
           amenities: {
-            utilities: {
-              internet: formData.amenities.wifi, // Match "internet" field as expected by extractAmenities
-              power: formData.amenities.power,
-              water: formData.amenities.water,
-            },
-            facilities: {
-              pool: formData.amenities.pool,
-              parking: formData.amenities.parking,
-              laundry: formData.amenities.laundry,
-              security_system: formData.amenities.securitySystem, // Use snake_case to match PropertyAmenities
-            },
-            room_features: {
-              air_conditioning: formData.amenities.airConditioning, // Use snake_case to match PropertyAmenities
-              tv: formData.amenities.tv,
-              furnished: formData.amenities.furnished,
-            },
+            utilities: { 
+              internet: formData.amenities.wifi,
+              power: formData.amenities.power, 
+              water: formData.amenities.water, 
+            }, 
+            facilities: { 
+              pool: formData.amenities.pool, 
+              parking: formData.amenities.parking, 
+              laundry: formData.amenities.laundry, 
+              security_system: formData.amenities.securitySystem,
+            }, 
+            room_features: { 
+              air_conditioning: formData.amenities.airConditioning,
+              tv: formData.amenities.tv, 
+              furnished: formData.amenities.furnished, 
+            }, 
           },
-          status: 'published'
+          status: 'published',
         })
         .select()
         .single();
