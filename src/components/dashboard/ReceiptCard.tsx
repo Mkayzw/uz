@@ -13,7 +13,13 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
   const [isExpanded, setIsExpanded] = useState(false)
   const receiptRef = useRef<HTMLDivElement>(null)
 
-
+  // Debug logging to verify data structure
+  console.log('ReceiptCard application data:', {
+    tenant_gender: application.tenant?.gender,
+    agent_name: application.property?.owner?.full_name,
+    agent_phone: application.property?.owner?.phone_number,
+    property_title: application.property?.title
+  })
 
   if (!application.payment_verified) {
     return null
@@ -269,14 +275,45 @@ Contact: ${agentPhone}
 Generated via Unistay Platform
     `
     
-    navigator.clipboard.writeText(receiptText)
-      .then(() => {
-        alert('Receipt details copied to clipboard')
-      })
-      .catch(err => {
-        console.error('Failed to copy receipt details: ', err)
-        alert('Failed to copy receipt details')
-      })
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(receiptText)
+        .then(() => {
+          alert('Receipt details copied to clipboard')
+        })
+        .catch(err => {
+          console.error('Failed to copy receipt details: ', err)
+          alert('Failed to copy receipt details. Please try again or copy manually.')
+        })
+    } else {
+      // Fallback for browsers that do not support the Clipboard API
+      try {
+        const textarea = document.createElement('textarea')
+        textarea.value = receiptText
+        // Prevent scrolling to bottom
+        textarea.style.position = 'fixed'
+        textarea.style.top = '0'
+        textarea.style.left = '0'
+        textarea.style.width = '2em'
+        textarea.style.height = '2em'
+        textarea.style.padding = '0'
+        textarea.style.border = 'none'
+        textarea.style.outline = 'none'
+        textarea.style.boxShadow = 'none'
+        textarea.style.background = 'transparent'
+        document.body.appendChild(textarea)
+        textarea.select()
+        const successful = document.execCommand('copy')
+        document.body.removeChild(textarea)
+        if (successful) {
+          alert('Receipt details copied to clipboard')
+        } else {
+          alert('Failed to copy receipt details. Please copy manually.')
+        }
+      } catch (err) {
+        console.error('Fallback: Failed to copy receipt details: ', err)
+        alert('Copy to clipboard is not supported in this browser. Please copy manually.')
+      }
+    }
   }
 
   return (

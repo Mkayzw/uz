@@ -35,7 +35,6 @@ export default function ReceiptsView() {
 
         if (profileError) throw profileError
         const userRole = profileData?.role
-        console.log('User profile data:', { userRole, userId: user.user.id })
 
         let query = supabase
           .from('applications')
@@ -80,32 +79,42 @@ export default function ReceiptsView() {
         } 
         // For agents, show applications for properties they own
         else if (userRole === 'agent') {
-          // The join in the query already filters by owner_id through the property table
-          // but we need to filter properties by owner_id which is `created_by`
-          // This is a bit tricky with PostgREST joins.
-          // A view or function would be better, but for now, let's fetch properties first.
-          const { data: agentProperties, error: propertiesError } = await supabase
-            .from('properties')
-            .select('id')
+          // Use a database view or function to fetch applications for properties owned by the agent
+          // This assumes a view or function named 'agent_applications' exists in the database
+          const { data: agentApplications, error: agentApplicationsError } = await supabase
+            .from('agent_applications')
+            .select(`
+              id,
+              created_at,
+              updated_at,
+              transaction_code,
+              payment_verified,
+              tenant_full_name,
+              tenant_ecocash_number,
+              tenant_registration_number,
+              tenant_national_id,
+              tenant_gender,
+              bed_number,
+              room_name,
+              room_type,
+              price_per_bed,
+              property_id,
+              property_title,
+              property_address,
+              property_city,
+              property_type,
+              property_view_count,
+              property_created_at,
+              property_owner_id
+            `)
             .eq('owner_id', user.user.id)
+            .eq('payment_verified', true)
+            .order('updated_at', { ascending: false })
 
-          if (propertiesError) throw propertiesError
-          
-          if (agentProperties && agentProperties.length > 0) {
-            const propertyIds = agentProperties.map(prop => prop.id)
-            
-            // We can't directly filter on the joined `property_id` in the same query.
-            // We need to fetch applications where the bed is in a room of a property owned by the agent.
-            // This is getting complex. Let's adjust the query logic.
-            // The RLS policy should handle this, but let's be explicit.
-            // We will have to fetch applications and then filter, or do a more complex query.
-            // Let's rely on RLS for now and see if it works. If not, we'll need a DB function.
-          } else {
-            // If agent has no properties, return empty result
-            setApplications([])
-            setLoading(false)
-            return
-          }
+          if (agentApplicationsError) throw agentApplicationsError
+          setApplications(agentApplications || [])
+          setLoading(false)
+          return
         }
 
         console.log('About to execute query for user role:', userRole)
@@ -125,52 +134,51 @@ export default function ReceiptsView() {
           console.log('No data returned from query')
         }
         
-        // Transform the data and fetch owner information separately
-        const formattedApplications = await Promise.all(data.map(async (app: any) => {
+        // Transform the data and fetch all owner information in a single query to avoid N+1 problem
+        // 1. Collect all unique owner_ids from the properties
+        const ownerIdsSet = new Set<string>();
+        data.forEach((app: any) => {
+          const property = app.bed?.room?.property;
+          if (property && property.owner_id) {
+            ownerIdsSet.add(property.owner_id);
+          }
+        });
+        const ownerIds = Array.from(ownerIdsSet);
+
+        // 2. Fetch all owners in a single query
+        let ownersMap: Record<string, { full_name: string; phone_number: string }> = {};
+        if (ownerIds.length > 0) {
+          const { data: ownersData, error: ownersError } = await supabase
+            .from('profiles')
+            .select('id, full_name, phone_number')
+            .in('id', ownerIds);
+          if (ownersError) {
+            console.log('Error fetching owners:', ownersError);
+          } else if (ownersData) {
+            ownersMap = ownersData.reduce((acc: typeof ownersMap, owner: any) => {
+              acc[owner.id] = { full_name: owner.full_name, phone_number: owner.phone_number };
+              return acc;
+            }, {});
+          }
+        }
+
+        // 3. Format applications, attaching owner data from the map
+        const formattedApplications = data.map((app: any) => {
           const property = app.bed?.room?.property;
           let propertyWithOwner = property;
-          
-          // If property exists and has owner_id, fetch owner details separately
-          if (property && property.owner_id) {
-            try {
-              const { data: ownerData, error: ownerError } = await supabase
-                .from('profiles')
-                .select('full_name, phone_number')
-                .eq('id', property.owner_id)
-                .single()
-              
-              if (!ownerError && ownerData) {
-                propertyWithOwner = {
-                  ...property,
-                  owner: ownerData,
-                  location: property.address, // Map address to location for compatibility
-                }
-              } else {
-                console.log('Owner fetch error:', ownerError)
-                propertyWithOwner = {
-                  ...property,
-                  location: property.address,
-                }
-              }
-            } catch (err) {
-              console.log('Error fetching owner:', err)
-              propertyWithOwner = {
-                ...property,
-                location: property.address,
-              }
-            }
-          } else if (property) {
+          if (property) {
+            const owner = property.owner_id ? ownersMap[property.owner_id] : undefined;
             propertyWithOwner = {
               ...property,
+              ...(owner ? { owner } : {}),
               location: property.address,
-            }
+            };
           }
-          
           return {
             ...app,
             property: propertyWithOwner,
-          }
-        })) as Application[]
+          };
+        }) as Application[];
         
         // Debug logging to verify data structure
         if (formattedApplications.length > 0) {
