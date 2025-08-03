@@ -13,14 +13,6 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
   const [isExpanded, setIsExpanded] = useState(false)
   const receiptRef = useRef<HTMLDivElement>(null)
 
-  // Debug logging to verify data structure
-  console.log('ReceiptCard application data:', {
-    tenant_gender: application.tenant?.gender,
-    agent_name: application.property?.owner?.full_name,
-    agent_phone: application.property?.owner?.phone_number,
-    property_title: application.property?.title
-  })
-
   if (!application.payment_verified) {
     return null
   }
@@ -46,8 +38,8 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
   // the Application interface doesn't directly include the agent profile details.
   // In a real implementation, we would need to fetch the agent profile using the property_owner_id.
   const propertyOwnerId = application.property?.created_by || (application as any).property_owner_id
-  const agentName = application.property?.owner?.full_name || 'Property Agent' // This should be fetched from the agent's profile in the parent component
-  const agentPhone = application.property?.owner?.phone_number || 'Contact platform for details' // This should be fetched from the agent's profile in the parent component
+  const agentName = application.property?.owner?.full_name || 'Agent details not available'
+  const agentPhone = application.property?.owner?.phone_number || 'Contact not available'
   
   // Get bed and room information for price
   const roomPrice = application.bed?.room?.price_per_bed || 0
@@ -206,10 +198,10 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
           
           <div class="tenant-info">
             <h4>Tenant Information</h4>
-            <p style="font-weight: bold;">${application.tenant?.full_name || 'N/A'}</p>
-            <p>EcoCash: ${application.tenant?.ecocash_number || 'N/A'}</p>
-            <p>Student ID: ${application.tenant?.registration_number || 'N/A'}</p>
-            <p>National ID: ${application.tenant?.national_id || 'N/A'}</p>
+            <p style="font-weight: bold;">${application.tenant?.full_name || 'Tenant information not available'}</p>
+            <p>EcoCash: ${application.tenant?.ecocash_number || 'Not provided'}</p>
+            <p>Student ID: ${application.tenant?.registration_number || 'Not provided'}</p>
+            <p>National ID: ${application.tenant?.national_id || 'Not provided'}</p>
           </div>
           
           <div class="payment-info">
@@ -263,10 +255,10 @@ Transaction Code: ${application.transaction_code || 'N/A'}
 Transaction Date: ${transactionDate}
 
 Tenant Information:
-Name: ${application.tenant?.full_name || 'N/A'}
-EcoCash: ${application.tenant?.ecocash_number || 'N/A'}
-Student ID: ${application.tenant?.registration_number || 'N/A'}
-National ID: ${application.tenant?.national_id || 'N/A'}
+Name: ${application.tenant?.full_name || 'Tenant information not available'}
+EcoCash: ${application.tenant?.ecocash_number || 'Not provided'}
+Student ID: ${application.tenant?.registration_number || 'Not provided'}
+National ID: ${application.tenant?.national_id || 'Not provided'}
 
 Agent Information:
 Name: ${agentName}
@@ -369,15 +361,15 @@ Generated via Unistay Platform
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
             <div>
               <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Tenant Information</h4>
-              <p className="text-gray-900 dark:text-white">{application.tenant?.full_name || 'N/A'}</p>
+              <p className="text-gray-900 dark:text-white">{application.tenant?.full_name || 'Tenant information not available'}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                EcoCash: {application.tenant?.ecocash_number || 'N/A'}
+                EcoCash: {application.tenant?.ecocash_number || 'Not provided'}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Student ID: {application.tenant?.registration_number || 'N/A'}
+                Student ID: {application.tenant?.registration_number || 'Not provided'}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                National ID: {application.tenant?.national_id || 'N/A'}
+                National ID: {application.tenant?.national_id || 'Not provided'}
               </p>
             </div>
 
