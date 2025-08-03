@@ -110,8 +110,16 @@ export const getAgentProperties = async (supabase: SupabaseClient, userId: strin
       created_at: prop.created_at,
       active: prop.status === 'published',
       total_rooms: totalRooms,
-      full_rooms: totalRooms - Math.ceil(availableBeds / 4), // Estimate full rooms
-      available_rooms: Math.ceil(availableBeds / 4), // Estimate available rooms
+      full_rooms: prop.rooms?.filter((room: any) => {
+        const roomBeds = room.beds?.length || 0
+        const roomOccupiedBeds = room.beds?.filter((bed: any) => bed.is_occupied).length || 0
+        return roomBeds > 0 && roomOccupiedBeds >= roomBeds
+      }).length || 0,
+      available_rooms: prop.rooms?.filter((room: any) => {
+        const roomBeds = room.beds?.length || 0
+        const roomOccupiedBeds = room.beds?.filter((bed: any) => bed.is_occupied).length || 0
+        return roomBeds > 0 && roomOccupiedBeds < roomBeds
+      }).length || 0,
       total_beds: totalBeds,
       available_beds: availableBeds,
       occupancy_rate: occupancyRate
@@ -176,8 +184,16 @@ export const getAllActiveProperties = async (supabase: SupabaseClient) => {
       created_by: prop.owner_id, // Map owner_id to created_by for backward compatibility
       active: prop.status === 'published',
       total_rooms: totalRooms,
-      full_rooms: totalRooms - Math.ceil(availableBeds / 4), // Estimate full rooms
-      available_rooms: Math.ceil(availableBeds / 4), // Estimate available rooms
+      full_rooms: prop.rooms?.filter((room: any) => {
+        const roomBeds = room.beds?.length || 0
+        const roomOccupiedBeds = room.beds?.filter((bed: any) => bed.is_occupied).length || 0
+        return roomBeds > 0 && roomOccupiedBeds >= roomBeds
+      }).length || 0,
+      available_rooms: prop.rooms?.filter((room: any) => {
+        const roomBeds = room.beds?.length || 0
+        const roomOccupiedBeds = room.beds?.filter((bed: any) => bed.is_occupied).length || 0
+        return roomBeds > 0 && roomOccupiedBeds < roomBeds
+      }).length || 0,
       total_beds: totalBeds,
       available_beds: availableBeds,
       occupancy_rate: occupancyRate
@@ -534,7 +550,7 @@ export const getAgentApplications = async (supabase: SupabaseClient, userId: str
     created_at: app.created_at,
     updated_at: app.updated_at,
     property: {
-      id: app.bed_id,
+      id: app.property_id,
       title: app.property_title,
       address: app.address,
       city: app.city

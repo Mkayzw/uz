@@ -72,7 +72,7 @@ export default function ManagePropertiesPage() {
     };
 
     fetchProperties();
-  }, [router]);
+  }, [supabase, router]);
 
   return (
     <AuthGuard allowedRoles={['agent']}>

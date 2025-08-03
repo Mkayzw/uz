@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import AuthGuard from '@/components/AuthGuard';
 import BackButton from '@/components/BackButton';
 import { RoomRow, BedRow } from '@/types/database';
@@ -24,7 +23,6 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
   const [newRoomCapacity, setNewRoomCapacity] = useState(1);
 
   const [newBedNumber, setNewBedNumber] = useState(1);
-  const [selectedRoomForBed, setSelectedRoomForBed] = useState<string>('');
   const [propertyStats, setPropertyStats] = useState<any>(null);
 
   // Resolve params Promise
@@ -152,7 +150,7 @@ export default function ManageRoomsPage({ params }: { params: Promise<{ id: stri
     };
 
     fetchRoomsAndBeds();
-  }, [id, router]);
+  }, [id, supabase, router]);
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();

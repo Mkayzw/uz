@@ -1,8 +1,5 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
-import PropertyImage from '@/components/PropertyImage'
 import DashboardWrapper from '@/components/DashboardWrapper'
 
 interface UserProfile {
