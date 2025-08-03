@@ -131,30 +131,7 @@ function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarousel
         </>
       )}
 
-      {/* Mobile-first image indicators - larger touch targets */}
-      {allImages.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
-          {allImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.stopPropagation()
-                setCurrentImageIndex(index)
-              }}
-              onTouchEnd={(e) => {
-                e.stopPropagation()
-                setCurrentImageIndex(index)
-              }}
-              className={`w-3 h-3 sm:w-2 sm:h-2 rounded-full transition-all touch-manipulation ${
-                index === currentImageIndex
-                  ? 'bg-white shadow-lg'
-                  : 'bg-white bg-opacity-60'
-              }`}
-              style={{ WebkitTouchCallout: 'none', minWidth: '12px', minHeight: '12px' }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Removed the image indicator dots */}
 
       {/* Image counter - positioned for mobile readability */}
       {allImages.length > 1 && (

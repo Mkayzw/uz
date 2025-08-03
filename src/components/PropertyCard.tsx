@@ -6,14 +6,15 @@ import { getImageUrl } from '@/lib/utils/imageHelpers'
 import {
   WifiIcon,
   TruckIcon,
-  SunIcon,
   HomeIcon,
   CircleStackIcon,
   BoltIcon,
   BeakerIcon,
   TvIcon,
   ArrowPathIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  // Better icon for air conditioning
+  CloudIcon 
 } from '@heroicons/react/24/outline'
 
 interface Property {
@@ -54,6 +55,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
     index: 0,
   })
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentExpandedDescription, setCurrentExpandedDescription] = useState(false)
 
   // Touch handling for swipe
   const touchStartX = useRef<number>(0)
@@ -118,7 +120,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
   const amenities = [
     { key: 'has_internet', label: 'WiFi', icon: <WifiIcon className="w-4 h-4" /> },
     { key: 'has_parking', label: 'Parking', icon: <TruckIcon className="w-4 h-4" /> },
-    { key: 'has_air_conditioning', label: 'AC', icon: <SunIcon className="w-4 h-4" /> },
+    { key: 'has_air_conditioning', label: 'AC', icon: <CloudIcon className="w-4 h-4" /> },
     { key: 'is_furnished', label: 'Furnished', icon: <HomeIcon className="w-4 h-4" /> },
     { key: 'has_pool', label: 'Pool', icon: <CircleStackIcon className="w-4 h-4" /> },
     { key: 'has_power', label: 'Power', icon: <BoltIcon className="w-4 h-4" /> },
@@ -217,47 +219,86 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
           )}
           
           {property.description && (
-            <p className="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-              {property.description}
-            </p>
+            <div className="mb-4">
+              {currentExpandedDescription ? (
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm">
+                    {property.description}
+                  </p>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentExpandedDescription(false);
+                    }}
+                    className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none"
+                  >
+                    Read less
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-2">
+                    {property.description}
+                  </p>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentExpandedDescription(true);
+                    }}
+                    className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none"
+                  >
+                    Read more
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           
           {property.price && (
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-              ${property.price}/month
+              ${Number(property.price).toFixed(2)}/month
             </p>
           )}
           
           <div className="flex flex-wrap gap-2 mb-4">
-            {property.bedrooms && (
+            {/* Bedrooms */}
+            {property.bedrooms ? (
               <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
-                {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
+                {Math.floor(Number(property.bedrooms))} bed{Number(property.bedrooms) > 1 ? 's' : ''}
               </span>
-            )}
-            {property.bathrooms && (
+            ) : null}
+            
+            {/* Bathrooms */}
+            {property.bathrooms ? (
               <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
-                {property.bathrooms} bath{property.bathrooms > 1 ? 's' : ''}
+                {Math.floor(Number(property.bathrooms))} bath{Number(property.bathrooms) > 1 ? 's' : ''}
               </span>
-            )}
+            ) : null}
           </div>
           
-          {availableAmenities.length > 0 && (
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-2">
-                {availableAmenities.slice(0, 4).map(amenity => (
-                  <span key={amenity.key} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                    {amenity.icon}
-                    {amenity.label}
-                  </span>
-                ))}
-                {availableAmenities.length > 4 && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    +{availableAmenities.length - 4} more
-                  </span>
-                )}
-              </div>
+          {/* Amenities Section */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Amenities:</h4>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(property).some(key => key.startsWith('has_') || key === 'is_furnished') ? (
+                amenities.map(amenity => {
+                  const isAvailable = property[amenity.key as keyof Property] === true;
+                  // Only show amenities that are available
+                  return isAvailable ? (
+                    <span 
+                      key={amenity.key} 
+                      className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                    >
+                      {amenity.icon}
+                      {amenity.label}
+                    </span>
+                  ) : null;
+                })
+              ) : (
+                <span className="text-sm text-gray-500 dark:text-gray-400">Amenities information not available</span>
+              )}
             </div>
-          )}
+          </div>
           
           <div className="flex gap-2">
             <button

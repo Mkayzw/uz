@@ -54,7 +54,7 @@ export default function Home() {
 
               <div className="hidden sm:mt-32 sm:flex lg:mt-16">
                 <div className="relative rounded-full px-3 py-1 text-sm/6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20 dark:text-gray-400 dark:ring-gray-700">
-                  Trusted by 500+ UZ students and growing.{' '}
+                  Trusted by 500+ students and growing.{' '}
                   <a href="#properties" className="font-semibold whitespace-nowrap text-blue-600 dark:text-blue-400">
                     <span aria-hidden="true" className="absolute inset-0" />
                     Browse properties <span aria-hidden="true">&rarr;</span>
@@ -63,11 +63,11 @@ export default function Home() {
               </div>
 
               <h1 className="mt-24 text-5xl font-semibold tracking-tight text-pretty text-gray-900 dark:text-white sm:mt-10 sm:text-7xl">
-                Find Your <span className="text-blue-600 dark:text-blue-400">UZ</span> Home, Faster.
+                Find Your Perfect Home, Faster.
               </h1>
 
               <p className="mt-8 text-lg font-medium text-pretty text-gray-500 dark:text-gray-400 sm:text-xl/8">
-                The #1 platform for University of Zimbabwe students to discover safe, affordable, and convenient off-campus housing.
+                The #1 platform for students to discover safe, affordable, and convenient off-campus housing.
               </p>
 
               <div className="mt-10 flex items-center gap-x-6">
@@ -86,7 +86,7 @@ export default function Home() {
 
           <div className="relative lg:col-span-5 lg:-mr-8 xl:absolute xl:inset-0 xl:left-1/2 xl:mr-0">
             <img
-              alt="University of Zimbabwe student housing"
+              alt="Student off-campus housing"
               src="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80"
               className="aspect-3/2 w-full bg-gray-50 object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
             />
@@ -99,10 +99,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-white sm:text-4xl">A Platform for Everyone</h2>
-            <p className="mt-6 text-lg text-gray-600 dark:text-gray-400">Whether you&apos;re a student or agent, UniStay is built for you.</p>
+            <p className="mt-6 text-lg text-gray-600 dark:text-gray-400 leading-relaxed">Whether you&apos;re a student or agent, UniStay is built for you.</p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Card 1: For UZ Students */}
+            {/* Card 1: For Students */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 ring-1 ring-gray-900/5 dark:ring-gray-700">
               <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-6">
                 <AcademicCapIcon className="w-6 h-6 text-white" />
@@ -120,7 +120,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">For Agents</h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                Connect with responsible UZ students, manage property listings efficiently, and fill vacancies faster than ever.
+                Connect with responsible students, manage property listings efficiently, and fill vacancies faster than ever.
               </p>
             </div>
           </div>
@@ -162,7 +162,7 @@ export default function Home() {
             </div>
 
             <p className="text-gray-400 mb-2">&copy; {new Date().getFullYear()} UniStay. All rights reserved.</p>
-            <p className="text-gray-400">Built for the UZ community.</p>
+            <p className="text-gray-400">Built for the student community.</p>
           </div>
         </div>
       </footer>

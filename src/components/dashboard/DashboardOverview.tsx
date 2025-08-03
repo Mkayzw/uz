@@ -375,7 +375,7 @@ export default function DashboardOverview({
                           </div>
                           <div className="flex items-center">
                             <CurrencyDollarIcon className="w-4 h-4 mr-1" />
-                            ${property.price}/month
+                            ${Number(property.price).toFixed(2)}/month
                           </div>
                         </div>
                       </div>

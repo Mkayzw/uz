@@ -1,6 +1,8 @@
 import { Application } from '@/types/dashboard'
 import { downloadReceipt, isIOS } from '@/lib/utils/downloadHelpers'
 import { useToast } from '@/components/ToastManager'
+import ReceiptCard from './ReceiptCard'
+import { useState } from 'react'
 
 interface AgentApplicationsProps {
   applications: Application[]
@@ -123,55 +125,30 @@ export default function AgentApplications({
               </div>
               
               {application.transaction_code ? (
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 flex-1">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction Code:</p>
-                    <p className="font-mono font-medium text-gray-800 dark:text-gray-200">{application.transaction_code}</p>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 flex-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transaction Code:</p>
+                      <p className="font-mono font-medium text-gray-800 dark:text-gray-200">{application.transaction_code}</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {!application.payment_verified && (
+                        <button
+                          onClick={() => onVerifyPayment(application.id)}
+                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                        >
+                          Verify Payment
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    {!application.payment_verified && (
-                      <button
-                        onClick={() => onVerifyPayment(application.id)}
-                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                      >
-                        Verify Payment
-                      </button>
-                    )}
-                    {application.payment_verified && (
-                      <button
-                        onClick={() => downloadReceipt(
-                          application.id,
-                          (error) => {
-                            console.error('Download failed:', error)
-                            addToast({
-                              title: 'Download Failed',
-                              message: 'Failed to download receipt. Please try again.',
-                              type: 'error',
-                              duration: 5000
-                            })
-                          },
-                          () => {
-                            console.log('Receipt downloaded successfully')
-                            const isiOS = isIOS()
-                            addToast({
-                              title: 'Download Successful',
-                              message: isiOS
-                                ? 'Receipt opened in Safari. Tap the share button to save to Files.'
-                                : 'Receipt downloaded successfully.',
-                              type: 'success',
-                              duration: isiOS ? 6000 : 3000
-                            })
-                          }
-                        )}
-                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Download Receipt
-                      </button>
-                    )}
-                  </div>
+
+                  {/* Show Receipt Card for verified payments */}
+                  {application.payment_verified && (
+                    <div className="mt-2">
+                      <ReceiptCard application={application} className="border-blue-100 dark:border-blue-900/30" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-amber-600 dark:text-amber-400">

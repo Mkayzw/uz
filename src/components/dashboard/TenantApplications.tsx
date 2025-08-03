@@ -1,6 +1,7 @@
 import { Application } from '@/types/dashboard'
 import { downloadReceipt, isIOS } from '@/lib/utils/downloadHelpers'
 import { useToast } from '@/components/ToastManager'
+import ReceiptCard from './ReceiptCard'
 
 interface TenantApplicationsProps {
   applications: Application[]
@@ -57,40 +58,14 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                         <span className="font-medium">Transaction Code:</span> {application.transaction_code}
                       </p>
                       {application.payment_verified ? (
-                        <div className="flex items-center mt-2 text-blue-600 dark:text-blue-400">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-xs font-medium">Payment verified</span>
-                          <button
-                            onClick={() => downloadReceipt(
-                              application.id,
-                              (error: string) => {
-                                console.error('Download failed:', error)
-                                addToast({
-                                  title: 'Download Failed',
-                                  message: 'Failed to download receipt. Please try again.',
-                                  type: 'error',
-                                  duration: 5000
-                                })
-                              },
-                              () => {
-                                console.log('Receipt downloaded successfully')
-                                const isiOS = isIOS()
-                                addToast({
-                                  title: 'Download Successful',
-                                  message: isiOS
-                                    ? 'Receipt opened in Safari. Tap the share button to save to Files.'
-                                    : 'Receipt downloaded successfully.',
-                                  type: 'success',
-                                  duration: isiOS ? 6000 : 3000
-                                })
-                              }
-                            )}
-                            className="ml-4 px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                          >
-                            Download Receipt
-                          </button>
+                        <div className="mt-2">
+                          <div className="flex items-center text-blue-600 dark:text-blue-400 mb-3">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-xs font-medium">Payment verified</span>
+                          </div>
+                          <ReceiptCard application={application} className="border-blue-100 dark:border-blue-900/30" />
                         </div>
                       ) : (
                         <div className="flex items-center mt-2">

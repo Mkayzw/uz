@@ -356,7 +356,7 @@ export default function PropertiesBrowser({
 
                 {property.price && (
                   <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                    ${property.price}/month
+                    ${Number(property.price).toFixed(2)}/month
                   </p>
                 )}
 
@@ -426,7 +426,7 @@ export default function PropertiesBrowser({
                     <div className="flex items-center gap-2">
                       {property.price && (
                         <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                          ${property.price}/month
+                          ${Number(property.price).toFixed(2)}/month
                         </span>
                       )}
                       <button
