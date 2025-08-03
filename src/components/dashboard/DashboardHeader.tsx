@@ -1,3 +1,6 @@
+import Link from 'next/link'
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
+
 interface DashboardHeaderProps {
   onSignOut: () => void
 }
@@ -22,6 +25,13 @@ export default function DashboardHeader({ onSignOut }: DashboardHeaderProps) {
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
+            <Link
+              href="/support"
+              className="inline-flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+            >
+              <QuestionMarkCircleIcon className="w-4 h-4 mr-2" />
+              Support
+            </Link>
             <button
               onClick={onSignOut}
               className="inline-flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"

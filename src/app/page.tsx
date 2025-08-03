@@ -25,6 +25,12 @@ export default function Home() {
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
+              <Link
+                href="/support"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors duration-200"
+              >
+                Support
+              </Link>
             </nav>
 
             {/* Auth Buttons */}
@@ -147,6 +153,12 @@ export default function Home() {
 
             {/* Footer Links */}
             <div className="flex justify-center space-x-6 mb-6">
+              <Link
+                href="/support"
+                className="text-gray-400 hover:text-white transition-colors duration-200"
+              >
+                Support
+              </Link>
               <Link
                 href="/merchant-agreement"
                 className="text-gray-400 hover:text-white transition-colors duration-200"
