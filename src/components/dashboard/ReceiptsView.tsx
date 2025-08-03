@@ -112,7 +112,44 @@ export default function ReceiptsView() {
             .order('updated_at', { ascending: false })
 
           if (agentApplicationsError) throw agentApplicationsError
-          setApplications(agentApplications || [])
+
+          const formattedApplications = (agentApplications || []).map(app => ({
+            id: app.id,
+            created_at: app.created_at,
+            updated_at: app.updated_at,
+            transaction_code: app.transaction_code,
+            payment_verified: app.payment_verified,
+            bed_id: '', // Not available from this view, but required by type
+            tenant_id: '', // Not available from this view, but required by type
+            status: 'approved', // Assuming payment_verified means approved for receipts
+            tenant: {
+              full_name: app.tenant_full_name,
+              ecocash_number: app.tenant_ecocash_number,
+              registration_number: app.tenant_registration_number,
+              national_id: app.tenant_national_id,
+              gender: app.tenant_gender,
+            },
+            bed: {
+              bed_number: app.bed_number,
+              room: {
+                name: app.room_name,
+                room_type: app.room_type,
+                price_per_bed: app.price_per_bed,
+                property: {
+                  id: app.property_id,
+                  title: app.property_title,
+                  address: app.property_address,
+                  city: app.property_city,
+                  property_type: app.property_type,
+                  view_count: app.property_view_count,
+                  created_at: app.property_created_at,
+                  owner_id: app.property_owner_id,
+                },
+              },
+            },
+          })) as Application[];
+
+          setApplications(formattedApplications)
           setLoading(false)
           return
         }
