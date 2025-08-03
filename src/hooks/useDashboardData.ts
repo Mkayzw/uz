@@ -64,7 +64,7 @@ export function useDashboardData({ user, profile }: UseDashboardDataProps) {
     }
 
     loadData()
-  }, [user?.id, profile?.role, profile?.agent_status])
+  }, [user?.id, profile?.role, profile?.agent_status, supabase, user, profile])
 
   const refreshData = async () => {
     if (!user || !profile) return

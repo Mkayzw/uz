@@ -184,7 +184,7 @@ const PropertyForm = () => {
           .from('property-images')
           .getPublicUrl(data.path);
           
-        photoUrls.push(data.path); // Store the path, not the full URL
+        photoUrls.push(publicUrl); // Store the full URL for immediate use
       }
 
       // Prepare full address
