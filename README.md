@@ -78,7 +78,7 @@ A modern Next.js application for students to find off-campus accommodation, buil
 The application uses a comprehensive schema with these main tables:
 
 - **profiles** - User profile data with roles (tenant, agent)
-- **pads** - Property listings with full details and amenities
+- **properties** - Property listings with full details and amenities
 - **rooms** - Individual rooms within properties
 - **beds** - Individual beds within rooms for granular booking
 - **applications** - Booking applications with full workflow

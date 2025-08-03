@@ -318,28 +318,29 @@ export type Database = {
       application_details: {
         Row: {
           id: string
+          bed_id: string
+          tenant_id: string
           status: 'pending' | 'approved' | 'rejected' | 'cancelled'
           message: string | null
           transaction_code: string | null
           payment_verified: boolean
           created_at: string
           updated_at: string
-          tenant_id: string
           tenant_name: string | null
+          tenant_ecocash: string | null
           registration_number: string | null
           national_id: string | null
-          tenant_ecocash: string | null
-          bed_id: string
           bed_number: number
           room_id: string
           room_name: string
-          room_type: 'single' | 'double' | 'triple' | 'quad'
           price_per_bed: number
           property_id: string
           property_title: string
           address: string
-          city: string
           property_owner_id: string
+          agent_name: string | null
+          agent_contact: string | null
+          agent_ecocash: string | null
         }
       }
     }
