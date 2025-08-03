@@ -135,52 +135,51 @@ export default function ReceiptsView() {
           console.log('No data returned from query')
         }
         
-        // Transform the data and fetch owner information separately
-        const formattedApplications = await Promise.all(data.map(async (app: any) => {
+        // Transform the data and fetch all owner information in a single query to avoid N+1 problem
+        // 1. Collect all unique owner_ids from the properties
+        const ownerIdsSet = new Set<string>();
+        data.forEach((app: any) => {
+          const property = app.bed?.room?.property;
+          if (property && property.owner_id) {
+            ownerIdsSet.add(property.owner_id);
+          }
+        });
+        const ownerIds = Array.from(ownerIdsSet);
+
+        // 2. Fetch all owners in a single query
+        let ownersMap: Record<string, { full_name: string; phone_number: string }> = {};
+        if (ownerIds.length > 0) {
+          const { data: ownersData, error: ownersError } = await supabase
+            .from('profiles')
+            .select('id, full_name, phone_number')
+            .in('id', ownerIds);
+          if (ownersError) {
+            console.log('Error fetching owners:', ownersError);
+          } else if (ownersData) {
+            ownersMap = ownersData.reduce((acc: typeof ownersMap, owner: any) => {
+              acc[owner.id] = { full_name: owner.full_name, phone_number: owner.phone_number };
+              return acc;
+            }, {});
+          }
+        }
+
+        // 3. Format applications, attaching owner data from the map
+        const formattedApplications = data.map((app: any) => {
           const property = app.bed?.room?.property;
           let propertyWithOwner = property;
-          
-          // If property exists and has owner_id, fetch owner details separately
-          if (property && property.owner_id) {
-            try {
-              const { data: ownerData, error: ownerError } = await supabase
-                .from('profiles')
-                .select('full_name, phone_number')
-                .eq('id', property.owner_id)
-                .single()
-              
-              if (!ownerError && ownerData) {
-                propertyWithOwner = {
-                  ...property,
-                  owner: ownerData,
-                  location: property.address, // Map address to location for compatibility
-                }
-              } else {
-                console.log('Owner fetch error:', ownerError)
-                propertyWithOwner = {
-                  ...property,
-                  location: property.address,
-                }
-              }
-            } catch (err) {
-              console.log('Error fetching owner:', err)
-              propertyWithOwner = {
-                ...property,
-                location: property.address,
-              }
-            }
-          } else if (property) {
+          if (property) {
+            const owner = property.owner_id ? ownersMap[property.owner_id] : undefined;
             propertyWithOwner = {
               ...property,
+              ...(owner ? { owner } : {}),
               location: property.address,
-            }
+            };
           }
-          
           return {
             ...app,
             property: propertyWithOwner,
-          }
-        })) as Application[]
+          };
+        }) as Application[];
         
         // Debug logging to verify data structure
         if (formattedApplications.length > 0) {
