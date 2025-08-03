@@ -275,11 +275,38 @@ export const getTenantApplications = async (supabase: SupabaseClient, userId: st
       payment_verified: app.payment_verified,
       created_at: app.created_at,
       updated_at: app.updated_at,
-      property: {
+      tenant: {
+        id: app.tenant_id,
+        full_name: app.tenant_name,
+        ecocash_number: app.tenant_ecocash,
+        registration_number: app.registration_number,
+        national_id: app.national_id,
+      },
+      bed: {
         id: app.bed_id,
+        bed_number: app.bed_number,
+        room: {
+          id: app.room_id,
+          name: app.room_name,
+          price_per_bed: app.price_per_bed,
+          property: {
+            id: app.property_id,
+            title: app.property_title,
+            address: app.address,
+            owner: {
+              id: app.property_owner_id,
+              full_name: app.agent_name,
+              ecocash_number: app.agent_ecocash,
+            }
+          }
+        }
+      },
+      property: {
+        id: app.property_id,
         title: app.property_title,
         description: null, // Not available in view
         location: app.address,
+        address: app.address,
         image_url: null, // Not available in view
         image_urls: [],
         price: app.price_per_bed,
@@ -289,6 +316,12 @@ export const getTenantApplications = async (supabase: SupabaseClient, userId: st
         view_count: 0,
         created_at: app.created_at,
         active: true,
+        owner: {
+          id: app.property_owner_id,
+          full_name: app.agent_name,
+          ecocash_number: app.agent_ecocash,
+          phone_number: app.agent_contact,
+        },
         // Default amenities since not available in view
         has_internet: false,
         has_parking: false,

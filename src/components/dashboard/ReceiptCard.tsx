@@ -199,7 +199,7 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
           <div class="tenant-info">
             <h4>Tenant Information</h4>
             <p style="font-weight: bold;">${application.tenant?.full_name || 'Tenant information not available'}</p>
-            <p>EcoCash: {application.property?.owner?.ecocash_number || 'Not provided'}</p>
+            <p>EcoCash: ${application.tenant?.ecocash_number || 'Not provided'}</p>
             <p>Student ID: ${application.tenant?.registration_number || 'Not provided'}</p>
             <p>National ID: ${application.tenant?.national_id || 'Not provided'}</p>
           </div>
@@ -215,6 +215,7 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
             <h4>Agent Information</h4>
             <p>Agent: ${agentName}</p>
             <p>Contact: ${agentPhone}</p>
+            <p>EcoCash: ${application.property?.owner?.ecocash_number || 'Not provided'}</p>
           </div>
           
           <div class="footer">
@@ -256,13 +257,14 @@ Transaction Date: ${transactionDate}
 
 Tenant Information:
 Name: ${application.tenant?.full_name || 'Tenant information not available'}
-EcoCash: ${application.property?.owner?.ecocash_number || 'Not provided'}
+EcoCash: ${application.tenant?.ecocash_number || 'Not provided'}
 Student ID: ${application.tenant?.registration_number || 'Not provided'}
 National ID: ${application.tenant?.national_id || 'Not provided'}
 
 Agent Information:
 Name: ${agentName}
 Contact: ${agentPhone}
+EcoCash: ${application.property?.owner?.ecocash_number || 'Not provided'}
 
 Generated via Unistay Platform
     `
@@ -363,7 +365,7 @@ Generated via Unistay Platform
               <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Tenant Information</h4>
               <p className="text-gray-900 dark:text-white">{application.tenant?.full_name || 'Tenant information not available'}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                EcoCash: {application.property?.owner?.ecocash_number || 'Not provided'}
+                EcoCash: {application.tenant?.ecocash_number || 'Not provided'}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Student ID: {application.tenant?.registration_number || 'Not provided'}
@@ -403,6 +405,7 @@ Generated via Unistay Platform
               <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Agent Information</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">Agent: {agentName}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Contact: {agentPhone}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">EcoCash: {application.property?.owner?.ecocash_number || 'Not provided'}</p>
             </div>
 
             <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
