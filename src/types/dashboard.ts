@@ -134,7 +134,7 @@ export interface ApplicationModal {
   pricePerBed?: number | null;
 }
 
-export type DashboardTab = 'overview' | 'browse' | 'properties' | 'applications' | 'saved' | 'account' | 'commission';
+export type DashboardTab = 'overview' | 'browse' | 'properties' | 'applications' | 'saved' | 'account' | 'commission' | 'receipts';
 
 export interface RoleInfo {
   icon: React.ReactNode;
