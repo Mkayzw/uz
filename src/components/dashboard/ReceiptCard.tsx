@@ -13,14 +13,6 @@ export default function ReceiptCard({ application, className = '' }: ReceiptCard
   const [isExpanded, setIsExpanded] = useState(false)
   const receiptRef = useRef<HTMLDivElement>(null)
 
-  // Debug logging to verify data structure
-  console.log('ReceiptCard application data:', {
-    tenant_gender: application.tenant?.gender,
-    agent_name: application.property?.owner?.full_name,
-    agent_phone: application.property?.owner?.phone_number,
-    property_title: application.property?.title
-  })
-
   if (!application.payment_verified) {
     return null
   }
