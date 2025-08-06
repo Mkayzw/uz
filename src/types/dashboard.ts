@@ -89,6 +89,7 @@ export interface Application {
       name?: string | null
       room_type?: 'single' | 'double' | 'triple' | 'quad'
       price_per_bed?: number
+      property?: Property
     } | null
   } | null
 }
