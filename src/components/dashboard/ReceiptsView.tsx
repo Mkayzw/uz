@@ -26,15 +26,16 @@ export default function ReceiptsView() {
           return
         }
 
-        // Fetch user profile to determine role
+        // Fetch user profile to determine role and get agent details
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, full_name, phone_number, ecocash_number')
           .eq('id', user.user.id)
           .single()
 
         if (profileError) throw profileError
         const userRole = profileData?.role
+        const agentProfile = profileData
 
         let query = supabase
           .from('applications')
@@ -113,41 +114,52 @@ export default function ReceiptsView() {
 
           if (agentApplicationsError) throw agentApplicationsError
 
-          const formattedApplications = (agentApplications || []).map(app => ({
-            id: app.id,
-            created_at: app.created_at,
-            updated_at: app.updated_at,
-            transaction_code: app.transaction_code,
-            payment_verified: app.payment_verified,
-            bed_id: '', // Not available from this view, but required by type
-            tenant_id: '', // Not available from this view, but required by type
-            status: 'approved', // Assuming payment_verified means approved for receipts
-            tenant: {
-              full_name: app.tenant_full_name,
-              ecocash_number: app.tenant_ecocash_number,
-              registration_number: app.tenant_registration_number,
-              national_id: app.tenant_national_id,
-              gender: app.tenant_gender,
-            },
-            bed: {
-              bed_number: app.bed_number,
-              room: {
-                name: app.room_name,
-                room_type: app.room_type,
-                price_per_bed: app.price_per_bed,
-                property: {
-                  id: app.property_id,
-                  title: app.property_title,
-                  address: app.property_address,
-                  city: app.property_city,
-                  property_type: app.property_type,
-                  view_count: app.property_view_count,
-                  created_at: app.property_created_at,
-                  owner_id: app.property_owner_id,
+          const formattedApplications = (agentApplications || []).map(app => {
+            const property = {
+              id: app.property_id,
+              title: app.property_title,
+              address: app.property_address,
+              city: app.property_city,
+              property_type: app.property_type,
+              view_count: app.property_view_count,
+              created_at: app.property_created_at,
+              owner_id: app.property_owner_id,
+              owner: {
+                full_name: agentProfile.full_name,
+                phone_number: agentProfile.phone_number,
+                ecocash_number: agentProfile.ecocash_number,
+              },
+              location: app.property_address,
+            };
+
+            return {
+              id: app.id,
+              created_at: app.created_at,
+              updated_at: app.updated_at,
+              transaction_code: app.transaction_code,
+              payment_verified: app.payment_verified,
+              bed_id: '', // Not available from this view, but required by type
+              tenant_id: '', // Not available from this view, but required by type
+              status: 'approved', // Assuming payment_verified means approved for receipts
+              tenant: {
+                full_name: app.tenant_full_name,
+                ecocash_number: app.tenant_ecocash_number,
+                registration_number: app.tenant_registration_number,
+                national_id: app.tenant_national_id,
+                gender: app.tenant_gender,
+              },
+              bed: {
+                bed_number: app.bed_number,
+                room: {
+                  name: app.room_name,
+                  room_type: app.room_type,
+                  price_per_bed: app.price_per_bed,
+                  property,
                 },
               },
-            },
-          })) as Application[];
+              property,
+            }
+          }) as Application[];
 
           setApplications(formattedApplications)
           setLoading(false)
@@ -183,17 +195,17 @@ export default function ReceiptsView() {
         const ownerIds = Array.from(ownerIdsSet);
 
         // 2. Fetch all owners in a single query
-        let ownersMap: Record<string, { full_name: string; phone_number: string }> = {};
+        let ownersMap: Record<string, { full_name: string; phone_number: string; ecocash_number: string | null }> = {};
         if (ownerIds.length > 0) {
           const { data: ownersData, error: ownersError } = await supabase
             .from('profiles')
-            .select('id, full_name, phone_number')
+            .select('id, full_name, phone_number, ecocash_number')
             .in('id', ownerIds);
           if (ownersError) {
             console.log('Error fetching owners:', ownersError);
           } else if (ownersData) {
             ownersMap = ownersData.reduce((acc: typeof ownersMap, owner: any) => {
-              acc[owner.id] = { full_name: owner.full_name, phone_number: owner.phone_number };
+              acc[owner.id] = { full_name: owner.full_name, phone_number: owner.phone_number, ecocash_number: owner.ecocash_number };
               return acc;
             }, {});
           }
