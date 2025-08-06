@@ -29,7 +29,7 @@ export default function ReceiptsView() {
         // Fetch user profile to determine role and get agent details
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('role, full_name, phone_number, ecocash_number')
+          .select('*')
           .eq('id', user.user.id)
           .single()
 
@@ -124,11 +124,7 @@ export default function ReceiptsView() {
               view_count: app.property_view_count,
               created_at: app.property_created_at,
               owner_id: app.property_owner_id,
-              owner: {
-                full_name: agentProfile.full_name,
-                phone_number: agentProfile.phone_number,
-                ecocash_number: agentProfile.ecocash_number,
-              },
+              owner: agentProfile,
               location: app.property_address,
             };
 
