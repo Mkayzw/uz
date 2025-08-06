@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Logo from '@/components/Logo'
 import { EnvelopeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 
 export default function SupportPage() {
@@ -12,14 +13,7 @@ export default function SupportPage() {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-3 group">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                  <span className="text-white font-bold text-lg">U</span>
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-500">
-                  UniStay
-                </span>
-              </Link>
+              <Logo variant="full" size="md" href="/" className="group hover:scale-105 transition-transform duration-200" />
             </div>
 
             {/* Back to Home */}
