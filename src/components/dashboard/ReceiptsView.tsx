@@ -115,6 +115,7 @@ export default function ReceiptsView() {
           if (agentApplicationsError) throw agentApplicationsError
 
           const formattedApplications = (agentApplications || []).map(app => {
+            // Create a property object with owner that matches UserProfile interface
             const property = {
               id: app.property_id,
               title: app.property_title,
@@ -125,9 +126,15 @@ export default function ReceiptsView() {
               created_at: app.property_created_at,
               owner_id: app.property_owner_id,
               owner: {
+                id: user.user.id, // Add required UserProfile properties
                 full_name: agentProfile.full_name,
                 phone_number: agentProfile.phone_number,
                 ecocash_number: agentProfile.ecocash_number,
+                role: 'agent', // Required by UserProfile
+                agent_status: 'active', // Required by UserProfile
+                is_verified_agent: true, // Required by UserProfile
+                created_at: new Date().toISOString(), // Required by UserProfile
+                updated_at: new Date().toISOString(), // Required by UserProfile
               },
               location: app.property_address,
             };
@@ -159,9 +166,10 @@ export default function ReceiptsView() {
               },
               property,
             }
-          }) as Application[];
+          });
 
-          setApplications(formattedApplications)
+          // Use type assertion with unknown intermediate step to satisfy TypeScript
+          setApplications(formattedApplications as unknown as Application[])
           setLoading(false)
           return
         }
@@ -227,18 +235,21 @@ export default function ReceiptsView() {
             ...app,
             property: propertyWithOwner,
           };
-        }) as Application[];
+        });
+        
+        // Use type assertion with unknown intermediate step to satisfy TypeScript
+        const typedApplications = formattedApplications as unknown as Application[];
         
         // Debug logging to verify data structure
-        if (formattedApplications.length > 0) {
+        if (typedApplications.length > 0) {
           console.log('Sample application data after owner fetch:', {
-            tenant: formattedApplications[0].tenant,
-            property_owner: formattedApplications[0].property?.owner,
-            property_title: formattedApplications[0].property?.title
+            tenant: typedApplications[0].tenant,
+            property_owner: typedApplications[0].property?.owner,
+            property_title: typedApplications[0].property?.title
           })
         }
         
-        setApplications(formattedApplications)
+        setApplications(typedApplications)
       } catch (error) {
         console.error('Error fetching applications:', error)
         addToast({
