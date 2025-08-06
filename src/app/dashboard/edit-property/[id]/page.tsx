@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
-import { v4 as uuidv4 } from 'uuid';
-import { use } from 'react';
 
 
 interface EditFormData {
@@ -153,7 +151,7 @@ export default function EditPropertyPage() {
         } finally {
             setLoading(false);
         }
-    }, [propertyId]);
+    }, [propertyId, supabase]);
 
     useEffect(() => {
         fetchProperty();
@@ -210,10 +208,7 @@ export default function EditPropertyPage() {
                 uploadedImageUrls.push(data.path);
             }
             
-            // Calculate total beds across all rooms
-            const totalBeds = getTotalBeds();
-
-            // 1. Update property data
+            // Update property data
             const { error: updateError } = await supabase
                 .from('properties')
                 .update({

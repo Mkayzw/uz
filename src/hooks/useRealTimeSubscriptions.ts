@@ -228,5 +228,5 @@ export function useRealTimeSubscriptions({
       supabase.removeChannel(savedPropertiesChannel)
       supabase.removeChannel(propChannelPublic)
     }
-  }, [user?.id, profile?.role, profile?.agent_status, supabase, addToast])
+  }, [user?.id, profile?.role, profile?.agent_status, supabase, setProfile, setProperties, setAllProperties, setApplications, setAgentApplications, setSavedProperties, addToast])
 }

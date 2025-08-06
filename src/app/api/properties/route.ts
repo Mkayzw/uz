@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { extractAmenities } from '@/lib/utils/dashboard'
-import { PropertyAmenities } from '@/types/database'
 
 export async function GET() {
   try {
@@ -45,7 +44,6 @@ export async function GET() {
 
     // Transform properties to match expected format
     const transformedProperties = properties?.map(prop => {
-      const amenities = (prop.amenities as PropertyAmenities) || {}
       const totalRooms = prop.rooms?.length || 0
       const totalBeds = prop.rooms?.reduce((sum: number, room: any) => sum + (room.beds?.length || 0), 0) || 0
       const occupiedBeds = prop.rooms?.reduce((sum: number, room: any) =>
@@ -63,7 +61,7 @@ export async function GET() {
         city: prop.city,
         state: prop.state,
         property_type: prop.property_type,
-        price: minPrice,
+        price: finalMinPrice,
         bedrooms: totalRooms,
         bathrooms: prop.rooms?.reduce((sum: number, room: any) => sum + (room.bathrooms || 0), 0) || 0,
         image_url: prop.images?.[0] || null,

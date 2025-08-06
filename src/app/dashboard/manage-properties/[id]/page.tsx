@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
-import PropertyImage from '@/components/PropertyImage';
 import BackButton from '@/components/BackButton';
 import Link from 'next/link';
-import { getImageUrl } from '@/lib/utils/imageHelpers';
 
 interface Property {
   id: string;
@@ -32,7 +29,6 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [propertyId, setPropertyId] = useState<string | null>(null);
-  const router = useRouter();
 
   // Resolve params Promise
   useEffect(() => {
@@ -82,7 +78,7 @@ export default function ManagePropertyPage({ params }: { params: Promise<{ id: s
     };
 
     fetchProperty();
-  }, [propertyId]);
+  }, [propertyId, supabase]);
 
   if (loading) {
     return (
