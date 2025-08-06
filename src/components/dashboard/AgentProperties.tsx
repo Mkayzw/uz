@@ -13,7 +13,7 @@ interface AgentPropertiesProps {
 
 interface PropertyImageCarouselProps {
   property: Property
-  onImageClick: (src: string | null, alt: string) => void
+  onImageClick: (src: string | null, alt: string, allImages?: string[], index?: number) => void
 }
 
 function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarouselProps) {
@@ -86,7 +86,9 @@ function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarousel
         onTouchEnd={handleTouchEnd}
         onClick={() => onImageClick(
           getImageUrl(allImages[currentImageIndex] || null),
-          property.title
+          property.title,
+          allImages,
+          currentImageIndex
         )}
         style={{
           WebkitTouchCallout: 'none',

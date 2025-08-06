@@ -23,12 +23,12 @@ interface PropertiesBrowserProps {
   onCancelApplication: (applicationId: string) => void
   onSaveProperty: (propertyId: string) => void
   onUnsaveProperty: (propertyId: string) => void
-  onImageClick: (src: string | null, alt: string) => void
+  onImageClick: (src: string | null, alt: string, allImages?: string[], initialIndex?: number) => void
 }
 
 interface PropertyImageCarouselProps {
   property: Property
-  onImageClick: (src: string | null, alt: string) => void
+  onImageClick: (src: string | null, alt: string, allImages?: string[], initialIndex?: number) => void
   height?: string
 }
 
@@ -102,7 +102,9 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
         onTouchEnd={handleTouchEnd}
         onClick={() => onImageClick(
           getImageUrl(allImages[currentImageIndex] || null),
-          property.title
+          property.title,
+          allImages,
+          currentImageIndex
         )}
         style={{
           WebkitTouchCallout: 'none',

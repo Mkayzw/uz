@@ -7,7 +7,7 @@ interface SavedPropertiesProps {
   onApplyToProperty: (propertyId: string) => void
   onCancelApplication: (applicationId: string) => void
   onUnsaveProperty: (propertyId: string) => void
-  onImageClick: (src: string | null, alt: string) => void
+  onImageClick: (src: string | null, alt: string, allImages?: string[], initialIndex?: number) => void
   setActiveTab: (tab: DashboardTab) => void
 }
 
@@ -62,56 +62,75 @@ export default function SavedProperties({
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Saved Properties</h3>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {savedProperties.map((savedProperty) => (
-          <div key={savedProperty.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-            <button
-              onClick={() => onImageClick(
-                savedProperty.property?.image_url || null, 
-                savedProperty.property?.title || 'Property'
-              )}
-              className="w-full h-48 object-cover rounded-t-2xl"
-            >
-              <PropertyImage
-                src={savedProperty.property?.image_url || null}
-                alt={savedProperty.property?.title || 'Property'}
-                className="w-full h-full object-cover rounded-t-2xl"
-              />
-            </button>
-            <div className="p-6">
-              <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
-                {savedProperty.property?.title}
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-                {savedProperty.property?.location}
-              </p>
-              {savedProperty.property?.price && (
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                  ${Number(savedProperty.property.price).toFixed(2)}/month
+        {savedProperties.map((savedProperty) => {
+          const property = savedProperty.property
+          if (!property) return null
+
+          const allImages: string[] = []
+          if (property.image_url) {
+            allImages.push(property.image_url)
+          }
+          if (property.image_urls && property.image_urls.length > 0) {
+            property.image_urls.forEach(url => {
+              if (url && url !== property.image_url) {
+                allImages.push(url)
+              }
+            })
+          }
+
+          return (
+            <div key={savedProperty.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+              <button
+                onClick={() => onImageClick(
+                  allImages[0] || null,
+                  property.title || 'Property',
+                  allImages,
+                  0
+                )}
+                className="w-full h-48 object-cover rounded-t-2xl"
+              >
+                <PropertyImage
+                  src={allImages[0] || null}
+                  alt={property.title || 'Property'}
+                  className="w-full h-full object-cover rounded-t-2xl"
+                />
+              </button>
+              <div className="p-6">
+                <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2">
+                  {property.title}
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                  {property.location}
                 </p>
-              )}
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleApplyClick(savedProperty)}
-                  disabled={false}
-                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    hasAppliedToProperty(savedProperty.bed_id)
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {hasAppliedToProperty(savedProperty.bed_id) ? 'Cancel Application' : 'Apply'}
-                </button>
-                <button
-                  onClick={() => onUnsaveProperty(savedProperty.bed_id)}
-                  className="px-3 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Remove
-                </button>
+                {property.price && (
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+                    ${Number(property.price).toFixed(2)}/month
+                  </p>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApplyClick(savedProperty)}
+                    disabled={false}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      hasAppliedToProperty(savedProperty.bed_id)
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {hasAppliedToProperty(savedProperty.bed_id) ? 'Cancel Application' : 'Apply'}
+                  </button>
+                  <button
+                    onClick={() => onUnsaveProperty(savedProperty.bed_id)}
+                    className="px-3 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

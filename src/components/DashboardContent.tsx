@@ -102,6 +102,8 @@ export default function DashboardContent() {
     isOpen: false,
     src: '',
     alt: '',
+    allImages: [],
+    initialIndex: 0
   })
 
   // Helper functions for modals
@@ -121,14 +123,20 @@ export default function DashboardContent() {
     setNotificationModal(prev => ({ ...prev, isOpen: false }))
   }
 
-  const openImageModal = (src: string | null, alt: string) => {
+  const openImageModal = (src: string | null, alt: string, allImages?: string[], initialIndex?: number) => {
     if (src) {
-      setImageModal({ isOpen: true, src, alt })
+      setImageModal({
+        isOpen: true,
+        src,
+        alt,
+        allImages: allImages || (src ? [src] : []),
+        initialIndex: initialIndex || 0
+      })
     }
   }
 
   const closeImageModal = () => {
-    setImageModal({ isOpen: false, src: '', alt: '' })
+    setImageModal({ isOpen: false, src: '', alt: '', allImages: [], initialIndex: 0 })
   }
 
   // Update active tab from URL (only on initial load)
@@ -584,6 +592,8 @@ export default function DashboardContent() {
         onClose={closeImageModal}
         src={imageModal.src}
         alt={imageModal.alt}
+        allImages={imageModal.allImages}
+        initialIndex={imageModal.initialIndex}
       />
 
       <ApplicationModal
