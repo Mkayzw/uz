@@ -195,18 +195,28 @@ function PaymentPageContent() {
             console.log('Agent ID type:', typeof agentId)
             console.log('Agent ID value:', JSON.stringify(agentId))
 
-            // WORKAROUND: RLS is blocking access to agent profiles
-            // For now, let's use a hardcoded EcoCash number or show a different message
-            console.log('RLS is blocking access to agent profile')
-            console.log('Agent ID that we cannot access:', agentId)
+            // Fetch the agent's profile to get their EcoCash number.
+            // NOTE: This requires an RLS policy that allows tenants to view the 'ecocash_number' of the agent
+            // associated with their approved application.
+            const { data: agentProfile, error: agentProfileError } = await supabase
+              .from('profiles')
+              .select('ecocash_number')
+              .eq('id', agentId)
+              .single()
 
-            // Temporary solution: Use a default EcoCash number for all agents
-            // TODO: Need to create proper RLS policy to allow tenants to view agent profiles
-            console.log('Using temporary workaround - default EcoCash number')
+            if (agentProfileError) {
+              console.error('Error fetching agent profile:', agentProfileError)
+              setError('Could not fetch agent payment details. Please contact support.')
+              return
+            }
 
-            // For now, we'll use the centralized number until RLS is fixed
-            setAgentEcocash('0780851851')
-            console.log('Set default EcoCash number for payment')
+            if (!agentProfile || !agentProfile.ecocash_number) {
+              console.error('Agent has not set their EcoCash number:', agentId)
+              setError('The agent for this property has not provided their payment details yet.')
+              return
+            }
+
+            setAgentEcocash(agentProfile.ecocash_number)
 
 
           } else {

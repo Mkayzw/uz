@@ -69,6 +69,14 @@ export default function DashboardContent() {
 
   // Local state for UI
   const [activeTab, setActiveTab] = useState<DashboardTab>((searchParams.get('tab') as DashboardTab) || 'overview')
+
+  // Sync URL when activeTab changes programmatically
+  const updateActiveTab = (tab: DashboardTab) => {
+    setActiveTab(tab)
+    const newUrl = new URL(window.location.href)
+    newUrl.searchParams.set('tab', tab)
+    window.history.replaceState({}, '', newUrl.toString())
+  }
   const [applicationModal, setApplicationModal] = useState<ApplicationModalType>({
     isOpen: false,
     bedId: null
@@ -123,10 +131,12 @@ export default function DashboardContent() {
     setImageModal({ isOpen: false, src: '', alt: '' })
   }
 
-  // Update active tab from URL
+  // Update active tab from URL (only on initial load)
   useEffect(() => {
     const tab = searchParams.get('tab') as DashboardTab
-    if (tab) {
+    if (tab && tab !== activeTab) {
+      // Use setActiveTab directly here to avoid URL update loop
+      // since the URL already has the correct tab parameter
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -148,6 +158,10 @@ export default function DashboardContent() {
     if (propertyIdToApply && user && profile?.role === 'tenant') {
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete('apply')
+      // Preserve the current tab parameter to avoid triggering tab useEffect
+      if (activeTab && activeTab !== 'overview') {
+        newUrl.searchParams.set('tab', activeTab)
+      }
       window.history.replaceState({}, '', newUrl.toString())
 
       setTimeout(() => {
@@ -158,10 +172,10 @@ export default function DashboardContent() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('redirect_after_auth')
     }
-  }, [user, profile, searchParams])
+  }, [user, profile, searchParams, activeTab])
 
   const handleBrowseProperties = () => {
-    setActiveTab('browse')
+    updateActiveTab('browse')
   }
 
   // Property action handlers
@@ -447,18 +461,18 @@ export default function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       {/* Header */}
       <DashboardHeader onSignOut={handleSignOut} />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12">
         {/* Welcome Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome back, {displayName}!
           </h2>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
             Here's your personalized dashboard for UniStay.
           </p>
         </div>
@@ -466,7 +480,7 @@ export default function DashboardContent() {
         {/* Tab Navigation */}
         <DashboardTabs 
           activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+          setActiveTab={updateActiveTab} 
           profile={profile} 
         />
         
@@ -478,7 +492,7 @@ export default function DashboardContent() {
             agentApplications={agentApplications}
             tenantApplications={applications}
             savedProperties={savedProperties}
-            setActiveTab={setActiveTab}
+            setActiveTab={updateActiveTab}
             onBrowseProperties={handleBrowseProperties}
           />
         )}
@@ -524,7 +538,7 @@ export default function DashboardContent() {
             onCancelApplication={handleCancelApplication}
             onUnsaveProperty={handleUnsaveProperty}
             onImageClick={openImageModal}
-            setActiveTab={setActiveTab}
+            setActiveTab={updateActiveTab}
           />
         )}
 

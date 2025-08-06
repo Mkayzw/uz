@@ -80,8 +80,8 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                     </div>
                   ) : (
                     <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex-1">
                           <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
                             🎉 Application Approved!
                           </p>
@@ -91,7 +91,7 @@ export default function TenantApplications({ applications, onVerifyPayment }: Te
                         </div>
                         <button
                           onClick={() => window.location.href = `/dashboard/payment?application_id=${application.id}&type=rent`}
-                          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
                         >
                           Pay Now
                         </button>
