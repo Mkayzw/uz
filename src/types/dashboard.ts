@@ -123,6 +123,8 @@ export interface ImageModal {
   isOpen: boolean;
   src: string;
   alt: string;
+  allImages?: string[];
+  initialIndex?: number;
 }
 
 export interface ApplicationModal {
