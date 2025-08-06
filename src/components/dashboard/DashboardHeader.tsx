@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
+import Logo from '@/components/Logo'
 
 interface DashboardHeaderProps {
   onSignOut: () => void
@@ -12,15 +13,8 @@ export default function DashboardHeader({ onSignOut }: DashboardHeaderProps) {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">U</span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent dark:from-blue-400 dark:to-blue-500">
-                UniStay
-              </h1>
-              <span className="text-xs text-gray-500 dark:text-gray-400 -mt-1">Dashboard</span>
-            </div>
+            <Logo variant="full" size="md" href="/dashboard" />
+            <span className="text-xs text-gray-500 dark:text-gray-400 -mt-1">Dashboard</span>
           </div>
 
           {/* Actions */}
