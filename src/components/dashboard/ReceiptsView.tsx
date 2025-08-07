@@ -124,9 +124,7 @@ export default function ReceiptsView() {
               property_type: app.property_type,
               view_count: app.property_view_count,
               created_at: app.property_created_at,
-              owner_id: app.property_owner_id
-              owner: agentProfile,
-=======
+              owner_id: app.property_owner_id,
               owner: {
                 id: user.user.id, // Add required UserProfile properties
                 full_name: agentProfile.full_name,
@@ -138,6 +136,7 @@ export default function ReceiptsView() {
                 created_at: new Date().toISOString(), // Required by UserProfile
                 updated_at: new Date().toISOString(), // Required by UserProfile
               },
+            }
 
             return {
               id: app.id,

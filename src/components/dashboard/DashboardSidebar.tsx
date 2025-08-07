@@ -104,14 +104,7 @@ export default function DashboardSidebar({
       iconSolid: HeartIconSolid,
       show: true
     },
-    {
-      id: 'receipts',
-      label: 'Receipts',
-      icon: ReceiptPercentIcon,
-      iconSolid: ReceiptPercentIconSolid,
-      show: true,
-      description: 'View your payment receipts'
-    },
+    
     {
       id: 'account',
       label: 'Account',

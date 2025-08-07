@@ -291,11 +291,14 @@ function PaymentPageContent() {
     }
   }
 
-  const pageTitle = paymentType === 'rent' ? 'Complete Your Rent Payment' : 'Agent Account Activation'
+  const pageTitle = paymentType === 'rent' ? 'Application Fee Payment' : 'Agent Account Activation'
   const instructions = paymentType === 'rent' ? (
     <>
       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        Your application for <strong>{application?.property?.title}</strong> has been approved! To secure your place, please send the rent of <strong>${application?.property?.price.toLocaleString()}</strong> via EcoCash to your agent's EcoCash number below.
+        Your application for <strong>{application?.property?.title}</strong> has been approved! To secure your place, please send the application fee of <strong>$20.00</strong> via EcoCash to your agent's EcoCash number below.
+      </p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Note: This is only an agent fee. You will pay rent directly to the landlord.
       </p>
     </>
   ) : (
