@@ -18,57 +18,47 @@ export async function createPropertyChat(context: ChatCreationContext) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Check if chat already exists for this property-tenant combination
-  const { data: existingChats } = await supabase
+  // Check if chat already exists for this application
+  const { data: existingChat } = await supabase
     .from('chats')
     .select('id')
-    .eq('property_id', context.propertyId)
     .eq('application_id', context.applicationId)
+    .single()
 
-  if (existingChats && existingChats.length > 0) {
-    return existingChats[0].id
+  if (existingChat) {
+    return existingChat.id
   }
 
-  // Create new chat
-  const { data: newChat, error: chatError } = await supabase
+  // If chat doesn't exist, create it now
+  const { data: newChat, error: createError } = await supabase
     .from('chats')
     .insert({
-      title: `Property: ${context.propertyTitle} - ${context.tenantName}`,
-      property_id: context.propertyId,
       application_id: context.applicationId,
-      created_at: new Date().toISOString()
+      property_id: context.propertyId,
+      title: `Chat for ${context.propertyTitle}`,
     })
-    .select()
+    .select('id')
+    .single()
 
-  if (chatError || !newChat || newChat.length === 0) {
-    throw new Error('Failed to create chat')
+  if (createError) {
+    throw new Error(`Failed to create chat: ${createError.message}`)
   }
 
-  const chatId = newChat[0].id
-
-  // Add both participants
+  // Also add participants to the chat
   const { error: participantError } = await supabase
     .from('chat_participants')
     .insert([
-      { chat_id: chatId, user_id: context.tenantId },
-      { chat_id: chatId, user_id: context.agentId }
+      { chat_id: newChat.id, user_id: context.tenantId },
+      { chat_id: newChat.id, user_id: context.agentId },
     ])
 
   if (participantError) {
-    throw new Error('Failed to add chat participants')
+    // Note: This could leave an orphaned chat, but it's better than failing silently.
+    // A cleanup process for chats without participants might be needed.
+    throw new Error(`Failed to add participants to chat: ${participantError.message}`)
   }
 
-  // Send initial system message
-  await supabase
-    .from('messages')
-    .insert({
-      chat_id: chatId,
-      sender_id: context.agentId, // Send from agent
-      content: `Hi ${context.tenantName}! I'm ${context.agentName}, the property owner. Feel free to ask any questions about "${context.propertyTitle}".`,
-      created_at: new Date().toISOString()
-    })
-
-  return chatId
+  return newChat.id
 }
 
 export async function getUserChats(userId: string, userRole: 'tenant' | 'agent') {
@@ -79,6 +69,9 @@ export async function getUserChats(userId: string, userRole: 'tenant' | 'agent')
 
   if (userRole === 'agent') {
     // Agents see applications to their properties - these can become chats
+    console.log('getUserChats: Fetching applications for agent:', userId)
+    
+    // Get applications for properties owned by this agent using the new property_id column
     const { data: applications, error } = await supabase
       .from('applications')
       .select(`
@@ -87,26 +80,19 @@ export async function getUserChats(userId: string, userRole: 'tenant' | 'agent')
         created_at,
         tenant_id,
         bed_id,
+        property_id,
         tenant:profiles!applications_tenant_id_fkey(
           id,
           full_name,
           role
         ),
-        bed:beds!applications_bed_id_fkey(
+        property:properties!applications_property_id_fkey(
           id,
-          bed_number,
-          room:rooms!beds_room_id_fkey(
-            id,
-            name,
-            property:properties!rooms_property_id_fkey(
-              id,
-              title,
-              owner_id
-            )
-          )
+          title,
+          owner_id
         )
       `)
-      .eq('bed.room.property.owner_id', userId)
+      .eq('property.owner_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -131,9 +117,7 @@ export async function getUserChats(userId: string, userRole: 'tenant' | 'agent')
         .eq('application_id', app.id)
         .single()
 
-      const bed = Array.isArray(app.bed) ? app.bed[0] : app.bed
-      const room = Array.isArray(bed?.room) ? bed.room[0] : bed?.room  
-      const property = Array.isArray(room?.property) ? room.property[0] : room?.property
+      const property = Array.isArray(app.property) ? app.property[0] : app.property
       const tenant = Array.isArray(app.tenant) ? app.tenant[0] : app.tenant
 
       chatsWithApplications.push({

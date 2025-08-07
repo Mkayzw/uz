@@ -37,60 +37,50 @@ export default function ChatList() {
     setIsCreatingChat(chat.application_id)
     
     try {
-      // We need to get more details for chat creation
-      const { data: application } = await supabase
-        .from('applications')
-        .select(`
-          id,
-          tenant_id,
-          bed:beds!applications_bed_id_fkey(
-            room:rooms!beds_room_id_fkey(
-              property:properties!rooms_property_id_fkey(
-                id,
-                title,
-                owner_id
-              )
-            )
-          )
-        `)
-        .eq('id', chat.application_id)
+      // Check if chat already exists for this application
+      const { data: existingChat } = await supabase
+        .from('chats')
+        .select('id')
+        .eq('application_id', chat.application_id)
         .single()
         
-      if (!application) return
-      
-      const bed = Array.isArray(application.bed) ? application.bed[0] : application.bed
-      const room = Array.isArray(bed?.room) ? bed.room[0] : bed?.room
-      const property = Array.isArray(room?.property) ? room.property[0] : room?.property
-      
-      if (!property) return
-      
-      // Get current user profile
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', userId)
-        .single()
-        
-      const context = {
-        propertyId: property.id,
-        propertyTitle: property.title,
-        tenantId: application.tenant_id,
-        tenantName: chat.otherParticipant.full_name || 'Unknown User',
-        agentId: property.owner_id,
-        agentName: userProfile?.full_name || 'Property Owner',
-        applicationId: chat.application_id
+      if (existingChat) {
+        // Chat already exists, navigate to it
+        window.location.href = `/chat/${existingChat.id}`
+        return
       }
       
-      const chatId = await createPropertyChat(context)
-      
-      // Refresh chats list
-      if (userRole) {
-        const updatedChats = await getUserChats(userId, userRole)
-        setChats(updatedChats)
+      // If we are here, it means we need to create a new chat.
+      // The logic should be the same for both agent and tenant, as long as they have the right context.
+      if (userRole === 'agent') {
+        // Get property and tenant details to create chat
+        const { data: propertyData, error: propertyError } = await supabase
+          .from('properties')
+          .select('id, title, owner_id')
+          .eq('id', chat.property_id)
+          .single()
+
+        if (propertyError || !propertyData) {
+          throw new Error('Could not verify property for chat creation.')
+        }
+
+        const newChatId = await createPropertyChat({
+          propertyId: propertyData.id,
+          propertyTitle: propertyData.title,
+          tenantId: chat.otherParticipant.id,
+          tenantName: chat.otherParticipant.full_name || 'Applicant',
+          agentId: userId,
+          agentName: 'Property Agent', // This could be fetched from agent's profile
+          applicationId: chat.application_id,
+        })
+
+        // Navigate to the new chat
+        window.location.href = `/chat/${newChatId}`
+      } else {
+        // Tenants should not be able to create chats directly.
+        // This action should only be available to agents.
+        alert('Waiting for the agent to start the chat.')
       }
-      
-      // Navigate to the new chat
-      window.location.href = `/chat/${chatId}`
       
     } catch (error) {
       console.error('Failed to create chat:', error)
@@ -135,6 +125,24 @@ export default function ChatList() {
         .select('*')
         .eq('user_id', uid)
       console.log('ChatList: All chat participants for user:', allParticipants)
+      
+      // Debug: Check agent's properties and applications
+      if (role === 'agent') {
+        const { data: properties } = await supabase
+          .from('properties')
+          .select('id, title, owner_id')
+          .eq('owner_id', uid)
+        console.log('ChatList: Agent properties:', properties)
+        
+        if (properties && properties.length > 0) {
+          const propertyIds = properties.map(p => p.id)
+          const { data: applications } = await supabase
+            .from('applications')
+            .select('*, bed:beds!bed_id(room:rooms!room_id(property:properties!property_id(id, title, owner_id)))')
+            .in('bed.room.property.id', propertyIds)
+          console.log('ChatList: Applications for agent properties:', applications)
+        }
+      }
 
       // subscribe to new chats
       channel = supabase
@@ -215,15 +223,19 @@ export default function ChatList() {
                       )}
                     </div>
                     <div className="text-right ml-2">
-                      {!chat.hasExistingChat && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                          {isCreatingChat === chat.application_id ? 'Creating...' : 'New'}
-                        </div>
-                      )}
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(chat.created_at || '').toLocaleDateString()}
+                    {!chat.hasExistingChat ? (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        {isCreatingChat === chat.application_id ? 'Creating Chat...' : 'Create Chat'}
                       </div>
+                    ) : (
+                      <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                        Active
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
+                      {new Date(chat.created_at || '').toLocaleDateString()}
                     </div>
+                  </div>
                   </div>
                 </Link>
               </li>
