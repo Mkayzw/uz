@@ -3,25 +3,102 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
-import { getUserChats } from '@/lib/chat/chatService'
+import { getUserChats, createPropertyChat } from '@/lib/chat/chatService'
 
 interface ChatItem {
-  id: string
+  id: string | null
   title?: string
   property_id?: string
   application_id?: string
   lastMessage?: string
   updatedAt?: string
+  created_at?: string
+  hasExistingChat?: boolean
+  otherParticipant?: {
+    id: string
+    full_name: string | null
+    role: 'tenant' | 'agent'
+  } | null
 }
 
 export default function ChatList() {
   const [chats, setChats] = useState<ChatItem[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<'tenant' | 'agent' | null>(null)
+  const [isCreatingChat, setIsCreatingChat] = useState<string | null>(null)
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
+
+  const handleCreateChat = async (chat: ChatItem) => {
+    if (!chat.application_id || !chat.otherParticipant || !userId) return
+    
+    setIsCreatingChat(chat.application_id)
+    
+    try {
+      // We need to get more details for chat creation
+      const { data: application } = await supabase
+        .from('applications')
+        .select(`
+          id,
+          tenant_id,
+          bed:beds!applications_bed_id_fkey(
+            room:rooms!beds_room_id_fkey(
+              property:properties!rooms_property_id_fkey(
+                id,
+                title,
+                owner_id
+              )
+            )
+          )
+        `)
+        .eq('id', chat.application_id)
+        .single()
+        
+      if (!application) return
+      
+      const bed = Array.isArray(application.bed) ? application.bed[0] : application.bed
+      const room = Array.isArray(bed?.room) ? bed.room[0] : bed?.room
+      const property = Array.isArray(room?.property) ? room.property[0] : room?.property
+      
+      if (!property) return
+      
+      // Get current user profile
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single()
+        
+      const context = {
+        propertyId: property.id,
+        propertyTitle: property.title,
+        tenantId: application.tenant_id,
+        tenantName: chat.otherParticipant.full_name || 'Unknown User',
+        agentId: property.owner_id,
+        agentName: userProfile?.full_name || 'Property Owner',
+        applicationId: chat.application_id
+      }
+      
+      const chatId = await createPropertyChat(context)
+      
+      // Refresh chats list
+      if (userRole) {
+        const updatedChats = await getUserChats(userId, userRole)
+        setChats(updatedChats)
+      }
+      
+      // Navigate to the new chat
+      window.location.href = `/chat/${chatId}`
+      
+    } catch (error) {
+      console.error('Failed to create chat:', error)
+      alert('Failed to create chat. Please try again.')
+    } finally {
+      setIsCreatingChat(null)
+    }
+  }
 
   useEffect(() => {
     let channel: any
@@ -93,20 +170,61 @@ export default function ChatList() {
       <div className="flex-1 overflow-y-auto">
         {chats.length > 0 ? (
           <ul className="space-y-1">
-            {chats.map(chat => (
-              <li key={chat.id}>
+            {chats.map((chat, index) => (
+              <li key={chat.id || `chat-${index}`}>
                 <Link 
-                  href={`/chat/${chat.id}`}
-                  className="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-600"
+                  href={chat.id ? `/chat/${chat.id}` : '#'}
+                  className={`block p-3 border-b border-gray-100 dark:border-gray-600 ${
+                    chat.hasExistingChat 
+                      ? 'hover:bg-gray-50 dark:hover:bg-gray-700' 
+                      : 'hover:bg-blue-50 dark:hover:bg-blue-900/20 border-l-4 border-l-blue-500'
+                  }`}
+                  onClick={async (e) => {
+                    if (!chat.hasExistingChat) {
+                      e.preventDefault()
+                      await handleCreateChat(chat)
+                    }
+                  }}
                 >
-                  <div className="font-medium text-gray-900 dark:text-white truncate">
-                    {chat.title || `Chat ${chat.id}`}
-                  </div>
-                  {chat.lastMessage && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                      {chat.lastMessage}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        {chat.otherParticipant && (
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-medium text-xs">
+                              {(chat.otherParticipant.full_name || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 dark:text-white truncate">
+                            {chat.otherParticipant?.full_name || 'Unknown User'}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {chat.otherParticipant?.role === 'agent' ? 'Property Owner' : 'Tenant'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 truncate mt-1">
+                        {chat.title}
+                      </div>
+                      {chat.lastMessage && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+                          {chat.lastMessage}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="text-right ml-2">
+                      {!chat.hasExistingChat && (
+                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                          {isCreatingChat === chat.application_id ? 'Creating...' : 'New'}
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-400 dark:text-gray-500">
+                        {new Date(chat.created_at || '').toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
                 </Link>
               </li>
             ))}
