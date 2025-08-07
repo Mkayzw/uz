@@ -78,29 +78,32 @@ export async function getUserChats(userId: string, userRole: 'tenant' | 'agent')
   )
 
   if (userRole === 'agent') {
-    // Agents see all applications to their properties (potential chats)
+    // Agents see applications to their properties - these can become chats
     const { data: applications, error } = await supabase
       .from('applications')
       .select(`
         id,
+        status,
         created_at,
-        tenant:profiles!inner(
+        tenant_id,
+        bed_id,
+        tenant:profiles!applications_tenant_id_fkey(
           id,
-          full_name
+          full_name,
+          role
         ),
-        bed:beds!inner(
-          room:rooms!inner(
-            property:properties!inner(
+        bed:beds!applications_bed_id_fkey(
+          id,
+          bed_number,
+          room:rooms!beds_room_id_fkey(
+            id,
+            name,
+            property:properties!rooms_property_id_fkey(
               id,
               title,
               owner_id
             )
           )
-        ),
-        chats(
-          id,
-          title,
-          created_at
         )
       `)
       .eq('bed.room.property.owner_id', userId)
@@ -116,74 +119,116 @@ export async function getUserChats(userId: string, userRole: 'tenant' | 'agent')
       throw new Error(`Failed to fetch applications: ${error.message}`)
     }
 
-    // Transform applications to chat-like format
-    const chats = applications?.map(app => ({
-      id: app.chats?.[0]?.id || null,
-      title: app.chats?.[0]?.title || `Application: ${app.bed[0]?.room[0]?.property[0]?.title} - ${app.tenant[0]?.full_name}`,
-      property_id: app.bed[0]?.room[0]?.property[0]?.id,
-      application_id: app.id,
-      created_at: app.chats?.[0]?.created_at || app.created_at,
-      chat_participants: [],
-      applications: [{
-        tenant: app.tenant[0],
-        bed: app.bed[0]
-      }],
-      hasExistingChat: !!app.chats?.[0]?.id
-    })) || []
+    if (!applications) return []
 
-    return chats
+    // For each application, check if a chat exists
+    const chatsWithApplications = []
+    
+    for (const app of applications) {
+      const { data: existingChat } = await supabase
+        .from('chats')
+        .select('id, title, created_at')
+        .eq('application_id', app.id)
+        .single()
+
+      const bed = Array.isArray(app.bed) ? app.bed[0] : app.bed
+      const room = Array.isArray(bed?.room) ? bed.room[0] : bed?.room  
+      const property = Array.isArray(room?.property) ? room.property[0] : room?.property
+      const tenant = Array.isArray(app.tenant) ? app.tenant[0] : app.tenant
+
+      chatsWithApplications.push({
+        id: existingChat?.id || null,
+        title: existingChat?.title || `Application: ${property?.title} - ${tenant?.full_name}`,
+        property_id: property?.id,
+        application_id: app.id,
+        created_at: existingChat?.created_at || app.created_at,
+        hasExistingChat: !!existingChat?.id,
+        // Include participant info for the UI
+        otherParticipant: {
+          id: tenant?.id,
+          full_name: tenant?.full_name,
+          role: tenant?.role
+        }
+      })
+    }
+
+    return chatsWithApplications
   } else {
     // Tenants see chats they participate in
     console.log('getUserChats: Fetching chats for tenant:', userId)
     
-    // First, let's check if the tenant has any applications
-    const { data: applications, error: appError } = await supabase
-      .from('applications')
-      .select('id, status, created_at')
-      .eq('tenant_id', userId)
-    
-    console.log('getUserChats: Tenant applications:', JSON.stringify(applications, null, 2))
-    console.log('getUserChats: Applications error:', appError)
-    
-    const { data: chats, error } = await supabase
-      .from('chats')
+    const { data: chatParticipants, error: participantsError } = await supabase
+      .from('chat_participants')
       .select(`
-        id,
-        title,
-        property_id,
-        application_id,
-        created_at,
-        chat_participants (
-          user_id
-        ),
-        applications!inner(
-          tenant:profiles!inner(
-            id,
-            full_name
-          ),
-          bed:beds!inner(
-            room:rooms!inner(
-              property:properties!inner(owner_id)
-            )
-          )
+        chat_id,
+        chat:chats!chat_participants_chat_id_fkey(
+          id,
+          title,
+          property_id,
+          application_id,
+          created_at
         )
       `)
-      .eq('chat_participants.user_id', userId)
-      .order('created_at', { ascending: false })
+      .eq('user_id', userId)
 
-    console.log('getUserChats: Tenant chats result:', chats)
-    console.log('getUserChats: Tenant chats error:', error)
-
-    if (error) {
-      console.error('Chat fetch error:', {
-        userId,
-        userRole,
-        error: error.message,
-        code: error.code,
-      })
-      throw new Error(`Failed to fetch chats: ${error.message}`)
+    if (participantsError) {
+      console.error('Chat participants fetch error:', participantsError)
+      throw new Error(`Failed to fetch chat participants: ${participantsError.message}`)
     }
 
-    return chats || []
+    if (!chatParticipants || chatParticipants.length === 0) {
+      return []
+    }
+
+    // For each chat, get the other participant (agent/property owner)
+    const chatsWithParticipants = []
+    
+    for (const participant of chatParticipants) {
+      const chat = Array.isArray(participant.chat) ? participant.chat[0] : participant.chat
+      if (!chat) continue
+
+      // Get the other participant (not the current user)
+      const { data: otherParticipants, error: otherError } = await supabase
+        .from('chat_participants')
+        .select(`
+          user_id,
+          user:profiles!chat_participants_user_id_fkey(
+            id,
+            full_name,
+            role
+          )
+        `)
+        .eq('chat_id', chat.id)
+        .neq('user_id', userId)
+
+      if (otherError) {
+        console.error('Other participants fetch error:', otherError)
+        continue
+      }
+
+      const otherParticipantData = otherParticipants?.[0]
+      const otherParticipant = Array.isArray(otherParticipantData?.user) 
+        ? otherParticipantData.user[0] 
+        : otherParticipantData?.user
+
+      chatsWithParticipants.push({
+        id: chat.id,
+        title: chat.title,
+        property_id: chat.property_id,
+        application_id: chat.application_id,
+        created_at: chat.created_at,
+        hasExistingChat: true,
+        // Include participant info for the UI
+        otherParticipant: otherParticipant ? {
+          id: otherParticipant.id,
+          full_name: otherParticipant.full_name,
+          role: otherParticipant.role
+        } : null
+      })
+    }
+
+    return chatsWithParticipants.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
   }
 }

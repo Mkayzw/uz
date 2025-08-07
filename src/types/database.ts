@@ -295,6 +295,78 @@ export type Database = {
           created_at?: string
         }
       }
+      chats: {
+        Row: {
+          id: string
+          title: string
+          property_id: string | null
+          application_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          property_id?: string | null
+          application_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          property_id?: string | null
+          application_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      chat_participants: {
+        Row: {
+          id: string
+          chat_id: string
+          user_id: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          chat_id: string
+          user_id: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          chat_id?: string
+          user_id?: string
+          joined_at?: string
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          chat_id: string
+          sender_id: string
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          chat_id: string
+          sender_id: string
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          chat_id?: string
+          sender_id?: string
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       property_stats: {
@@ -387,6 +459,9 @@ export type Application = Database['public']['Tables']['applications']['Row']
 export type AgentPayment = Database['public']['Tables']['agent_payments']['Row']
 export type SavedProperty = Database['public']['Tables']['saved_properties']['Row']
 export type PropertyView = Database['public']['Tables']['property_views']['Row']
+export type Chat = Database['public']['Tables']['chats']['Row']
+export type ChatParticipant = Database['public']['Tables']['chat_participants']['Row']
+export type Message = Database['public']['Tables']['messages']['Row']
 
 // View types
 export type PropertyStats = Database['public']['Views']['property_stats']['Row']

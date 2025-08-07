@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import ChatList from '@/components/chat/ChatList'
+import ChatWindow from '@/components/chat/ChatWindow'
+import MessageInput from '@/components/chat/MessageInput'
 
 export default function ChatIndexPage() {
   return (
