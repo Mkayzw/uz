@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { RoomRow, BedRow, Database } from '@/types/database'
+import { createPropertyChat, ChatCreationContext } from '@/lib/chat/serverChatService'
 
 type PropertyStatsRow = Database['public']['Functions']['get_property_stats']['Returns'][0]
 
@@ -283,6 +284,59 @@ export async function submitApplication(
       .single()
 
     if (error) throw error
+
+    // Get property and agent details for chat creation
+    const { data: propertyData, error: propertyError } = await supabase
+      .from('beds')
+      .select(`
+        id,
+        room:rooms!inner(
+          id,
+          property:properties!inner(
+            id,
+            title,
+            owner_id
+          )
+        )
+      `)
+      .eq('id', bedId)
+      .single()
+
+    if (propertyError) {
+      console.error('Error fetching property data for chat:', propertyError)
+    } else {
+      // Get tenant and agent profile details
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', [user.id, propertyData.room[0]?.property[0]?.owner_id])
+
+      if (!profilesError && profiles && profiles.length === 2) {
+        const tenant = profiles.find(p => p.id === user.id)
+        const agent = profiles.find(p => p.id === propertyData.room[0]?.property[0]?.owner_id)
+
+        if (tenant && agent) {
+          try {
+            // Create chat context
+            const chatContext: ChatCreationContext = {
+              propertyId: propertyData.room[0]?.property[0]?.id,
+              propertyTitle: propertyData.room[0]?.property[0]?.title,
+              tenantId: user.id,
+              tenantName: tenant.full_name || 'Tenant',
+              agentId: propertyData.room[0]?.property[0]?.owner_id,
+              agentName: agent.full_name || 'Agent',
+              applicationId: data.id
+            }
+
+            // Create the chat
+            await createPropertyChat(chatContext)
+          } catch (chatError) {
+            console.error('Error creating chat:', chatError)
+            // Don't fail the application if chat creation fails
+          }
+        }
+      }
+    }
 
     revalidatePath('/dashboard')
     return { data }
