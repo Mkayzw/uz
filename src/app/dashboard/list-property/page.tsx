@@ -207,6 +207,7 @@ const PropertyForm = () => {
           state: formData.state,
           zip_code: formData.zipCode,
           property_type: formData.propertyType,
+          price: parseFloat(formData.price) || 0,
           contact_phone: formData.contactPhone,
           contact_email: formData.contactEmail || user.email,
           rules: formData.rules,
@@ -244,14 +245,12 @@ const PropertyForm = () => {
       for (const room of rooms) {
         // Insert room
         // TODO: Individual room pricing should be implemented in the UI
-        // For now, using property price divided by number of rooms as baseline
-        const roomPrice = parseFloat(formData.price) / rooms.length;
-
+        // For now, setting price_per_bed to 0 as property price is stored separately.
         const { data: roomData, error: roomError } = await supabase.from("rooms").insert({
           property_id: propertyData.id,
           name: room.name,
           room_type: getRoomType(room.beds),
-          price_per_bed: roomPrice, // Price per bed
+          price_per_bed: 0, // Price per bed is now set at the room level, UI for which is a TODO
           capacity: room.beds,
         }).select().single();
 
