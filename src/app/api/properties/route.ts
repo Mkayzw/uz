@@ -49,9 +49,8 @@ export async function GET() {
       const occupiedBeds = prop.rooms?.reduce((sum: number, room: any) =>
         sum + (room.beds?.filter((bed: any) => bed.is_occupied).length || 0), 0) || 0
       const availableBeds = totalBeds - occupiedBeds
-      const minPrice = prop.rooms?.reduce((min: number, room: any) =>
-        Math.min(min, room.price_per_bed || 0), Infinity)
-      const finalMinPrice = minPrice === Infinity ? 0 : minPrice
+      const totalPrice = prop.rooms?.reduce((sum: number, room: any) => sum + (room.price_per_bed || 0), 0)
+      const finalPrice = totalPrice || 0
 
       return {
         id: prop.id,
@@ -61,7 +60,7 @@ export async function GET() {
         city: prop.city,
         state: prop.state,
         property_type: prop.property_type,
-        price: finalMinPrice,
+        price: finalPrice,
         bedrooms: totalRooms,
         bathrooms: prop.rooms?.reduce((sum: number, room: any) => sum + (room.bathrooms || 0), 0) || 0,
         image_url: prop.images?.[0] || null,
