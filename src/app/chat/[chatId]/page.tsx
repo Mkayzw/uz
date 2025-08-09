@@ -6,32 +6,36 @@ import ChatList from '@/components/chat/ChatList'
 import ChatWindow from '@/components/chat/ChatWindow'
 import MessageInput from '@/components/chat/MessageInput'
 import { useDocumentSwipe } from '@/hooks/useTouchGestures'
+import MobileDrawer from '@/components/chat/MobileDrawer'
+import { usePathname } from 'next/navigation'
 
 export default function ChatPage() {
   const params = useParams()
+  const pathname = usePathname()
   const chatId = (params?.chatId as string) || ''
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Swipe gestures on mobile: swipe right to open, left to close
+  // Swipe gestures only on small screens
   useDocumentSwipe({
     onSwipeRight: () => setSidebarOpen(true),
     onSwipeLeft: () => setSidebarOpen(false),
     threshold: 60,
-    enabled: true,
+    enabled: typeof window !== 'undefined' ? window.matchMedia('(max-width: 639px)').matches : true,
   })
 
   // Prevent body scroll when mobile drawer is open
   useEffect(() => {
     if (typeof document === 'undefined') return
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = sidebarOpen ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
     }
   }, [sidebarOpen])
+
+  // Close drawer on route change
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex">
@@ -41,19 +45,9 @@ export default function ChatPage() {
       </aside>
 
       {/* Mobile drawer sidebar */}
-      {sidebarOpen && (
-        <div className="sm:hidden fixed inset-0 z-50 flex">
-          <div className="w-80 max-w-[80%] h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-xl">
-            <div className="h-full overflow-y-auto hide-scrollbar">
-              <ChatList />
-            </div>
-          </div>
-          <div
-            className="flex-1 h-full bg-black/40 backdrop-blur-supported"
-            onClick={() => setSidebarOpen(false)}
-          />
-        </div>
-      )}
+      <MobileDrawer open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+        <ChatList />
+      </MobileDrawer>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">

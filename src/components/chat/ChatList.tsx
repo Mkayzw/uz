@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { getUserChats, createPropertyChat } from '@/lib/chat/chatService'
 
@@ -37,20 +38,23 @@ export default function ChatList() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  const router = useRouter()
+  const pathname = usePathname()
+
   const handleCreateChat = async (chat: ChatItem) => {
-    if (!chat.application_id || !userId) return
-    
+    if (!chat.application_id || !userId || isCreatingChat) return
+
     setIsCreatingChat(chat.application_id)
     setError(null)
-    
+
     try {
       const chatId = await createPropertyChat({
         applicationId: chat.application_id
       })
-      
-      // Navigate to the new chat
-      window.location.href = `/chat/${chatId}`
-      
+
+      // Navigate to the new chat (client-side)
+      router.push(`/chat/${chatId}`)
+
     } catch (error) {
       console.error('Failed to create chat:', error)
       setError('Failed to create chat. Please try again.')
@@ -164,25 +168,26 @@ export default function ChatList() {
           {userRole === 'tenant' ? 'Chats with property owners' : 'Chats with applicants'}
         </p>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto">
         {chats.length > 0 ? (
           <ul className="space-y-1">
-            {chats.map((chat, index) => (
-              <li key={chat.id || `chat-${index}`}>
-                <Link 
-                  href={chat.id ? `/chat/${chat.id}` : '#'}
+            {chats.map((chat, index) => {
+              const href = chat.id ? `/chat/${chat.id}` : null
+              const isActive = href && typeof window !== 'undefined' && window.location.pathname === href
+
+              const row = (
+                <div
                   className={`block p-3 border-b border-gray-100 dark:border-gray-600 ${
-                    chat.hasExistingChat 
-                      ? 'hover:bg-gray-50 dark:hover:bg-gray-700' 
+                    isActive ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  } ${
+                    chat.hasExistingChat
+                      ? 'hover:bg-gray-50 dark:hover:bg-gray-700'
                       : 'hover:bg-blue-50 dark:hover:bg-blue-900/20 border-l-4 border-l-blue-500'
+                  } ${
+                    isCreatingChat === chat.application_id ? 'opacity-60 pointer-events-none' : ''
                   }`}
-                  onClick={async (e) => {
-                    if (!chat.hasExistingChat) {
-                      e.preventDefault()
-                      await handleCreateChat(chat)
-                    }
-                  }}
+                  aria-busy={isCreatingChat === chat.application_id}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -225,9 +230,28 @@ export default function ChatList() {
                       )}
                     </div>
                   </div>
-                </Link>
-              </li>
-            ))}
+                </div>
+              )
+
+              return (
+                <li key={chat.id || `chat-${index}`}>
+                  {href ? (
+                    <Link href={href} className="block">
+                      {row}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleCreateChat(chat)}
+                      className="w-full text-left"
+                      disabled={!!isCreatingChat}
+                    >
+                      {row}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         ) : (
           <div className="p-4 text-center">
@@ -235,8 +259,8 @@ export default function ChatList() {
               No messages yet.
             </div>
             <div className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              {userRole === 'tenant' 
-                ? 'Chats will appear when you apply to properties.' 
+              {userRole === 'tenant'
+                ? 'Chats will appear when you apply to properties.'
                 : 'Chats will appear when tenants apply to your properties.'
               }
             </div>

@@ -3,28 +3,32 @@
 import { useState, useEffect } from 'react'
 import ChatList from '@/components/chat/ChatList'
 import { useDocumentSwipe } from '@/hooks/useTouchGestures'
+import MobileDrawer from '@/components/chat/MobileDrawer'
+import { usePathname } from 'next/navigation'
 
 export default function ChatIndexPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const pathname = usePathname()
 
   useDocumentSwipe({
     onSwipeRight: () => setSidebarOpen(true),
     onSwipeLeft: () => setSidebarOpen(false),
     threshold: 60,
-    enabled: true,
+    enabled: typeof window !== 'undefined' ? window.matchMedia('(max-width: 639px)').matches : true,
   })
 
   useEffect(() => {
     if (typeof document === 'undefined') return
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = sidebarOpen ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
     }
   }, [sidebarOpen])
+
+  // Close drawer on route change
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex">
