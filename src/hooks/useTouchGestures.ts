@@ -12,7 +12,7 @@ interface TouchGestureOptions {
 }
 
 export function useTouchGestures<T extends HTMLElement = HTMLElement>(
-  elementRef: React.RefObject<T>,
+  elementRef: React.RefObject<T | null> | React.MutableRefObject<T | null>,
   options: TouchGestureOptions
 ) {
   const {
@@ -85,7 +85,7 @@ export function useTouchGestures<T extends HTMLElement = HTMLElement>(
 
     element.addEventListener('touchstart', handleTouchStart, { passive: true })
     element.addEventListener('touchmove', handleTouchMove, { passive: true })
-    element.addEventListener('touchend', handleTouchEnd, { passive: true })
+    element.addEventListener('touchend', handleTouchEnd)
 
     return () => {
       element.removeEventListener('touchstart', handleTouchStart)
@@ -107,5 +107,5 @@ export function useDocumentSwipe(options: TouchGestureOptions) {
     }
   }, [])
 
-  useTouchGestures(documentRef as React.RefObject<HTMLElement>, options)
+  useTouchGestures(documentRef, options)
 }
