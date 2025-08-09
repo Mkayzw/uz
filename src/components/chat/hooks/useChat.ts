@@ -14,6 +14,9 @@ interface Message {
 export default function useChat(chatId: string) {
   const [messages, setMessages] = useState<Message[]>([])
   const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -21,31 +24,73 @@ export default function useChat(chatId: string) {
 
   useEffect(() => {
     let subscription: any
+    
     async function init() {
-      // get current user
-      const { data: userData } = await supabase.auth.getUser()
-      const id = userData?.user?.id || null
-      setUserId(id)
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Get current user
+        const { data: userData } = await supabase.auth.getUser()
+        const id = userData?.user?.id || null
+        setUserId(id)
 
-      // fetch initial messages
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true })
-      if (error) {
-        console.error('Error loading messages:', error)
-      } else if (data) {
-        setMessages(data)
+        if (!id) {
+          setError('User not authenticated')
+          setLoading(false)
+          return
+        }
+
+        // Verify user has access to this chat
+        const { data: chatAccess, error: accessError } = await supabase
+          .from('chats')
+          .select('id')
+          .eq('id', chatId)
+          .single()
+
+        if (accessError || !chatAccess) {
+          setError('Chat not found or access denied')
+          setLoading(false)
+          return
+        }
+
+        // Fetch initial messages
+        const { data, error: messagesError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('chat_id', chatId)
+          .order('created_at', { ascending: true })
+          
+        if (messagesError) {
+          console.error('Error loading messages:', messagesError)
+          setError('Failed to load messages')
+        } else if (data) {
+          setMessages(data)
+        }
+
+        // Subscribe to new messages
+        subscription = supabase
+          .channel(`chat-${chatId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+              filter: `chat_id=eq.${chatId}`
+            },
+            (payload) => {
+              setMessages(prev => [...prev, payload.new as Message])
+            }
+          )
+          .subscribe()
+          
+      } catch (err) {
+        console.error('Error initializing chat:', err)
+        setError('Failed to initialize chat')
+      } finally {
+        setLoading(false)
       }
-
-      // subscribe to new messages
-      subscription = supabase
-        .channel(`public:messages:chat_id=eq.${chatId}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, payload => {
-          setMessages(prev => [...prev, payload.new as Message])
-        })
-        .subscribe()
     }
 
     init()
@@ -58,12 +103,32 @@ export default function useChat(chatId: string) {
   }, [chatId])
 
   async function sendMessage(content: string) {
-    if (!userId) return
-    const { error } = await supabase
-      .from('messages')
-      .insert({ chat_id: chatId, sender_id: userId, content })
-    if (error) console.error('Error sending message:', error)
+    if (!userId || !content.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          sender_id: userId,
+          content: content.trim()
+        })
+        
+      if (error) {
+        console.error('Error sending message:', error)
+        throw new Error('Failed to send message')
+      }
+    } catch (err) {
+      console.error('Error sending message:', err)
+      throw err
+    }
   }
 
-  return { messages, sendMessage, userId }
+  return { 
+    messages, 
+    sendMessage, 
+    userId,
+    loading,
+    error
+  }
 }

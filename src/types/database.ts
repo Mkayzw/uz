@@ -298,47 +298,33 @@ export type Database = {
       chats: {
         Row: {
           id: string
-          title: string
-          property_id: string | null
-          application_id: string | null
+          application_id: string
+          tenant_id: string
+          agent_id: string
+          property_id: string
+          property_title: string
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          title: string
-          property_id?: string | null
-          application_id?: string | null
+          application_id: string
+          tenant_id: string
+          agent_id: string
+          property_id: string
+          property_title: string
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          title?: string
-          property_id?: string | null
-          application_id?: string | null
+          application_id?: string
+          tenant_id?: string
+          agent_id?: string
+          property_id?: string
+          property_title?: string
           created_at?: string
           updated_at?: string
-        }
-      }
-      chat_participants: {
-        Row: {
-          id: string
-          chat_id: string
-          user_id: string
-          joined_at: string
-        }
-        Insert: {
-          id?: string
-          chat_id: string
-          user_id: string
-          joined_at?: string
-        }
-        Update: {
-          id?: string
-          chat_id?: string
-          user_id?: string
-          joined_at?: string
         }
       }
       messages: {
@@ -460,7 +446,6 @@ export type AgentPayment = Database['public']['Tables']['agent_payments']['Row']
 export type SavedProperty = Database['public']['Tables']['saved_properties']['Row']
 export type PropertyView = Database['public']['Tables']['property_views']['Row']
 export type Chat = Database['public']['Tables']['chats']['Row']
-export type ChatParticipant = Database['public']['Tables']['chat_participants']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
 
 // View types

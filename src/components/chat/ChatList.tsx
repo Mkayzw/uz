@@ -10,8 +10,11 @@ interface ChatItem {
   title?: string
   property_id?: string
   application_id?: string
-  lastMessage?: string
-  updatedAt?: string
+  lastMessage?: {
+    content: string
+    created_at: string
+    sender_id: string
+  } | null
   created_at?: string
   hasExistingChat?: boolean
   otherParticipant?: {
@@ -26,75 +29,31 @@ export default function ChatList() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<'tenant' | 'agent' | null>(null)
   const [isCreatingChat, setIsCreatingChat] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
   const handleCreateChat = async (chat: ChatItem) => {
-    if (!chat.application_id || !chat.otherParticipant || !userId) return
+    if (!chat.application_id || !userId) return
     
     setIsCreatingChat(chat.application_id)
+    setError(null)
     
     try {
-      // We need to get more details for chat creation
-      const { data: application } = await supabase
-        .from('applications')
-        .select(`
-          id,
-          tenant_id,
-          bed:beds!applications_bed_id_fkey(
-            room:rooms!beds_room_id_fkey(
-              property:properties!rooms_property_id_fkey(
-                id,
-                title,
-                owner_id
-              )
-            )
-          )
-        `)
-        .eq('id', chat.application_id)
-        .single()
-        
-      if (!application) return
-      
-      const bed = Array.isArray(application.bed) ? application.bed[0] : application.bed
-      const room = Array.isArray(bed?.room) ? bed.room[0] : bed?.room
-      const property = Array.isArray(room?.property) ? room.property[0] : room?.property
-      
-      if (!property) return
-      
-      // Get current user profile
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', userId)
-        .single()
-        
-      const context = {
-        propertyId: property.id,
-        propertyTitle: property.title,
-        tenantId: application.tenant_id,
-        tenantName: chat.otherParticipant.full_name || 'Unknown User',
-        agentId: property.owner_id,
-        agentName: userProfile?.full_name || 'Property Owner',
+      const chatId = await createPropertyChat({
         applicationId: chat.application_id
-      }
-      
-      const chatId = await createPropertyChat(context)
-      
-      // Refresh chats list
-      if (userRole) {
-        const updatedChats = await getUserChats(userId, userRole)
-        setChats(updatedChats)
-      }
+      })
       
       // Navigate to the new chat
       window.location.href = `/chat/${chatId}`
       
     } catch (error) {
       console.error('Failed to create chat:', error)
-      alert('Failed to create chat. Please try again.')
+      setError('Failed to create chat. Please try again.')
     } finally {
       setIsCreatingChat(null)
     }
@@ -102,61 +61,100 @@ export default function ChatList() {
 
   useEffect(() => {
     let channel: any
+    
     async function loadChats() {
-      const { data: usr } = await supabase.auth.getUser()
-      const uid = usr?.user?.id || null
-      setUserId(uid)
-      
-      if (!uid) return
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const { data: usr } = await supabase.auth.getUser()
+        const uid = usr?.user?.id || null
+        setUserId(uid)
+        
+        if (!uid) {
+          setLoading(false)
+          return
+        }
 
-      // Get user profile to determine role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', uid)
-        .single()
-      
-      const role = profile?.role as 'tenant' | 'agent'
-      setUserRole(role)
+        // Get user profile to determine role
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', uid)
+          .single()
+        
+        const role = profile?.role as 'tenant' | 'agent'
+        setUserRole(role)
 
-      // Load user's chats
-      const userChats = await getUserChats(uid, role)
-      console.log('ChatList: Loaded chats for user:', uid, 'role:', role, 'chats:', userChats)
-      setChats(userChats)
-      
-      // Debug: Check if there are any chats in the database for this user
-      const { data: allChats } = await supabase
-        .from('chats')
-        .select('*')
-      console.log('ChatList: All chats in database:', allChats)
-      
-      const { data: allParticipants } = await supabase
-        .from('chat_participants')
-        .select('*')
-        .eq('user_id', uid)
-      console.log('ChatList: All chat participants for user:', allParticipants)
+        // Load user's chats
+        const userChats = await getUserChats(uid, role)
+        setChats(userChats)
 
-      // subscribe to new chats
-      channel = supabase
-        .channel('public:chats')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats' }, payload => {
-          // Only add if user is a participant
-          supabase
-            .from('chat_participants')
-            .select('*')
-            .eq('chat_id', payload.new.id)
-            .eq('user_id', uid)
-            .then(({ data }) => {
-              if (data && data.length > 0) {
-                setChats(prev => [payload.new as ChatItem, ...prev])
-              }
-            })
-        })
-        .subscribe()
+        // Subscribe to new messages for real-time updates
+        channel = supabase
+          .channel('chat-list-updates')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages'
+            },
+            async (payload) => {
+              // Reload chats to get updated last message
+              const updatedChats = await getUserChats(uid, role)
+              setChats(updatedChats)
+            }
+          )
+          .subscribe()
+          
+      } catch (err) {
+        console.error('Error loading chats:', err)
+        setError('Failed to load chats')
+      } finally {
+        setLoading(false)
+      }
     }
+    
     loadChats()
-    return () => { if (channel) supabase.removeChannel(channel) }
+    
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [])
+
+  const formatLastMessageTime = (timestamp: string) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString()
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading chats...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-red-500">{error}</div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -210,19 +208,21 @@ export default function ChatList() {
                       </div>
                       {chat.lastMessage && (
                         <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                          {chat.lastMessage}
+                          {chat.lastMessage.content}
                         </div>
                       )}
                     </div>
                     <div className="text-right ml-2">
                       {!chat.hasExistingChat && (
                         <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                          {isCreatingChat === chat.application_id ? 'Creating...' : 'New'}
+                          {isCreatingChat === chat.application_id ? 'Creating...' : 'Start Chat'}
                         </div>
                       )}
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
-                        {new Date(chat.created_at || '').toLocaleDateString()}
-                      </div>
+                      {chat.lastMessage && (
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                          {formatLastMessageTime(chat.lastMessage.created_at)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

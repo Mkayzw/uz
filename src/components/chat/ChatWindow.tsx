@@ -3,79 +3,52 @@
 import { useEffect, useRef, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import useChat from './hooks/useChat'
+import { getChatDetails, ChatDetails } from '@/lib/chat/chatService'
 
 interface ChatWindowProps {
   chatId: string
 }
 
-interface UserProfile {
-  id: string
-  full_name: string | null
-  role: 'tenant' | 'agent'
-}
-
 export default function ChatWindow({ chatId }: ChatWindowProps) {
   const { messages } = useChat(chatId)
-  const [participants, setParticipants] = useState<Record<string, UserProfile>>({})
+  const [chatDetails, setChatDetails] = useState<ChatDetails | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
+  
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Fetch participants when component mounts
+  // Fetch chat details when component mounts
   useEffect(() => {
-    async function fetchParticipants() {
-      console.log('ChatWindow: Fetching participants for chatId:', chatId)
-      
-      // Get current user
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData?.user?.id
-      console.log('ChatWindow: Current user ID:', userId)
-      setCurrentUserId(userId || null)
-
-      // Get chat participants
-      const { data: chatParticipants, error: participantsError } = await supabase
-        .from('chat_participants')
-        .select('user_id')
-        .eq('chat_id', chatId)
-
-      console.log('ChatWindow: Chat participants:', chatParticipants)
-      console.log('ChatWindow: Participants error:', participantsError)
-
-      if (chatParticipants && chatParticipants.length > 0) {
-        const userIds = chatParticipants.map(p => p.user_id)
-        console.log('ChatWindow: User IDs to fetch profiles for:', userIds)
+    async function fetchChatDetails() {
+      try {
+        setLoading(true)
         
-        // Fetch profiles for all participants
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, role')
-          .in('id', userIds)
+        // Get current user
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData?.user?.id
+        setCurrentUserId(userId || null)
 
-        console.log('ChatWindow: Fetched profiles:', profiles)
-        console.log('ChatWindow: Profiles error:', profilesError)
-
-        if (profiles) {
-          const participantMap: Record<string, UserProfile> = {}
-          profiles.forEach(profile => {
-            participantMap[profile.id] = profile
-          })
-          console.log('ChatWindow: Participant map:', participantMap)
-          setParticipants(participantMap)
-        }
-      } else {
-        console.log('ChatWindow: No chat participants found')
+        // Get chat details
+        const details = await getChatDetails(chatId)
+        setChatDetails(details)
+        
+      } catch (error) {
+        console.error('Error fetching chat details:', error)
+      } finally {
+        setLoading(false)
       }
     }
 
     if (chatId) {
-      fetchParticipants()
+      fetchChatDetails()
     }
   }, [chatId])
 
-  // scroll to bottom on new messages
+  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -91,18 +64,55 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   }
 
   const getSenderInfo = (senderId: string) => {
-    const participant = participants[senderId]
-    if (!participant) return { name: 'Loading...', role: '' }
+    if (!chatDetails) return { name: 'Loading...', role: '' }
     
-    return {
-      name: participant.full_name || 'Unknown User',
-      role: participant.role === 'agent' ? 'Property Owner' : 'Tenant'
+    if (senderId === chatDetails.tenant_id) {
+      return {
+        name: chatDetails.tenant_name || 'Unknown User',
+        role: 'Tenant'
+      }
+    } else if (senderId === chatDetails.agent_id) {
+      return {
+        name: chatDetails.agent_name || 'Unknown User',
+        role: 'Property Owner'
+      }
     }
+    
+    return { name: 'Unknown User', role: '' }
   }
 
   const getOtherParticipant = () => {
-    const otherParticipantId = Object.keys(participants).find(id => id !== currentUserId)
-    return otherParticipantId ? participants[otherParticipantId] : null
+    if (!chatDetails || !currentUserId) return null
+    
+    if (currentUserId === chatDetails.tenant_id) {
+      return {
+        id: chatDetails.agent_id,
+        full_name: chatDetails.agent_name,
+        role: 'agent' as const
+      }
+    } else {
+      return {
+        id: chatDetails.tenant_id,
+        full_name: chatDetails.tenant_name,
+        role: 'tenant' as const
+      }
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading chat...</div>
+      </div>
+    )
+  }
+
+  if (!chatDetails) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-red-500">Chat not found</div>
+      </div>
+    )
   }
 
   const otherParticipant = getOtherParticipant()
@@ -127,36 +137,45 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
               </p>
             </div>
           </div>
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+            Property: {chatDetails.property_title}
+          </div>
         </div>
       )}
       
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map(msg => {
-        const senderInfo = getSenderInfo(msg.sender_id)
-        const isCurrentUser = msg.sender_id === currentUserId
-        
-        return (
-          <div key={msg.id} className={`flex ${getMessageAlignment(msg.sender_id)}`}>
-            <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${getMessageStyle(msg.sender_id)}`}>
-              {!isCurrentUser && (
-                <div className="text-xs font-medium mb-1 text-gray-600 dark:text-gray-300">
-                  {senderInfo.name} ({senderInfo.role})
-                </div>
-              )}
-              <div className="text-sm">{msg.content}</div>
-              <div className={`text-xs mt-1 ${
-                isCurrentUser 
-                  ? 'text-blue-100' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                {new Date(msg.created_at).toLocaleTimeString()}
-              </div>
-            </div>
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            No messages yet. Start the conversation!
           </div>
-        )
-      })}
-       <div ref={bottomRef} />
+        ) : (
+          messages.map(msg => {
+            const senderInfo = getSenderInfo(msg.sender_id)
+            const isCurrentUser = msg.sender_id === currentUserId
+            
+            return (
+              <div key={msg.id} className={`flex ${getMessageAlignment(msg.sender_id)}`}>
+                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${getMessageStyle(msg.sender_id)}`}>
+                  {!isCurrentUser && (
+                    <div className="text-xs font-medium mb-1 text-gray-600 dark:text-gray-300">
+                      {senderInfo.name} ({senderInfo.role})
+                    </div>
+                  )}
+                  <div className="text-sm">{msg.content}</div>
+                  <div className={`text-xs mt-1 ${
+                    isCurrentUser 
+                      ? 'text-blue-100' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {new Date(msg.created_at).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+        <div ref={bottomRef} />
       </div>
     </div>
   )
