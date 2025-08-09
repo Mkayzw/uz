@@ -194,7 +194,7 @@ export default function DashboardContent() {
       const { data, error } = await supabase
         .from('saved_properties')
         .insert({
-          bed_id: propertyId,
+          property_id: propertyId,
           user_id: user.id
         })
         .select()
@@ -235,7 +235,7 @@ export default function DashboardContent() {
           const { error } = await supabase
             .from('saved_properties')
             .delete()
-            .eq('bed_id', propertyId)
+            .eq('property_id', propertyId)
             .eq('user_id', user.id)
           
           if (error) throw error

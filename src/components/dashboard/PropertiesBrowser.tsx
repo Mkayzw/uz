@@ -191,7 +191,7 @@ export default function PropertiesBrowser({
   }, [allProperties, searchTerm, priceRange, typeFilter])
 
   const isPropertySaved = (propertyId: string) => {
-    return savedProperties.some(sp => sp.bed_id === propertyId)
+    return savedProperties.some(sp => sp.property_id === propertyId)
   }
 
   const hasAppliedToProperty = (propertyId: string) => {

@@ -96,7 +96,7 @@ export interface Application {
 
 export interface SavedProperty {
   id: string;
-  bed_id: string;
+  property_id: string;
   user_id: string;
   created_at: string;
   property?: Property;
