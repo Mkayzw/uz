@@ -128,9 +128,9 @@ export default function MessagesView({ profile, unreadCount = 0 }: MessagesViewP
   }
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex flex-col md:flex-row overflow-x-hidden">
       {/* Conversations List */}
-      <div className="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
@@ -196,7 +196,7 @@ export default function MessagesView({ profile, unreadCount = 0 }: MessagesViewP
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {selectedConversation ? (
           <>
             {/* Chat Header */}
@@ -224,7 +224,7 @@ export default function MessagesView({ profile, unreadCount = 0 }: MessagesViewP
                   className={`flex ${message.sender === 'You' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    className={`max-w-[85%] sm:max-w-[70%] md:max-w-md px-4 py-2 rounded-lg break-words ${
                       message.sender === 'You'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'

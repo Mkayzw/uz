@@ -150,6 +150,8 @@ function PropertyImageCarousel({ property, onImageClick }: PropertyImageCarousel
 export default function AgentProperties({ properties, onImageClick, onRefreshData }: AgentPropertiesProps) {
   const router = useRouter()
   const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
+  // Track expanded/collapsed state for each property's description
+  const [expandedDescriptions, setExpandedDescriptions] = useState<{ [key: string]: boolean }>({})
 
   const handleUnpublish = async (propertyId: string) => {
     if (loadingStates[propertyId]) return
@@ -227,9 +229,39 @@ export default function AgentProperties({ properties, onImageClick, onRefreshDat
                   <h4 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">{property.title}</h4>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{property.location}</p>
                   {property.description && (
-                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-                      {property.description}
-                    </p>
+                    <div className="mb-4">
+                      {expandedDescriptions[property.id] ? (
+                        <>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm">
+                            {property.description}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedDescriptions(prev => ({ ...prev, [property.id]: false }))
+                            }}
+                            className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
+                          >
+                            Read less
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-2">
+                            {property.description}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedDescriptions(prev => ({ ...prev, [property.id]: true }))
+                            }}
+                            className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
+                          >
+                            Read more
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="flex justify-between items-center mt-4">
