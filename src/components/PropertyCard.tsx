@@ -60,6 +60,8 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
   // Touch handling for swipe
   const touchStartX = useRef<number>(0)
   const touchEndX = useRef<number>(0)
+  const touchStartY = useRef<number>(0)
+  const touchEndY = useRef<number>(0)
 
   // Get all available images
   const allImages: string[] = []
@@ -96,24 +98,28 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
   // Touch event handlers for swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX
+    touchStartY.current = e.targetTouches[0].clientY
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndX.current = e.targetTouches[0].clientX
+    touchEndY.current = e.targetTouches[0].clientY
   }
 
   const handleTouchEnd = () => {
     if (!touchStartX.current || !touchEndX.current) return
 
-    const distance = touchStartX.current - touchEndX.current
-    const isLeftSwipe = distance > 50
-    const isRightSwipe = distance < -50
+    const deltaX = touchStartX.current - touchEndX.current
+    const deltaY = touchStartY.current - touchEndY.current
+    const minSwipeDistance = 30
 
-    if (isLeftSwipe && allImages.length > 1) {
-      nextImage()
-    }
-    if (isRightSwipe && allImages.length > 1) {
-      prevImage()
+    // Only handle horizontal swipes if they're more significant than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0 && allImages.length > 1) {
+        nextImage()
+      } else if (deltaX < 0 && allImages.length > 1) {
+        prevImage()
+      }
     }
   }
 
@@ -136,10 +142,10 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
         <div className="relative">
           <div
-            className="w-full h-48 relative cursor-pointer touch-manipulation"
+            className="w-full h-48 sm:h-56 relative cursor-pointer touch-manipulation"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -148,7 +154,11 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               property.title,
               currentImageIndex
             )}
-            style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
+            style={{
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              touchAction: 'pan-y pinch-zoom'
+            }}
           >
             <PropertyImage
               src={getImageUrl(allImages[currentImageIndex] || null)}
@@ -159,7 +169,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
           
           {/* Property Type Badge */}
           {property.property_type && (
-            <span className="absolute top-3 left-3 bg-blue-600 text-white px-2 py-1 rounded-md text-xs font-medium z-10">
+            <span className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-blue-600 text-white px-2 py-1 rounded-md text-xs font-medium z-10">
               {property.property_type}
             </span>
           )}
@@ -167,7 +177,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
           {/* Image Navigation */}
           {allImages.length > 1 && (
             <>
-              {/* Previous Button */}
+              {/* Navigation buttons - hidden on mobile, visible on larger screens */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -176,7 +186,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
                 onTouchStart={(e) => {
                   e.stopPropagation()
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-10 touch-manipulation"
+                className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all z-10 touch-manipulation items-center justify-center"
                 style={{ WebkitTouchCallout: 'none' }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,7 +194,6 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
                 </svg>
               </button>
               
-              {/* Next Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -193,7 +202,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
                 onTouchStart={(e) => {
                   e.stopPropagation()
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-10 touch-manipulation"
+                className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all z-10 touch-manipulation items-center justify-center"
                 style={{ WebkitTouchCallout: 'none' }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,50 +211,54 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               </button>
               
               {/* Image Counter */}
-              <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white px-2 py-1 rounded-md text-xs z-10">
-                {currentImageIndex + 1} / {allImages.length}
+              <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-xs z-10">
+                {currentImageIndex + 1}/{allImages.length}
               </div>
-
-
             </>
           )}
         </div>
         
-        <div className="p-6">
-          <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{property.title}</h3>
+        <div className="p-4 sm:p-6">
+          <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white mb-2 line-clamp-2">{property.title}</h3>
           
           {property.location && (
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{property.location}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-3 flex items-center">
+              <svg className="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {property.location}
+            </p>
           )}
           
           {property.description && (
             <div className="mb-4">
               {currentExpandedDescription ? (
                 <div>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm">
+                  <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
                     {property.description}
                   </p>
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setCurrentExpandedDescription(false);
                     }}
-                    className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none"
+                    className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
                   >
                     Read less
                   </button>
                 </div>
               ) : (
                 <div>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-2">
+                  <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm line-clamp-2">
                     {property.description}
                   </p>
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setCurrentExpandedDescription(true);
                     }}
-                    className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none"
+                    className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
                   >
                     Read more
                   </button>
@@ -255,12 +268,12 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
           )}
           
           {property.price && (
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-              ${Number(property.price).toFixed(2)}/month
+            <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 mb-3 sm:mb-4">
+              ${Number(property.price).toFixed(2)}/mo
             </p>
           )}
           
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
             {/* Bedrooms */}
             {property.bedrooms ? (
               <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
@@ -276,26 +289,28 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
             ) : null}
           </div>
           
-          {/* Amenities Section */}
+          {/* Amenities Section - Mobile optimized */}
           <div className="mb-4">
-            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Amenities:</h4>
-            <div className="flex flex-wrap gap-2">
-              {Object.keys(property).some(key => key.startsWith('has_') || key === 'is_furnished') ? (
-                amenities.map(amenity => {
-                  const isAvailable = property[amenity.key as keyof Property] === true;
-                  // Only show amenities that are available
-                  return isAvailable ? (
-                    <span 
-                      key={amenity.key} 
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full"
-                    >
-                      {amenity.icon}
-                      {amenity.label}
-                    </span>
-                  ) : null;
-                })
+            <h4 className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Amenities:</h4>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {availableAmenities.length > 0 ? (
+                availableAmenities.slice(0, 6).map(amenity => (
+                  <span
+                    key={amenity.key}
+                    className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                  >
+                    {amenity.icon}
+                    <span className="hidden sm:inline">{amenity.label}</span>
+                    <span className="sm:hidden">{amenity.label.slice(0, 3)}</span>
+                  </span>
+                ))
               ) : (
-                <span className="text-sm text-gray-500 dark:text-gray-400">Amenities information not available</span>
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">No amenities listed</span>
+              )}
+              {availableAmenities.length > 6 && (
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">
+                  +{availableAmenities.length - 6} more
+                </span>
               )}
             </div>
           </div>
@@ -303,7 +318,7 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
           <div className="flex gap-2">
             <button
               onClick={() => onApply(property.id)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 sm:py-2 px-4 rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px] text-sm sm:text-base"
             >
               Apply Now
             </button>
@@ -313,10 +328,11 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
                 property.title,
                 currentImageIndex
               )}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors touch-manipulation"
+              className="px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px] text-sm sm:text-base"
               style={{ WebkitTouchCallout: 'none' }}
             >
-              View {allImages.length > 1 ? `(${allImages.length})` : ''}
+              <span className="sm:hidden">View</span>
+              <span className="hidden sm:inline">View {allImages.length > 1 ? `(${allImages.length})` : ''}</span>
             </button>
           </div>
         </div>

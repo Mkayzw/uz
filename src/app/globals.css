@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Mobile-first spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Touch target sizes */
+  --touch-target-min: 48px;
+  --touch-target-comfortable: 56px;
 }
 
 @theme inline {
@@ -19,10 +30,21 @@
   }
 }
 
+/* Base styles - Mobile first */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent iOS zoom on input focus */
+  touch-action: manipulation;
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* Custom utilities */
@@ -45,21 +67,124 @@ body {
 /* Mobile touch optimizations */
 .touch-manipulation {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Prevent text selection on mobile */
-.pointer-events-none {
-  pointer-events: none;
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
-/* Ensure buttons are properly sized for touch */
-button {
-  min-height: 44px;
-  min-width: 44px;
+/* Ensure all interactive elements have proper touch targets */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"],
+.touchable {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Small buttons for specific use cases */
-button.small {
-  min-height: auto;
-  min-width: auto;
+/* Small buttons for specific use cases - must be explicitly set */
+button.small,
+a.small {
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* Improve form inputs on mobile */
+input,
+textarea,
+select {
+  font-size: 16px; /* Prevents zoom on iOS */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Mobile-first responsive utilities */
+.mobile-padding {
+  padding: var(--spacing-md);
+}
+
+@media (min-width: 640px) {
+  .mobile-padding {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-padding {
+    padding: var(--spacing-xl);
+  }
+}
+
+/* Smooth scrolling for mobile */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbars on mobile for cleaner look */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area insets for modern phones */
+.safe-area-inset {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Improve performance for animations */
+.will-change-transform {
+  will-change: transform;
+}
+
+/* Backdrop blur for mobile overlays */
+.backdrop-blur-supported {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Mobile-first typography scale */
+.text-mobile-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-mobile-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-mobile-base { font-size: 1rem; line-height: 1.5rem; }
+.text-mobile-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-mobile-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-mobile-2xl { font-size: 1.5rem; line-height: 2rem; }
+
+/* Enhance typography on larger screens */
+@media (min-width: 640px) {
+  .text-mobile-xs { font-size: 0.875rem; }
+  .text-mobile-sm { font-size: 1rem; }
+  .text-mobile-base { font-size: 1.125rem; }
+  .text-mobile-lg { font-size: 1.25rem; }
+  .text-mobile-xl { font-size: 1.5rem; }
+  .text-mobile-2xl { font-size: 2rem; }
 }

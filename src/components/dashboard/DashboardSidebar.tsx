@@ -168,8 +168,8 @@ export default function DashboardSidebar({
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+      {/* Desktop Sidebar - Only visible on large screens */}
+      <div className="flex flex-col w-72 fixed inset-y-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center p-6 border-b border-gray-200 dark:border-gray-700">
@@ -241,39 +241,6 @@ export default function DashboardSidebar({
         </div>
       </div>
 
-      {/* Mobile Bottom Tab Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)]">
-        <div className="grid h-16 grid-cols-5">
-          {visibleNavigation.map((item) => {
-            const Icon = activeTab === item.id ? item.iconSolid : item.icon
-            const isActive = activeTab === item.id
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleTabChange(item.id)}
-                className={`relative flex flex-col items-center justify-center pt-2 pb-1 px-1 transition-colors duration-200 group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900
-                  ${isActive
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                  }`}
-              >
-                <Icon className="w-6 h-6" />
-                <span className="text-[11px] font-medium text-center leading-tight mt-1">
-                  {item.label}
-                </span>
-                
-                {/* Badge for mobile */}
-                {item.badge && item.badge > 0 && (
-                  <span suppressHydrationWarning className="absolute top-1 right-2 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center leading-none font-bold">
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
     </>
   )
 }

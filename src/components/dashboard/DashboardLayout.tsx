@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
+import MobileNavDrawer from '@/components/dashboard/MobileNavDrawer'
+import MobileHeader from '@/components/dashboard/MobileHeader'
+import MobileBottomNav from '@/components/dashboard/MobileBottomNav'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
+import { useDocumentSwipe } from '@/hooks/useTouchGestures'
 import DashboardOverview from '@/components/dashboard/DashboardOverview'
 import PropertiesBrowser from '@/components/dashboard/PropertiesBrowser'
 import AgentProperties from '@/components/dashboard/AgentProperties'
@@ -22,15 +26,15 @@ import { useRealTimeSubscriptions } from '@/hooks/useRealTimeSubscriptions'
 import { useNavigationState } from '@/hooks/useNavigationState'
 import { useSupabaseClient } from '@/hooks/useSupabaseClient'
 import { updateApplicationStatus, verifyPayment, cancelApplication, submitApplication } from '@/app/dashboard/actions'
-import { 
-  DashboardTab, 
-  NotificationModal as NotificationModalType, 
-  ConfirmationModal as ConfirmationModalType, 
-  ImageModal as ImageModalType, 
+import {
+  DashboardTab,
+  NotificationModal as NotificationModalType,
+  ConfirmationModal as ConfirmationModalType,
+  ImageModal as ImageModalType,
   ApplicationModal as ApplicationModalType,
   Bed
 } from '@/types/dashboard'
-import { 
+import {
   BellIcon,
   HomeIcon
 } from '@heroicons/react/24/outline'
@@ -77,6 +81,8 @@ export default function DashboardLayout() {
 
   // Local state for UI
   const [activeTab, setActiveTab] = useState<DashboardTab>((searchParams.get('tab') as DashboardTab) || 'browse')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showBottomNav, setShowBottomNav] = useState(true) // Optional bottom nav
   const [applicationModal, setApplicationModal] = useState<ApplicationModalType>({
     isOpen: false,
     bedId: null
@@ -114,6 +120,18 @@ export default function DashboardLayout() {
       setActiveTab(defaultTab)
     }
   }, [profile, searchParams])
+
+  // Add swipe gesture to open mobile menu
+  useDocumentSwipe({
+    onSwipeRight: () => {
+      // Only open menu on swipe from left edge
+      if (window.innerWidth < 1024) {
+        setIsMobileMenuOpen(true)
+      }
+    },
+    enabled: !isMobileMenuOpen && typeof window !== 'undefined' && window.innerWidth < 1024,
+    threshold: 30
+  })
 
   // Helper functions for modals
   const showConfirmation = (config: Omit<ConfirmationModalType, 'isOpen'>) => {
@@ -298,7 +316,7 @@ export default function DashboardLayout() {
 
   // Render content based on active tab
   const renderContent = () => {
-    const contentClasses = "p-6 lg:p-8"
+    const contentClasses = ""
     
     switch (activeTab) {
       case 'overview':
@@ -497,24 +515,41 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Render sidebar component */}
-      <DashboardSidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+      {/* Mobile Navigation Drawer */}
+      <MobileNavDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         profile={profile}
-        pendingApplicationsCount={pendingApplicationsCount} 
+        pendingApplicationsCount={pendingApplicationsCount}
       />
 
-      {/* Main Content Area */}
-      <div className="lg:pl-72">
-        {/* Top Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4">
+      {/* Desktop Sidebar - hidden on mobile */}
+      <div className="hidden lg:block">
+        <DashboardSidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          profile={profile}
+          pendingApplicationsCount={pendingApplicationsCount}
+        />
+      </div>
+
+      {/* Main Content Area - responsive padding */}
+      <div className="lg:pl-72 flex flex-col min-h-screen">
+        {/* Mobile Header */}
+        <MobileHeader
+          onMenuClick={() => setIsMobileMenuOpen(true)}
+          profile={profile}
+          pendingApplicationsCount={pendingApplicationsCount}
+          displayName={displayName}
+        />
+
+        {/* Desktop Header */}
+        <header className="hidden lg:block bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <HomeIconSolid className="w-8 h-8 text-blue-600 mr-3 lg:hidden" />
-              <div className="hidden lg:block">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">UniStay</h2>
-              </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">UniStay</h2>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -544,22 +579,22 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* Page Title (Below Header) */}
-        <div className="bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        {/* Page Title (Below Header) - responsive padding */}
+        <div className="bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200 dark:border-gray-700">
           {activeTab === 'overview' ? (
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 Welcome back, {profile?.full_name || (profile?.role === 'agent' ? 'Agent' : 'Student')}!
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {profile?.role === 'agent' 
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+                {profile?.role === 'agent'
                   ? 'Manage your property portfolio and client relationships'
                   : 'Find your perfect accommodation'
                 }
               </p>
             </div>
           ) : (
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {activeTab === 'browse' && 'Search & Browse Properties'}
               {activeTab === 'properties' && 'Property Management'}
               {activeTab === 'applications' && (profile?.role === 'agent' ? 'Application Reviews' : 'My Applications')}
@@ -570,11 +605,20 @@ export default function DashboardLayout() {
           )}
         </div>
 
-        {/* Main Content */}
-        <main className="px-4 sm:px-6 py-6 pb-20">
+        {/* Main Content - responsive padding and bottom spacing for mobile nav */}
+        <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-6 ${showBottomNav ? 'pb-24' : 'pb-6'} lg:pb-6 transition-all duration-300`}>
           {renderContent()}
         </main>
       </div>
+
+      {/* Optional Mobile Bottom Navigation */}
+      {showBottomNav && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          profile={profile}
+        />
+      )}
 
       {/* Modals */}
       <ConfirmationModal
