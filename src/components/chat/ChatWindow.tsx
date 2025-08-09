@@ -7,15 +7,16 @@ import { getChatDetails, ChatDetails } from '@/lib/chat/chatService'
 
 interface ChatWindowProps {
   chatId: string
+  onOpenSidebar?: () => void
 }
 
-export default function ChatWindow({ chatId }: ChatWindowProps) {
+export default function ChatWindow({ chatId, onOpenSidebar }: ChatWindowProps) {
   const { messages } = useChat(chatId)
   const [chatDetails, setChatDetails] = useState<ChatDetails | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
-  
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -121,30 +122,47 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     <div className="flex-1 flex flex-col">
       {/* Chat Header */}
       {otherParticipant && (
-        <div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+        <div
+          className="border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 bg-white/95 dark:bg-gray-800/95 sticky top-0 z-10 backdrop-blur-supported"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
           <div className="flex items-center space-x-3">
+            {/* Mobile: open chat list */}
+            {onOpenSidebar && (
+              <button
+                type="button"
+                onClick={onOpenSidebar}
+                className="sm:hidden p-2 -ml-2 mr-1 rounded-md border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
+                aria-label="Open chats"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M3.75 6.75a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zm0 5.25a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zm0 5.25a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+
             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white font-medium text-sm">
                 {(otherParticipant.full_name || 'U').charAt(0).toUpperCase()}
               </span>
             </div>
-            <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <h3 className="font-medium text-gray-900 dark:text-white truncate">
                 {otherParticipant.full_name || 'Unknown User'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                 {otherParticipant.role === 'agent' ? 'Property Owner' : 'Tenant'}
               </p>
             </div>
           </div>
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-300 truncate">
             Property: {chatDetails.property_title}
           </div>
         </div>
       )}
-      
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 hide-scrollbar smooth-scroll">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400">
             No messages yet. Start the conversation!

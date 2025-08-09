@@ -1,17 +1,55 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import ChatList from '@/components/chat/ChatList'
-import ChatWindow from '@/components/chat/ChatWindow'
-import MessageInput from '@/components/chat/MessageInput'
+import { useDocumentSwipe } from '@/hooks/useTouchGestures'
 
 export default function ChatIndexPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  useDocumentSwipe({
+    onSwipeRight: () => setSidebarOpen(true),
+    onSwipeLeft: () => setSidebarOpen(false),
+    threshold: 60,
+    enabled: true,
+  })
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [sidebarOpen])
+
   return (
-    <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
-      <aside className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex">
+      {/* Desktop sidebar */}
+      <aside className="hidden sm:block w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <ChatList />
       </aside>
-      <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+
+      {/* Mobile drawer sidebar */}
+      {sidebarOpen && (
+        <div className="sm:hidden fixed inset-0 z-50 flex">
+          <div className="w-80 max-w-[80%] h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-xl">
+            <div className="h-full overflow-y-auto hide-scrollbar">
+              <ChatList />
+            </div>
+          </div>
+          <div
+            className="flex-1 h-full bg-black/40 backdrop-blur-supported"
+            onClick={() => setSidebarOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* Empty state on desktop */}
+      <div className="hidden sm:flex flex-1 items-center justify-center text-gray-500 dark:text-gray-400">
         <div className="text-center">
           <div className="mb-4">
             <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
