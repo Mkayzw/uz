@@ -73,6 +73,39 @@ export default function SignupFormContent() {
     }
   }
 
+  const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
+    try {
+      if (!formData.role) {
+        setError('Please select a role.')
+        return
+      }
+      if (!agreeToTerms) {
+        setError('Please agree to the Merchant Agreement to continue.')
+        return
+      }
+      setLoading(true)
+      setError('')
+      // Save intended role locally so you can use it post-sign-in if needed
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('oauth_intended_role', formData.role)
+      }
+      const nextPath = (typeof window !== 'undefined' && localStorage.getItem('redirect_after_auth')) || '/dashboard'
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}&role=${encodeURIComponent(formData.role)}`
+        }
+      })
+      if (error) throw error
+      // Browser will redirect to provider
+    } catch (err) {
+      if (err instanceof Error) setError(err.message)
+      else setError('Failed to start OAuth sign-in')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full">
@@ -203,6 +236,35 @@ export default function SignupFormContent() {
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-gray-800 px-2 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={loading}
+                className="inline-flex w-full justify-center items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+              >
+                <span>Continue with Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOAuthSignIn('apple')}
+                disabled={loading}
+                className="inline-flex w-full justify-center items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+              >
+                <span>Continue with Apple</span>
+              </button>
+            </div>
+          </div>
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600 dark:text-gray-400">

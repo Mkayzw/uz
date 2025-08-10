@@ -3,14 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  
+
   /* Mobile-first spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
-  
+
   /* Touch target sizes */
   --touch-target-min: 48px;
   --touch-target-comfortable: 56px;
@@ -108,6 +108,16 @@ select {
   -moz-appearance: none;
   appearance: none;
 }
+
+/* Restore native appearance for checkboxes and radios */
+input[type="checkbox"],
+input[type="radio"] {
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  accent-color: #2563eb; /* Tailwind blue-600 */
+}
+
 
 /* Mobile-first responsive utilities */
 .mobile-padding {

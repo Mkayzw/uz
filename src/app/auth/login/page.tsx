@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
+  const supabase = createClient()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -37,7 +39,6 @@ export default function LoginPage() {
         throw new Error(data.error || 'An unknown error occurred')
       }
 
-    
       const storedRedirect = typeof window !== 'undefined' ? localStorage.getItem('redirect_after_auth') : null
       if (storedRedirect) {
         router.push(storedRedirect)
@@ -53,6 +54,28 @@ export default function LoginPage() {
         setError('An unknown error occurred')
       }
     } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
+    try {
+      setLoading(true)
+      setError('')
+      const nextPath = (typeof window !== 'undefined' && localStorage.getItem('redirect_after_auth')) || '/dashboard'
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+        }
+      })
+      if (error) throw error
+      // Browser will redirect; no further action needed
+    } catch (err) {
+      if (err instanceof Error) setError(err.message)
+      else setError('Failed to start OAuth sign-in')
+    } finally {
+      // If redirect happens, this may not run; safe to keep
       setLoading(false)
     }
   }
@@ -129,6 +152,35 @@ export default function LoginPage() {
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-gray-800 px-2 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={loading}
+                className="inline-flex w-full justify-center items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+              >
+                <span>Continue with Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOAuthSignIn('apple')}
+                disabled={loading}
+                className="inline-flex w-full justify-center items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+              >
+                <span>Continue with Apple</span>
+              </button>
+            </div>
+          </div>
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600 dark:text-gray-400">
