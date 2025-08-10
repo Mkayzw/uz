@@ -69,9 +69,8 @@ export default function MobileBottomNav({
   ]
 
   const handleTabChange = (tab: DashboardTab) => {
+    // Delegate URL updates to parent setActiveTab implementation
     setActiveTab(tab)
-    // Update URL without navigation
-    window.history.replaceState(null, '', `/dashboard?tab=${tab}`)
   }
 
   return (

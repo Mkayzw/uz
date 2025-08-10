@@ -16,6 +16,7 @@ import DashboardApplications from '@/components/dashboard/DashboardApplications'
 import SavedProperties from '@/components/dashboard/SavedProperties'
 import DashboardAccount from '@/components/dashboard/DashboardAccount'
 import CommissionTracking from '@/components/dashboard/CommissionTracking'
+import MobileBottomNav from '@/components/dashboard/MobileBottomNav'
 import { useDashboardAuth } from '@/hooks/useDashboardAuth'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useRealTimeSubscriptions } from '@/hooks/useRealTimeSubscriptions'
@@ -73,9 +74,11 @@ export default function DashboardContent() {
   // Sync URL when activeTab changes programmatically
   const updateActiveTab = (tab: DashboardTab) => {
     setActiveTab(tab)
-    const newUrl = new URL(window.location.href)
-    newUrl.searchParams.set('tab', tab)
-    window.history.replaceState({}, '', newUrl.toString())
+    // Push a new history entry so the browser Back button navigates between tabs
+    const params = new URLSearchParams(Array.from(searchParams.entries()))
+    params.set('tab', tab)
+    // Keep other params intact
+    router.push(`/dashboard?${params.toString()}`)
   }
   const [applicationModal, setApplicationModal] = useState<ApplicationModalType>({
     isOpen: false,
@@ -474,7 +477,7 @@ export default function DashboardContent() {
       <DashboardHeader onSignOut={handleSignOut} />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12 pb-24 sm:pb-12">
         {/* Welcome Section */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -630,6 +633,13 @@ export default function DashboardContent() {
 
       {/* Toast Notifications */}
       <ToastManager />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={updateActiveTab}
+        profile={profile}
+      />
     </div>
   )
 }

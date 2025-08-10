@@ -156,10 +156,9 @@ export default function MobileNavDrawer({
   const visibleNavigation = navigation.filter(item => item.show)
 
   const handleTabChange = (tab: DashboardTab) => {
+    // Delegate URL updates to parent setActiveTab implementation
     setActiveTab(tab)
     onClose()
-    // Update URL without navigation
-    window.history.replaceState(null, '', `/dashboard?tab=${tab}`)
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, BellIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline'
 import { UserProfile } from '@/types/dashboard'
 
 interface MobileHeaderProps {
@@ -8,13 +8,17 @@ interface MobileHeaderProps {
   profile: UserProfile | null
   pendingApplicationsCount?: number
   displayName: string
+  unreadMessagesCount?: number
+  onTabChange: (tab: string) => void
 }
 
 export default function MobileHeader({
   onMenuClick,
   profile,
   pendingApplicationsCount = 0,
-  displayName
+  displayName,
+  unreadMessagesCount = 0,
+  onTabChange
 }: MobileHeaderProps) {
   return (
     <header className="lg:hidden sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 shadow-sm">
@@ -36,6 +40,20 @@ export default function MobileHeader({
 
       {/* Right side actions */}
       <div className="flex items-center gap-x-2">
+        {/* Messages */}
+        <button
+          className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg active:scale-95"
+          aria-label="View messages"
+          onClick={() => onTabChange('messages')}
+        >
+          <ChatBubbleLeftRightIcon className="h-6 w-6 transition-transform duration-200" />
+          {unreadMessagesCount > 0 && (
+            <span className="absolute top-1 right-1 h-5 w-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center font-medium animate-pulse">
+              {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+            </span>
+          )}
+        </button>
+
         {/* Notifications */}
         <button
           className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg active:scale-95"

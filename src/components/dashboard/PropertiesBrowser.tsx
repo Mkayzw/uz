@@ -121,32 +121,15 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48", isExpa
         />
 
 
-        {/* Read more / less overlay on image */}
+        {/* Read more / less overlay on image (match home page badge style) */}
         {property.description && (
-          <div className="absolute bottom-2 left-2 right-2">
-            {!isExpanded ? (
-              <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
-                <span className="line-clamp-1">{property.description}</span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-                  className="underline ml-2"
-                >
-                  Read more
-                </button>
-              </div>
-            ) : (
-              <div className="bg-black/70 text-white text-xs px-2 py-2 rounded-md">
-                <p className="max-h-20 overflow-auto hide-scrollbar">
-                  {property.description}
-                </p>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-                  className="underline mt-1"
-                >
-                  Read less
-                </button>
-              </div>
-            )}
+          <div className="absolute bottom-2 right-2 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
+              className="bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-xs"
+            >
+              {isExpanded ? 'Read less' : 'Read more'}
+            </button>
           </div>
         )}
 

@@ -88,6 +88,7 @@ export default function DashboardLayout() {
     bedId: null
   })
   const [availableBeds, setAvailableBeds] = useState<any[]>([])
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
 
   // Modal states
   const [confirmationModal, setConfirmationModal] = useState<ConfirmationModalType>({
@@ -513,6 +514,40 @@ export default function DashboardLayout() {
     }
   }
 
+  useEffect(() => {
+    const fetchUnreadMessages = async () => {
+      if (!user || !profile) return
+      
+      try {
+        // Get user's chats and count unread messages
+        const { data: chats, error } = await supabase
+          .from('chats')
+          .select(`
+            id,
+            messages!inner(id, is_read, sender_id)
+          `)
+          .or(`tenant_id.eq.${user.id},agent_id.eq.${user.id}`)
+        
+        if (error) throw error
+        
+        let unreadCount = 0
+        chats?.forEach(chat => {
+          chat.messages?.forEach(message => {
+            if (!message.is_read && message.sender_id !== user.id) {
+              unreadCount++
+            }
+          })
+        })
+        
+        setUnreadMessagesCount(unreadCount)
+      } catch (error) {
+        console.error('Error fetching unread messages:', error)
+      }
+    }
+    
+    fetchUnreadMessages()
+  }, [user, profile, supabase])
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile Navigation Drawer */}
@@ -543,6 +578,8 @@ export default function DashboardLayout() {
           profile={profile}
           pendingApplicationsCount={pendingApplicationsCount}
           displayName={displayName}
+          unreadMessagesCount={unreadMessagesCount}
+          onTabChange={(_tab) => router.push('/chat')}
         />
 
         {/* Desktop Header */}
