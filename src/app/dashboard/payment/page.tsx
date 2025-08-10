@@ -304,7 +304,7 @@ function PaymentPageContent() {
   ) : (
     <>
       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        To activate your agent account, please send the subscription fee of <strong>$15.00</strong> via EcoCash to the UniStay activation number below:
+        To activate your agent account, please send the subscription fee of <strong>$10.00</strong> via EcoCash to the UniStay activation number below:
       </p>
     </>
   )

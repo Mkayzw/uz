@@ -25,9 +25,11 @@ export default function ChatIndexPage() {
     }
   }, [sidebarOpen])
 
-  // Close drawer on route change
+  // Keep drawer open on the chat index route (mobile friendly)
   useEffect(() => {
-    setSidebarOpen(false)
+    if (pathname === '/chat') {
+      setSidebarOpen(true)
+    }
   }, [pathname])
 
   return (

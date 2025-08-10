@@ -30,9 +30,11 @@ interface PropertyImageCarouselProps {
   property: Property
   onImageClick: (src: string | null, alt: string, allImages?: string[], initialIndex?: number) => void
   height?: string
+  isExpanded: boolean
+  onToggleExpand: () => void
 }
 
-function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: PropertyImageCarouselProps) {
+function PropertyImageCarousel({ property, onImageClick, height = "h-48", isExpanded, onToggleExpand }: PropertyImageCarouselProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const touchStartX = useRef<number>(0)
   const touchEndX = useRef<number>(0)
@@ -118,6 +120,36 @@ function PropertyImageCarousel({ property, onImageClick, height = "h-48" }: Prop
           className="w-full h-full object-cover transition-transform duration-300 pointer-events-none"
         />
 
+
+        {/* Read more / less overlay on image */}
+        {property.description && (
+          <div className="absolute bottom-2 left-2 right-2">
+            {!isExpanded ? (
+              <div className="bg-black/60 text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+                <span className="line-clamp-1">{property.description}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
+                  className="underline ml-2"
+                >
+                  Read more
+                </button>
+              </div>
+            ) : (
+              <div className="bg-black/70 text-white text-xs px-2 py-2 rounded-md">
+                <p className="max-h-20 overflow-auto hide-scrollbar">
+                  {property.description}
+                </p>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
+                  className="underline mt-1"
+                >
+                  Read less
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Mobile-first overlay for better touch feedback */}
         <div className="absolute inset-0 bg-transparent" />
       </div>
@@ -179,6 +211,7 @@ export default function PropertiesBrowser({
   const [amenityFilters, setAmenityFilters] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high' | 'popular'>('newest')
   const [showFilters, setShowFilters] = useState(false)
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
 
   const filteredProperties = useMemo(() => {
     return allProperties.filter(property => {
@@ -327,6 +360,8 @@ export default function PropertiesBrowser({
                 property={property}
                 onImageClick={onImageClick}
                 height="h-48"
+                isExpanded={!!expandedDescriptions[property.id]}
+                onToggleExpand={() => setExpandedDescriptions(prev => ({ ...prev, [property.id]: !prev[property.id] }))}
               />
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
@@ -351,9 +386,39 @@ export default function PropertiesBrowser({
                 </div>
 
                 {property.description && (
-                  <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                    {property.description}
-                  </p>
+                  <div className="mb-3">
+                    {expandedDescriptions[property.id] ? (
+                      <>
+                        <p className="text-gray-700 dark:text-gray-300 text-sm">
+                          {property.description}
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setExpandedDescriptions(prev => ({ ...prev, [property.id]: false }))
+                          }}
+                          className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
+                        >
+                          Read less
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-2">
+                          {property.description}
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setExpandedDescriptions(prev => ({ ...prev, [property.id]: true }))
+                          }}
+                          className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
+                        >
+                          Read more
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
 
                 {property.price && (
@@ -417,6 +482,8 @@ export default function PropertiesBrowser({
                     property={property}
                     onImageClick={onImageClick}
                     height="h-full"
+                    isExpanded={!!expandedDescriptions[property.id]}
+                    onToggleExpand={() => setExpandedDescriptions(prev => ({ ...prev, [property.id]: !prev[property.id] }))}
                   />
                 </div>
 
@@ -450,9 +517,39 @@ export default function PropertiesBrowser({
                   </div>
 
                   {property.description && (
-                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-1">
-                      {property.description}
-                    </p>
+                    <div className="mb-3">
+                      {expandedDescriptions[property.id] ? (
+                        <>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm">
+                            {property.description}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedDescriptions(prev => ({ ...prev, [property.id]: false }))
+                            }}
+                            className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
+                          >
+                            Read less
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-1">
+                            {property.description}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedDescriptions(prev => ({ ...prev, [property.id]: true }))
+                            }}
+                            className="text-blue-600 dark:text-blue-400 text-xs mt-1 hover:underline focus:outline-none touch-manipulation"
+                          >
+                            Read more
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
 
                   <div className="flex items-center justify-between">

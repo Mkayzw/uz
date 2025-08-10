@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { UserProfile } from '@/types/dashboard'
 
@@ -9,12 +10,13 @@ interface DashboardAccountProps {
   onUpdateEcocash: (ecocashNumber: string) => Promise<void>
 }
 
-export default function DashboardAccount({ 
-  user, 
-  profile, 
-  onSignOut, 
-  onUpdateEcocash 
+export default function DashboardAccount({
+  user,
+  profile,
+  onSignOut,
+  onUpdateEcocash
 }: DashboardAccountProps) {
+  const router = useRouter()
   const [ecocashNumber, setEcocashNumber] = useState<string>(profile?.ecocash_number || '')
   const [updatingEcocash, setUpdatingEcocash] = useState(false)
 
@@ -82,10 +84,16 @@ export default function DashboardAccount({
         <div>
           <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Account Actions</h4>
           <div className="flex flex-wrap gap-4">
-            <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+            <button
+              onClick={() => router.push('/auth/confirm')}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Edit Profile
             </button>
-            <button className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+            <button
+              onClick={() => router.push('/auth/forgot-password')}
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
+            >
               Change Password
             </button>
             <button

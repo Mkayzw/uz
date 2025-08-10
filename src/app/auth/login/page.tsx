@@ -38,7 +38,7 @@ export default function LoginPage() {
       }
 
     
-      const storedRedirect = typeof window !== 'undefined' ? localStorage.getItem('redirect_after_auth') : null
+      const storedRedirect = localStorage.getItem('redirect_after_auth')
       if (storedRedirect) {
         router.push(storedRedirect)
         localStorage.removeItem('redirect_after_auth')

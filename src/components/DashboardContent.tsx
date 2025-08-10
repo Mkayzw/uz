@@ -427,7 +427,7 @@ export default function DashboardContent() {
   };
 
   // Loading and error states
-  const loading = authLoading || dataLoading
+  const loading = authLoading || ((user && profile) ? dataLoading : false)
   const error = authError || dataError
 
   if (loading) {

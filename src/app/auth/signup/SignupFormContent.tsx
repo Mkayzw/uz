@@ -55,7 +55,7 @@ export default function SignupFormContent() {
             full_name: formData.name,
             role: formData.role
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${location.origin}/auth/callback`
         }
       })
 
