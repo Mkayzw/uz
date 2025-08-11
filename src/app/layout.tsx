@@ -15,7 +15,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          {/* Global Beta badge */}
+          <div className="fixed top-3 right-3 z-50 select-none pointer-events-none" role="note" aria-label="This site is in beta">
+            <span
+              className="px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded-full shadow-md bg-blue-600 text-white dark:bg-blue-500"
+              title="Beta"
+            >
+              Beta
+            </span>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
