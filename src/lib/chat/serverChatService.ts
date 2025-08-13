@@ -17,75 +17,49 @@ export async function createPropertyChat(context: ChatCreationContext) {
   console.log('createPropertyChat: Starting chat creation with context:', JSON.stringify(context, null, 2))
   const supabase = createClient(cookies())
 
-  // Check if chat already exists for this property-tenant combination
-  const { data: existingChats, error: existingError } = await supabase
-    .from('chats')
-    .select('id')
-    .eq('property_id', context.propertyId)
-    .eq('application_id', context.applicationId)
-  
-  console.log('createPropertyChat: Existing chats check:', { existingChats, existingError })
-
-  if (existingChats && existingChats.length > 0) {
-    console.log('createPropertyChat: Chat already exists, returning existing ID:', existingChats[0].id)
-    return existingChats[0].id
-  }
-
-  // Create new chat
-  console.log('createPropertyChat: Creating new chat...')
-  const { data: newChat, error: chatError } = await supabase
-    .from('chats')
-    .insert({
-      title: `Property: ${context.propertyTitle} - ${context.tenantName}`,
-      property_id: context.propertyId,
-      application_id: context.applicationId,
-      created_at: new Date().toISOString()
-    })
-    .select()
-
-  console.log('createPropertyChat: Chat creation result:', { newChat, chatError })
-
-  if (chatError || !newChat || newChat.length === 0) {
-    console.error('createPropertyChat: Failed to create chat:', { chatError, newChat })
-    throw new Error('Failed to create chat')
-  }
-
-  const chatId = newChat[0].id
-  console.log('createPropertyChat: Created chat with ID:', chatId)
-
-  // Add both participants
-  console.log('createPropertyChat: Adding participants...')
-  const { error: participantError } = await supabase
-    .from('chat_participants')
-    .insert([
-      { chat_id: chatId, user_id: context.tenantId },
-      { chat_id: chatId, user_id: context.agentId }
-    ])
-
-  console.log('createPropertyChat: Participant addition result:', { participantError })
-
-  if (participantError) {
-    console.error('createPropertyChat: Failed to add participants:', participantError)
-    throw new Error('Failed to add chat participants')
-  }
-
-  // Send initial system message
-  console.log('createPropertyChat: Sending initial message...')
-  const { error: messageError } = await supabase
-    .from('messages')
-    .insert({
-      chat_id: chatId,
-      sender_id: context.agentId, // Send from agent
-      content: `Hi ${context.tenantName}! I'm ${context.agentName}, the property owner. Feel free to ask any questions about "${context.propertyTitle}".`,
-      created_at: new Date().toISOString()
+  try {
+    // Use database function to get or create chat based on application
+    console.log('createPropertyChat: Calling get_or_create_chat RPC...')
+    const { data: chatId, error: functionError } = await supabase.rpc('get_or_create_chat', {
+      p_application_id: context.applicationId,
     })
 
-  console.log('createPropertyChat: Message creation result:', { messageError })
-  
-  if (messageError) {
-    console.error('createPropertyChat: Failed to send initial message:', messageError)
-  }
+    if (functionError) {
+      console.error('createPropertyChat: RPC error:', functionError)
+      throw new Error(`Failed to create/retrieve chat: ${functionError.message}`)
+    }
 
-  console.log('createPropertyChat: Chat creation completed successfully for chatId:', chatId)
-  return chatId
+    if (!chatId) {
+      throw new Error('Failed to create/retrieve chat: No chat ID returned')
+    }
+
+    console.log('createPropertyChat: Got chatId:', chatId)
+
+    // Fetch chat details to decide whether to send a welcome message
+    const { data: chatDetails, error: detailsError } = await supabase
+      .from('chat_details')
+      .select('*')
+      .eq('id', chatId)
+      .single()
+
+    if (detailsError) {
+      console.warn('createPropertyChat: Failed to load chat details (continuing):', detailsError)
+    }
+
+    if (chatDetails && !chatDetails.last_message) {
+      const welcomeMessage = `Hi ${chatDetails.tenant_name}! I'm ${chatDetails.agent_name}, the property owner. Feel free to ask any questions about "${chatDetails.property_title}".`
+      await supabase.from('messages').insert({
+        chat_id: chatId,
+        sender_id: chatDetails.agent_id,
+        content: welcomeMessage,
+        created_at: new Date().toISOString(),
+      })
+    }
+
+    console.log('createPropertyChat: Chat ready with ID:', chatId)
+    return chatId
+  } catch (err) {
+    console.error('createPropertyChat: Unexpected error:', err)
+    throw err
+  }
 }

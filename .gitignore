@@ -42,3 +42,6 @@ next-env.d.ts
 
 # AI instructions (do not commit)
 .github/copilot-instructions.md
+
+# Supabase migrations
+supabase/migrations/

@@ -1,250 +1,308 @@
 'use client'
 
 import { createBrowserClient } from '@supabase/ssr'
+import { 
+  Chat, 
+  Message, 
+  Conversation, 
+  ChatDetails, 
+  SendMessageRequest, 
+  CreateChatRequest,
+  ChatServiceError 
+} from './types'
 
-export interface ChatCreationContext {
-  applicationId: string
-}
-
-export interface ChatDetails {
-  id: string
-  application_id: string
-  property_id: string
-  property_title: string
-  tenant_id: string
-  agent_id: string
-  tenant_name: string | null
-  agent_name: string | null
-  tenant_role: string
-  agent_role: string
-  created_at: string
-  updated_at: string
-  last_message?: {
-    content: string
-    created_at: string
-    sender_id: string
-  } | null
-}
-
-export async function createPropertyChat(context: ChatCreationContext) {
-  console.log('[DEBUG] createPropertyChat called with context:', context)
-  
-  const supabase = createBrowserClient(
+/**
+ * Chat Service - Handles all chat-related operations
+ * This service provides methods for chat management, messaging, and real-time subscriptions
+ */
+class ChatService {
+  private supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Check current user authentication
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  console.log('[DEBUG] Current authenticated user:', user?.id, 'Auth error:', authError)
-  
-  if (!user) {
-    console.error('[ERROR] No authenticated user found')
-    throw new Error('User must be authenticated to create a chat')
-  }
-
-  // Validate context data
-  if (!context.applicationId) {
-    console.error('[ERROR] Missing required field: applicationId')
-    throw new Error('Missing required field: applicationId')
-  }
-
-  try {
-    // Use the database function to get or create chat
-    console.log('[DEBUG] Calling get_or_create_chat function...')
-    const { data: chatId, error: functionError } = await supabase
-      .rpc('get_or_create_chat', {
-        p_application_id: context.applicationId
-      })
-    
-    if (functionError) {
-      console.error('[ERROR] Database function error:', functionError)
-      throw new Error(`Failed to create chat: ${functionError.message}`)
-    }
-    
-    if (!chatId) {
-      throw new Error('Failed to create chat: No chat ID returned')
-    }
-    
-    console.log('[DEBUG] Successfully created/retrieved chat with ID:', chatId)
-    
-    // Get chat details to send initial message if needed
-    const { data: chatDetails, error: detailsError } = await supabase
-      .from('chat_details')
-      .select('*')
-      .eq('id', chatId)
-      .single()
-    
-    if (!detailsError && chatDetails && !chatDetails.last_message) {
-      // Send initial welcome message from agent
-      const welcomeMessage = `Hi ${chatDetails.tenant_name}! I'm ${chatDetails.agent_name}, the property owner. Feel free to ask any questions about "${chatDetails.property_title}".`
-      
-      await supabase
-        .from('messages')
-        .insert({
-          chat_id: chatId,
-          sender_id: chatDetails.agent_id,
-          content: welcomeMessage,
-          created_at: new Date().toISOString()
-        })
-    }
-    
-    return chatId
-  } catch (error) {
-    console.error('[ERROR] Failed to create/retrieve chat:', error)
-    throw error
-  }
-}
-
-export async function getUserChats(userId: string, userRole: 'tenant' | 'agent') {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  try {
-    if (userRole === 'agent') {
-      // For agents: Get all applications to their properties
-      // Some may have chats, some may not yet
-      console.log('[DEBUG] Fetching applications for agent:', userId)
-      
-      const { data: applications, error } = await supabase
-        .from('applications')
-        .select(`
-          id,
-          status,
-          created_at,
-          tenant_id,
-          bed_id,
-          tenant:profiles!applications_tenant_id_fkey(
-            id,
-            full_name,
-            role
-          ),
-          bed:beds!applications_bed_id_fkey(
-            id,
-            bed_number,
-            room:rooms!beds_room_id_fkey(
-              id,
-              name,
-              property:properties!rooms_property_id_fkey(
-                id,
-                title,
-                owner_id
-              )
-            )
-          )
-        `)
-        .eq('bed.room.property.owner_id', userId)
-        .order('created_at', { ascending: false })
+  /**
+   * Get all conversations for the current user
+   */
+  async getUserConversations(): Promise<Conversation[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('chat_conversations')
+        .select('*')
+        .order('updated_at', { ascending: false })
 
       if (error) {
-        console.error('[ERROR] Failed to fetch applications:', error)
-        throw new Error(`Failed to fetch applications: ${error.message}`)
+        throw this.createError('Failed to fetch conversations', error)
       }
 
-      if (!applications || applications.length === 0) {
-        return []
-      }
+      return data || []
+    } catch (error) {
+      console.error('[ChatService] Error fetching user conversations:', error)
+      throw error
+    }
+  }
 
-      // Get all existing chats for these applications
-      const applicationIds = applications.map(app => app.id)
-      const { data: existingChats } = await supabase
-        .from('chat_details')
+  /**
+   * Get a specific chat by ID
+   */
+  async getChatById(chatId: string): Promise<Chat | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('chats')
         .select('*')
-        .in('application_id', applicationIds)
+        .eq('id', chatId)
+        .single()
 
-      // Create a map of application_id to chat details
-      const chatMap = new Map<string, ChatDetails>()
-      existingChats?.forEach(chat => {
-        chatMap.set(chat.application_id, chat)
-      })
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null // Chat not found
+        }
+        throw this.createError('Failed to fetch chat', error)
+      }
 
-      // Transform applications into chat items
-      return applications.map(app => {
-        const bed = Array.isArray(app.bed) ? app.bed[0] : app.bed
-        const room = Array.isArray(bed?.room) ? bed.room[0] : bed?.room  
-        const property = Array.isArray(room?.property) ? room.property[0] : room?.property
-        const tenant = Array.isArray(app.tenant) ? app.tenant[0] : app.tenant
-        const existingChat = chatMap.get(app.id)
+      return data
+    } catch (error) {
+      console.error('[ChatService] Error fetching chat:', error)
+      throw error
+    }
+  }
 
-        return {
-          id: existingChat?.id || null,
-          title: `Application: ${property?.title} - ${tenant?.full_name}`,
-          property_id: property?.id,
-          application_id: app.id,
-          created_at: existingChat?.created_at || app.created_at,
-          hasExistingChat: !!existingChat,
-          lastMessage: existingChat?.last_message,
-          otherParticipant: {
-            id: tenant?.id,
-            full_name: tenant?.full_name,
-            role: tenant?.role
+  /**
+   * Get chat details with participant information
+   */
+  async getChatDetails(chatId: string): Promise<ChatDetails | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('chat_conversations')
+        .select('*')
+        .eq('id', chatId)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null // Chat not found
+        }
+        throw this.createError('Failed to fetch chat details', error)
+      }
+
+      return {
+        id: data.id,
+        property_id: data.property_id,
+        property_title: data.property_title,
+        tenant_id: data.tenant_id,
+        agent_id: data.agent_id,
+        tenant_name: data.tenant_name,
+        agent_name: data.agent_name,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      }
+    } catch (error) {
+      console.error('[ChatService] Error fetching chat details:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Create a new chat for a property
+   */
+  async createPropertyChat(request: CreateChatRequest): Promise<string> {
+    try {
+      const { data: chatId, error } = await this.supabase
+        .rpc('get_or_create_property_chat', {
+          p_property_id: request.propertyId,
+          p_tenant_id: request.tenantId || undefined
+        })
+
+      if (error) {
+        throw this.createError('Failed to create chat', error)
+      }
+
+      if (!chatId) {
+        throw new Error('Failed to create chat: No chat ID returned')
+      }
+
+      return chatId
+    } catch (error) {
+      console.error('[ChatService] Error creating property chat:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get all messages for a chat
+   */
+  async getChatMessages(chatId: string): Promise<Message[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        throw this.createError('Failed to fetch messages', error)
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('[ChatService] Error fetching chat messages:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Send a message to a chat
+   */
+  async sendMessage(request: SendMessageRequest): Promise<Message> {
+    try {
+      const { data: user } = await this.supabase.auth.getUser()
+      
+      if (!user.user) {
+        throw new Error('User must be authenticated to send messages')
+      }
+
+      const messageData = {
+        chat_id: request.chatId,
+        sender_id: user.user.id,
+        content: request.content.trim(),
+        message_type: 'text' as const
+      }
+
+      const { data, error } = await this.supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single()
+
+      if (error) {
+        throw this.createError('Failed to send message', error)
+      }
+
+      return data
+    } catch (error) {
+      console.error('[ChatService] Error sending message:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Subscribe to new messages in a chat
+   */
+  subscribeToChat(chatId: string, callback: (message: Message) => void): () => void {
+    const channel = this.supabase
+      .channel(`chat-${chatId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `chat_id=eq.${chatId}`
+        },
+        (payload) => {
+          callback(payload.new as Message)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      this.supabase.removeChannel(channel)
+    }
+  }
+
+  /**
+   * Subscribe to chat list updates
+   */
+  subscribeToChatList(callback: (conversations: Conversation[]) => void): () => void {
+    const channel = this.supabase
+      .channel('chat-list-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        async () => {
+          // Reload conversations when any message changes
+          try {
+            const conversations = await this.getUserConversations()
+            callback(conversations)
+          } catch (error) {
+            console.error('[ChatService] Error reloading conversations:', error)
           }
         }
-      })
-    } else {
-      // For tenants: Get all their chats
-      console.log('[DEBUG] Fetching chats for tenant:', userId)
-      
-      const { data: chats, error } = await supabase
-        .from('chat_details')
-        .select('*')
-        .eq('tenant_id', userId)
-        .order('created_at', { ascending: false })
+      )
+      .subscribe()
 
-      if (error) {
-        console.error('[ERROR] Failed to fetch chats:', error)
-        throw new Error(`Failed to fetch chats: ${error.message}`)
-      }
-
-      if (!chats || chats.length === 0) {
-        return []
-      }
-
-      // Transform chats into the expected format
-      return chats.map(chat => ({
-        id: chat.id,
-        title: `Property: ${chat.property_title} - ${chat.agent_name}`,
-        property_id: chat.property_id,
-        application_id: chat.application_id,
-        created_at: chat.created_at,
-        hasExistingChat: true,
-        lastMessage: chat.last_message,
-        otherParticipant: {
-          id: chat.agent_id,
-          full_name: chat.agent_name,
-          role: chat.agent_role
-        }
-      }))
+    return () => {
+      this.supabase.removeChannel(channel)
     }
-  } catch (error) {
-    console.error('[ERROR] Failed to get user chats:', error)
-    throw error
+  }
+
+  /**
+   * Subscribe to typing indicators (placeholder for future implementation)
+   */
+  subscribeToTyping(chatId: string, callback: (isTyping: boolean, userId: string) => void): () => void {
+    // Placeholder for typing indicators - can be implemented later with presence
+    return () => {}
+  }
+
+  /**
+   * Get current user ID
+   */
+  async getCurrentUserId(): Promise<string | null> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      return user?.id || null
+    } catch (error) {
+      console.error('[ChatService] Error getting current user:', error)
+      return null
+    }
+  }
+
+  /**
+   * Check if user has access to a chat
+   */
+  async hasAccessToChat(chatId: string): Promise<boolean> {
+    try {
+      const chat = await this.getChatById(chatId)
+      return chat !== null
+    } catch (error) {
+      console.error('[ChatService] Error checking chat access:', error)
+      return false
+    }
+  }
+
+  /**
+   * Create a standardized error object
+   */
+  private createError(message: string, originalError: any): ChatServiceError {
+    const error = new Error(message) as ChatServiceError
+    error.code = originalError?.code
+    error.details = originalError
+    return error
   }
 }
 
-export async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+// Export singleton instance
+export const chatService = new ChatService()
 
-  try {
-    const { data, error } = await supabase
-      .from('chat_details')
-      .select('*')
-      .eq('id', chatId)
-      .single()
+// Export individual functions for backward compatibility
+export const getUserConversations = () => chatService.getUserConversations()
+export const getChatById = (chatId: string) => chatService.getChatById(chatId)
+export const getChatDetails = (chatId: string) => chatService.getChatDetails(chatId)
+export const createPropertyChat = (request: CreateChatRequest) => chatService.createPropertyChat(request)
+export const getChatMessages = (chatId: string) => chatService.getChatMessages(chatId)
+export const sendMessage = (request: SendMessageRequest) => chatService.sendMessage(request)
 
-    if (error) {
-      console.error('[ERROR] Failed to get chat details:', error)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error('[ERROR] Failed to get chat details:', error)
-    return null
-  }
+// Export types for external use
+export type { 
+  Chat, 
+  Message, 
+  Conversation, 
+  ChatDetails, 
+  SendMessageRequest, 
+  CreateChatRequest,
+  ChatServiceError 
 }

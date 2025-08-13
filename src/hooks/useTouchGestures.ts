@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-interface TouchGestureOptions {
+interface SwipeGestureOptions {
   onSwipeLeft?: () => void
   onSwipeRight?: () => void
   onSwipeUp?: () => void
@@ -11,10 +11,7 @@ interface TouchGestureOptions {
   enabled?: boolean
 }
 
-export function useTouchGestures<T extends HTMLElement = HTMLElement>(
-  elementRef: React.RefObject<T | null> | React.MutableRefObject<T | null>,
-  options: TouchGestureOptions
-) {
+export function useSwipeGesture(options: SwipeGestureOptions) {
   const {
     onSwipeLeft,
     onSwipeRight,
@@ -24,88 +21,63 @@ export function useTouchGestures<T extends HTMLElement = HTMLElement>(
     enabled = true
   } = options
 
-  const touchStartX = useRef<number | null>(null)
-  const touchStartY = useRef<number | null>(null)
-  const touchEndX = useRef<number | null>(null)
-  const touchEndY = useRef<number | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
-    if (!enabled || !elementRef.current) return
-
-    const element = elementRef.current
+    if (!enabled) return
 
     const handleTouchStart = (e: TouchEvent) => {
-      touchStartX.current = e.touches[0].clientX
-      touchStartY.current = e.touches[0].clientY
-    }
-
-    const handleTouchMove = (e: TouchEvent) => {
-      touchEndX.current = e.touches[0].clientX
-      touchEndY.current = e.touches[0].clientY
-    }
-
-    const handleTouchEnd = () => {
-      if (
-        touchStartX.current === null ||
-        touchStartY.current === null ||
-        touchEndX.current === null ||
-        touchEndY.current === null
-      ) {
-        return
+      const touch = e.touches[0]
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY
       }
+    }
 
-      const deltaX = touchEndX.current - touchStartX.current
-      const deltaY = touchEndY.current - touchStartY.current
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return
+
+      const touch = e.changedTouches[0]
+      const deltaX = touch.clientX - touchStartRef.current.x
+      const deltaY = touch.clientY - touchStartRef.current.y
+
       const absDeltaX = Math.abs(deltaX)
       const absDeltaY = Math.abs(deltaY)
 
       // Determine if it's a horizontal or vertical swipe
-      if (absDeltaX > absDeltaY && absDeltaX > threshold) {
+      if (absDeltaX > absDeltaY) {
         // Horizontal swipe
-        if (deltaX > 0 && onSwipeRight) {
-          onSwipeRight()
-        } else if (deltaX < 0 && onSwipeLeft) {
-          onSwipeLeft()
+        if (absDeltaX > threshold) {
+          if (deltaX > 0) {
+            onSwipeRight?.()
+          } else {
+            onSwipeLeft?.()
+          }
         }
-      } else if (absDeltaY > absDeltaX && absDeltaY > threshold) {
+      } else {
         // Vertical swipe
-        if (deltaY > 0 && onSwipeDown) {
-          onSwipeDown()
-        } else if (deltaY < 0 && onSwipeUp) {
-          onSwipeUp()
+        if (absDeltaY > threshold) {
+          if (deltaY > 0) {
+            onSwipeDown?.()
+          } else {
+            onSwipeUp?.()
+          }
         }
       }
 
-      // Reset values
-      touchStartX.current = null
-      touchStartY.current = null
-      touchEndX.current = null
-      touchEndY.current = null
+      touchStartRef.current = null
     }
 
-    element.addEventListener('touchstart', handleTouchStart, { passive: true })
-    element.addEventListener('touchmove', handleTouchMove, { passive: true })
-    element.addEventListener('touchend', handleTouchEnd)
+    document.addEventListener('touchstart', handleTouchStart, { passive: true })
+    document.addEventListener('touchend', handleTouchEnd, { passive: true })
 
     return () => {
-      element.removeEventListener('touchstart', handleTouchStart)
-      element.removeEventListener('touchmove', handleTouchMove)
-      element.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [enabled, elementRef, onSwipeLeft, onSwipeRight, onSwipeUp, onSwipeDown, threshold])
+  }, [onSwipeLeft, onSwipeRight, onSwipeUp, onSwipeDown, threshold, enabled])
 }
 
-// Hook for detecting swipe on the entire document
-export function useDocumentSwipe(options: TouchGestureOptions) {
-  const documentRef = useRef<HTMLElement>(
-    typeof document !== 'undefined' ? document.documentElement : null
-  )
-
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      documentRef.current = document.documentElement
-    }
-  }, [])
-
-  useTouchGestures(documentRef, options)
+export function useDocumentSwipe(options: SwipeGestureOptions) {
+  return useSwipeGesture(options)
 }

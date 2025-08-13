@@ -27,6 +27,7 @@ interface Property {
   has_security_system?: boolean
   view_count?: number
   created_at?: string
+  owner_id?: string
 }
 
 interface PropertyListingProps {

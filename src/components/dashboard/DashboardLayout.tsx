@@ -15,11 +15,13 @@ import DashboardApplications from '@/components/dashboard/DashboardApplications'
 import SavedProperties from '@/components/dashboard/SavedProperties'
 import DashboardAccount from '@/components/dashboard/DashboardAccount'
 import CommissionTracking from '@/components/dashboard/CommissionTracking'
+import MessagesView from '@/components/dashboard/MessagesView'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import NotificationModal from '@/components/NotificationModal'
 import ToastManager from '@/components/ToastManager'
 import ImageModal from '@/components/ImageModal'
 import ApplicationModal from '@/components/ApplicationModal'
+import PostAuthChatHandler from '@/components/chat/PostAuthChatHandler'
 import { useDashboardAuth } from '@/hooks/useDashboardAuth'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useRealTimeSubscriptions } from '@/hooks/useRealTimeSubscriptions'
@@ -455,6 +457,13 @@ export default function DashboardLayout() {
           </div>
         )
       
+      case 'messages':
+        return (
+          <div className={contentClasses}>
+            <MessagesView />
+          </div>
+        )
+      
       case 'commission':
         return (
           <div className={contentClasses}>
@@ -636,6 +645,7 @@ export default function DashboardLayout() {
               {activeTab === 'properties' && 'Property Management'}
               {activeTab === 'applications' && (profile?.role === 'agent' ? 'Application Reviews' : 'My Applications')}
               {activeTab === 'saved' && 'Saved Properties'}
+              {activeTab === 'messages' && 'Messages'}
               {activeTab === 'commission' && 'Commission Tracking'}
               {activeTab === 'account' && 'Profile & Settings'}
             </h1>
@@ -689,6 +699,9 @@ export default function DashboardLayout() {
       />
 
       <ToastManager />
+      
+      {/* Handle post-authentication chat creation */}
+      <PostAuthChatHandler />
     </div>
   )
 }

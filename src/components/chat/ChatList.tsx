@@ -1,133 +1,29 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
-import { getUserChats, createPropertyChat } from '@/lib/chat/chatService'
+import { usePathname } from 'next/navigation'
+import { useChatList, useCurrentUser } from '@/lib/chat/hooks'
+import { formatErrorForUser } from '@/lib/chat/errors'
+import { Conversation } from '@/lib/chat/types'
 
-interface ChatItem {
-  id: string | null
-  title?: string
-  property_id?: string
-  application_id?: string
-  lastMessage?: {
-    content: string
-    created_at: string
-    sender_id: string
-  } | null
-  created_at?: string
-  hasExistingChat?: boolean
-  otherParticipant?: {
-    id: string
-    full_name: string | null
-    role: 'tenant' | 'agent'
-  } | null
+interface ChatListProps {
+  onChatSelect?: (chatId: string) => void
+  className?: string
 }
 
-export default function ChatList() {
-  const [chats, setChats] = useState<ChatItem[]>([])
-  const [userId, setUserId] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<'tenant' | 'agent' | null>(null)
-  const [isCreatingChat, setIsCreatingChat] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  const router = useRouter()
+export default function ChatList({ onChatSelect, className = '' }: ChatListProps) {
+  const { conversations, loading, error } = useChatList()
+  const { userId } = useCurrentUser()
   const pathname = usePathname()
 
-  const handleCreateChat = async (chat: ChatItem) => {
-    if (!chat.application_id || !userId || isCreatingChat) return
-
-    setIsCreatingChat(chat.application_id)
-    setError(null)
-
-    try {
-      const chatId = await createPropertyChat({
-        applicationId: chat.application_id
-      })
-
-      // Navigate to the new chat (client-side)
-      router.push(`/chat/${chatId}`)
-
-    } catch (error) {
-      console.error('Failed to create chat:', error)
-      setError('Failed to create chat. Please try again.')
-    } finally {
-      setIsCreatingChat(null)
-    }
-  }
-
-  useEffect(() => {
-    let channel: any
+  // Get current user's role from conversations
+  const userRole = useMemo(() => {
+    if (!conversations.length || !userId) return null
     
-    async function loadChats() {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const { data: usr } = await supabase.auth.getUser()
-        const uid = usr?.user?.id || null
-        setUserId(uid)
-        
-        if (!uid) {
-          setLoading(false)
-          return
-        }
-
-        // Get user profile to determine role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', uid)
-          .single()
-        
-        const role = profile?.role as 'tenant' | 'agent'
-        setUserRole(role)
-
-        // Load user's chats
-        const userChats = await getUserChats(uid, role)
-        setChats(userChats)
-
-        // Subscribe to new messages for real-time updates
-        channel = supabase
-          .channel('chat-list-updates')
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'messages'
-            },
-            async (payload) => {
-              // Reload chats to get updated last message
-              const updatedChats = await getUserChats(uid, role)
-              setChats(updatedChats)
-            }
-          )
-          .subscribe()
-          
-      } catch (err) {
-        console.error('Error loading chats:', err)
-        setError('Failed to load chats')
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    loadChats()
-    
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
-    }
-  }, [])
+    const firstConversation = conversations[0]
+    return firstConversation.tenant_id === userId ? 'tenant' : 'agent'
+  }, [conversations, userId])
 
   const formatLastMessageTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -144,125 +40,168 @@ export default function ChatList() {
     return date.toLocaleDateString()
   }
 
+  const getOtherParticipant = (conversation: Conversation) => {
+    if (!userId) return null
+    
+    if (conversation.tenant_id === userId) {
+      return {
+        id: conversation.agent_id,
+        full_name: conversation.agent_name,
+        role: 'agent' as const
+      }
+    } else {
+      return {
+        id: conversation.tenant_id,
+        full_name: conversation.tenant_name,
+        role: 'tenant' as const
+      }
+    }
+  }
+
+  const handleChatClick = (chatId: string) => {
+    if (onChatSelect) {
+      onChatSelect(chatId)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading chats...</div>
+      <div className={`h-full flex items-center justify-center ${className}`}>
+        <div className="flex flex-col items-center space-y-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="text-gray-500 dark:text-gray-400 text-sm">Loading conversations...</div>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-red-500">{error}</div>
+      <div className={`h-full flex items-center justify-center p-4 ${className}`}>
+        <div className="text-center">
+          <div className="text-red-500 mb-2">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div className="text-red-600 dark:text-red-400 font-medium">
+            {formatErrorForUser(error)}
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b">
+    <div className={`h-full flex flex-col ${className}`}>
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Messages</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {userRole === 'tenant' ? 'Chats with property owners' : 'Chats with applicants'}
+          {userRole === 'tenant' ? 'Conversations with property agents' : 'Conversations with tenants'}
         </p>
       </div>
 
+      {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
-        {chats.length > 0 ? (
-          <ul className="space-y-1">
-            {chats.map((chat, index) => {
-              const href = chat.id ? `/chat/${chat.id}` : null
-              const isActive = href && typeof window !== 'undefined' && window.location.pathname === href
+        {conversations.length > 0 ? (
+          <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+            {conversations.map((conversation) => {
+              const otherParticipant = getOtherParticipant(conversation)
+              const href = `/chat/${conversation.id}`
+              const isActive = pathname === href
+              
+              if (!otherParticipant) return null
 
-              const row = (
+              const conversationItem = (
                 <div
-                  className={`block p-3 border-b border-gray-100 dark:border-gray-600 ${
-                    isActive ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                  } ${
-                    chat.hasExistingChat
-                      ? 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                      : 'hover:bg-blue-50 dark:hover:bg-blue-900/20 border-l-4 border-l-blue-500'
-                  } ${
-                    isCreatingChat === chat.application_id ? 'opacity-60 pointer-events-none' : ''
+                  className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                    isActive ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
                   }`}
-                  aria-busy={isCreatingChat === chat.application_id}
+                  onClick={() => handleChatClick(conversation.id)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        {chat.otherParticipant && (
-                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-medium text-xs">
-                              {(chat.otherParticipant.full_name || 'U').charAt(0).toUpperCase()}
-                            </span>
+                  <div className="flex items-start space-x-3">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-medium text-sm">
+                        {(otherParticipant.full_name || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-gray-900 dark:text-white truncate">
+                          {otherParticipant.full_name || 'Unknown User'}
+                        </div>
+                        {conversation.last_message && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 ml-2 flex-shrink-0">
+                            {formatLastMessageTime(conversation.last_message.created_at)}
                           </div>
                         )}
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-gray-900 dark:text-white truncate">
-                            {chat.otherParticipant?.full_name || 'Unknown User'}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {chat.otherParticipant?.role === 'agent' ? 'Property Owner' : 'Tenant'}
-                          </div>
-                        </div>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 truncate mt-1">
-                        {chat.title}
+                      
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        {otherParticipant.role === 'agent' ? 'Property Agent' : 'Tenant'} • {conversation.property_title}
                       </div>
-                      {chat.lastMessage && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
-                          {chat.lastMessage.content}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right ml-2">
-                      {!chat.hasExistingChat && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                          {isCreatingChat === chat.application_id ? 'Creating...' : 'Start Chat'}
-                        </div>
-                      )}
-                      {chat.lastMessage && (
-                        <div className="text-xs text-gray-400 dark:text-gray-500">
-                          {formatLastMessageTime(chat.lastMessage.created_at)}
-                        </div>
-                      )}
+
+                      <div className="flex items-center justify-between">
+                        {conversation.last_message ? (
+                          <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                            {conversation.last_message.sender_id === userId ? 'You: ' : ''}
+                            {conversation.last_message.content}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-400 dark:text-gray-500 italic">
+                            No messages yet
+                          </div>
+                        )}
+                        
+                        {conversation.unread_count > 0 && (
+                          <div className="ml-2 bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center flex-shrink-0">
+                            {conversation.unread_count > 99 ? '99+' : conversation.unread_count}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               )
 
               return (
-                <li key={chat.id || `chat-${index}`}>
-                  {href ? (
-                    <Link href={href} className="block">
-                      {row}
-                    </Link>
+                <li key={conversation.id}>
+                  {onChatSelect ? (
+                    conversationItem
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleCreateChat(chat)}
-                      className="w-full text-left"
-                      disabled={!!isCreatingChat}
-                    >
-                      {row}
-                    </button>
+                    <Link href={href} className="block">
+                      {conversationItem}
+                    </Link>
                   )}
                 </li>
               )
             })}
           </ul>
         ) : (
-          <div className="p-4 text-center">
-            <div className="text-gray-500 dark:text-gray-400">
-              No messages yet.
-            </div>
-            <div className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              {userRole === 'tenant'
-                ? 'Chats will appear when you apply to properties.'
-                : 'Chats will appear when tenants apply to your properties.'
-              }
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.418 8-9 8a9.013 9.013 0 01-5.41-1.824L3 21l2.824-3.59A9.013 9.013 0 013 12c0-4.97 4.029-9 9-9s9 4.03 9 9z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No conversations yet</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                {userRole === 'tenant' 
+                  ? 'Start a conversation by contacting a property agent from a listing.'
+                  : 'Conversations will appear when tenants contact you about your properties.'
+                }
+              </p>
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Property, Application, SavedProperty, UserProfile } from '@/types/dashboard'
 import PropertyImage from '@/components/PropertyImage'
+import ContactAgentButton from '@/components/chat/ContactAgentButton'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
 import {
   MagnifyingGlassIcon,
@@ -430,28 +431,42 @@ export default function PropertiesBrowser({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
-                  {profile?.role === 'tenant' && (
-                    <button
-                      onClick={() => handleApplyClick(property)}
-                      disabled={hasAppliedToProperty(property.id)}
-                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        hasAppliedToProperty(property.id)
-                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
-                    >
-                      {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
-                    </button>
-                  )}
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    {profile?.role === 'tenant' && (
+                      <button
+                        onClick={() => handleApplyClick(property)}
+                        disabled={hasAppliedToProperty(property.id)}
+                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          hasAppliedToProperty(property.id)
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                      >
+                        {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
+                      </button>
+                    )}
 
-                  {profile?.role === 'agent' && property.created_by === profile.id && (
-                    <button
-                      onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
-                      className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Manage
-                    </button>
+                    {profile?.role === 'agent' && property.created_by === profile.id && (
+                      <button
+                        onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
+                        className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Manage
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Contact Agent Button for tenants */}
+                  {profile?.role === 'tenant' && (
+                    <ContactAgentButton
+                      propertyId={property.id}
+                      agentId={property.owner_id || property.created_by || 'unknown'}
+                      propertyTitle={property.title}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    />
                   )}
                 </div>
               </div>
@@ -554,28 +569,42 @@ export default function PropertiesBrowser({
                       )}
                     </div>
 
-                    <div className="flex gap-2">
-                      {profile?.role === 'tenant' && (
-                        <button
-                          onClick={() => handleApplyClick(property)}
-                          disabled={hasAppliedToProperty(property.id)}
-                          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            hasAppliedToProperty(property.id)
-                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-700 text-white'
-                          }`}
-                        >
-                          {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
-                        </button>
-                      )}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        {profile?.role === 'tenant' && (
+                          <button
+                            onClick={() => handleApplyClick(property)}
+                            disabled={hasAppliedToProperty(property.id)}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              hasAppliedToProperty(property.id)
+                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
+                          >
+                            {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
+                          </button>
+                        )}
 
-                      {profile?.role === 'agent' && property.created_by === profile.id && (
-                        <button
-                          onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
-                          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          Manage
-                        </button>
+                        {profile?.role === 'agent' && property.created_by === profile.id && (
+                          <button
+                            onClick={() => router.push(`/dashboard/manage-properties/${property.id}`)}
+                            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            Manage
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Contact Agent Button for tenants */}
+                      {profile?.role === 'tenant' && (
+                        <ContactAgentButton
+                          propertyId={property.id}
+                          agentId={property.owner_id || property.created_by || 'unknown'}
+                          propertyTitle={property.title}
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        />
                       )}
                     </div>
                   </div>

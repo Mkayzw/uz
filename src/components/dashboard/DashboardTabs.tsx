@@ -26,6 +26,7 @@ export default function DashboardTabs({ activeTab, setActiveTab, profile }: Dash
       label: 'Saved Properties', 
       show: profile?.role === 'tenant' 
     },
+    { id: 'messages' as DashboardTab, label: 'Messages', show: true },
     { id: 'account' as DashboardTab, label: 'Account', show: true },
     { 
       id: 'commission' as DashboardTab, 

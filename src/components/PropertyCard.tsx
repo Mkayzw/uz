@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import PropertyImage from './PropertyImage'
+import ContactAgentButton from './chat/ContactAgentButton'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
 import {
   WifiIcon,
@@ -40,6 +41,7 @@ interface Property {
   has_security_system?: boolean
   view_count?: number
   created_at?: string
+  owner_id?: string
 }
 
 interface PropertyCardProps {
@@ -315,25 +317,35 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
             </div>
           </div>
           
-          <div className="flex gap-2">
-            <button
-              onClick={() => onApply(property.id)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 sm:py-2 px-4 rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px] text-sm sm:text-base"
-            >
-              Apply Now
-            </button>
-            <button
-              onClick={() => openImageModal(
-                getImageUrl(allImages[currentImageIndex] || null),
-                property.title,
-                currentImageIndex
-              )}
-              className="px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px] text-sm sm:text-base"
-              style={{ WebkitTouchCallout: 'none' }}
-            >
-              <span className="sm:hidden">View</span>
-              <span className="hidden sm:inline">View {allImages.length > 1 ? `(${allImages.length})` : ''}</span>
-            </button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => onApply(property.id)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 sm:py-2 px-4 rounded-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px] text-sm sm:text-base"
+              >
+                Apply Now
+              </button>
+              <button
+                onClick={() => openImageModal(
+                  getImageUrl(allImages[currentImageIndex] || null),
+                  property.title,
+                  currentImageIndex
+                )}
+                className="px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px] text-sm sm:text-base"
+                style={{ WebkitTouchCallout: 'none' }}
+              >
+                <span className="sm:hidden">View</span>
+                <span className="hidden sm:inline">View {allImages.length > 1 ? `(${allImages.length})` : ''}</span>
+              </button>
+            </div>
+            <ContactAgentButton
+              propertyId={property.id}
+              agentId={property.owner_id || ''}
+              propertyTitle={property.title}
+              variant="outline"
+              size="md"
+              className="w-full"
+            />
           </div>
         </div>
       </div>
