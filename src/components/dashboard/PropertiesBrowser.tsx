@@ -200,7 +200,7 @@ export default function PropertiesBrowser({
   const filteredProperties = useMemo(() => {
     return allProperties.filter(property => {
       const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           property.location?.toLowerCase().includes(searchTerm.toLowerCase())
+        property.location?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesPrice = !property.price || (property.price >= priceRange[0] && property.price <= priceRange[1])
       const matchesType = !typeFilter || property.property_type === typeFilter
       return matchesSearch && matchesPrice && matchesType
@@ -250,22 +250,20 @@ export default function PropertiesBrowser({
           <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'grid'
+                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
             >
               <Squares2X2Icon className="w-4 h-4" />
               Grid
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'list'
+                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
             >
               <ListBulletIcon className="w-4 h-4" />
               List
@@ -437,11 +435,10 @@ export default function PropertiesBrowser({
                       <button
                         onClick={() => handleApplyClick(property)}
                         disabled={hasAppliedToProperty(property.id)}
-                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                          hasAppliedToProperty(property.id)
-                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                        }`}
+                        className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${hasAppliedToProperty(property.id)
+                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
                       >
                         {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
                       </button>
@@ -456,7 +453,7 @@ export default function PropertiesBrowser({
                       </button>
                     )}
                   </div>
-                  
+
                   {/* Contact Agent Button for tenants */}
                   {profile?.role === 'tenant' && (
                     <ContactAgentButton
@@ -575,11 +572,10 @@ export default function PropertiesBrowser({
                           <button
                             onClick={() => handleApplyClick(property)}
                             disabled={hasAppliedToProperty(property.id)}
-                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                              hasAppliedToProperty(property.id)
-                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }`}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${hasAppliedToProperty(property.id)
+                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                              }`}
                           >
                             {hasAppliedToProperty(property.id) ? 'Applied' : 'Apply Now'}
                           </button>
@@ -594,7 +590,7 @@ export default function PropertiesBrowser({
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Contact Agent Button for tenants */}
                       {profile?.role === 'tenant' && (
                         <ContactAgentButton
