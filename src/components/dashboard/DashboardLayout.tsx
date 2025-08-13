@@ -51,7 +51,15 @@ export default function DashboardLayout() {
   const searchParams = useSearchParams()
   
   // Use custom hooks for state management
-  const { user, profile, loading: authLoading, error: authError, displayName, handleSignOut } = useDashboardAuth()
+  const { 
+    user, 
+    profile, 
+    loading: authLoading, 
+    error: authError, 
+    displayName, 
+    handleSignOut,
+    isInitialized: isAuthenticated
+  } = useDashboardAuth()
   const { navigateWithHistory, isBackNavigation } = useNavigationState()
   const {
     properties,
@@ -66,8 +74,16 @@ export default function DashboardLayout() {
     setAllProperties,
     setApplications,
     setAgentApplications,
-    setSavedProperties
-  } = useDashboardData({ user, profile })
+    setSavedProperties,
+    canRetryData,
+    retryDataLoading,
+    clearDataError
+  } = useDashboardData({ 
+    user, 
+    profile, 
+    isAuthenticated,
+    authError 
+  })
 
   // Set up real-time subscriptions
   useRealTimeSubscriptions({
@@ -186,12 +202,30 @@ export default function DashboardLayout() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {authError || dataError}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+          <div className="space-y-2">
+            {canRetryData && (
+              <button
+                onClick={retryDataLoading}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Retry Loading Data
+              </button>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              Refresh Page
+            </button>
+            {dataError && (
+              <button
+                onClick={clearDataError}
+                className="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                Clear Error
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
