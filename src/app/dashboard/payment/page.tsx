@@ -52,43 +52,25 @@ function PaymentPageContent() {
       }
       setUser(user)
 
-      // Debug: Check if there are any agents with EcoCash numbers
-      const { data: agentsWithEcocash } = await supabase
-        .from('profiles')
-        .select('id, full_name, ecocash_number, role')
-        .eq('role', 'agent')
-        .not('ecocash_number', 'is', null)
-      console.log('Agents with EcoCash numbers:', agentsWithEcocash)
-
       if (applicationId) {
-        console.log('Loading payment details for application:', applicationId)
-        console.log('Current user ID:', user.id)
-
-        // First, let's check if the application exists at all
+        // First, check if the application exists and belongs to this user
         const { data: appCheck, error: appCheckError } = await supabase
           .from('applications')
           .select('id, bed_id, tenant_id, status')
           .eq('id', applicationId)
           .single()
 
-        console.log('Application check result:', { appCheck, appCheckError })
-
         if (appCheckError || !appCheck) {
           setError('Application not found.')
-          console.error('Application not found:', { appCheckError, applicationId })
           return
         }
 
         if (appCheck.tenant_id !== user.id) {
           setError('You are not authorized to view this application.')
-          console.error('Unauthorized access attempt:', {
-            applicationTenantId: appCheck.tenant_id,
-            currentUserId: user.id
-          })
           return
         }
 
-        // This is a rent payment - fetch agent's EcoCash number
+        // Rent payment - fetch agent's EcoCash number via application relations
         const { data, error } = await supabase
           .from('applications')
           .select(`
@@ -112,59 +94,31 @@ function PaymentPageContent() {
           .eq('tenant_id', user.id)
           .single()
 
-        console.log('Application query result:', { data, error })
-
         if (error || !data) {
           setError('Failed to load application details.')
-          console.error('Error loading application:', {
-            error: error,
-            message: error?.message,
-            details: error?.details,
-            hint: error?.hint,
-            code: error?.code,
-            applicationId: applicationId
-          })
         } else if (data.status !== 'approved') {
           setError('This application has not been approved for payment.')
         } else {
-          // Transform the new data structure to match the expected format
-          console.log('Raw application data:', JSON.stringify(data, null, 2))
-          console.log('Bed data:', data.bed)
-          console.log('Is bed an array?', Array.isArray(data.bed))
-          console.log('Bed length:', data.bed?.length)
-
+          // Transform the data structure
           if (!data.bed || (Array.isArray(data.bed) && data.bed.length === 0)) {
-            console.error('No bed data found in application:', data)
             setError('Unable to find bed information for this application.')
             return
           }
 
           const bedData = Array.isArray(data.bed) ? data.bed[0] : data.bed
-          console.log('Bed data after processing:', bedData)
-          console.log('Room data:', bedData?.room)
 
           if (!bedData?.room || (Array.isArray(bedData.room) && bedData.room.length === 0)) {
-            console.error('No room data found in bed:', bedData)
             setError('Unable to find room information for this application.')
             return
           }
 
           const roomData = Array.isArray(bedData.room) ? bedData.room[0] : bedData.room
-          console.log('Room data after processing:', roomData)
-          console.log('Property data:', roomData?.property)
 
           const property = roomData?.property
           if (!property) {
-            console.error('Property not found in application data:', {
-              data,
-              bedData,
-              roomData,
-              property
-            })
             setError('Unable to find property information for this application.')
             return
           }
-          console.log('Property found:', property)
 
           const transformedData = {
             ...data,
@@ -191,13 +145,6 @@ function PaymentPageContent() {
           // Fetch agent's EcoCash number
           const agentId = property.owner_id
           if (agentId) {
-            console.log('Fetching EcoCash number for agent:', agentId)
-            console.log('Agent ID type:', typeof agentId)
-            console.log('Agent ID value:', JSON.stringify(agentId))
-
-            // Fetch the agent's profile to get their EcoCash number.
-            // NOTE: This requires an RLS policy that allows tenants to view the 'ecocash_number' of the agent
-            // associated with their approved application.
             const { data: agentProfile, error: agentProfileError } = await supabase
               .from('profiles')
               .select('ecocash_number')
@@ -205,29 +152,22 @@ function PaymentPageContent() {
               .single()
 
             if (agentProfileError) {
-              console.error('Error fetching agent profile:', agentProfileError)
               setError('Could not fetch agent payment details. Please contact support.')
               return
             }
 
             if (!agentProfile || !agentProfile.ecocash_number) {
-              console.error('Agent has not set their EcoCash number:', agentId)
               setError('The agent for this property has not provided their payment details yet.')
               return
             }
 
             setAgentEcocash(agentProfile.ecocash_number)
-
-
           } else {
-            console.error('No agent ID found in property:', property)
-            console.error('Property owner_id:', property.owner_id)
-            console.error('Property owner_id type:', typeof property.owner_id)
             setError('Unable to find agent information for this property.')
           }
         }
       } else {
-        // This is agent activation payment - use the centralized number
+        // Agent activation payment - use the centralized number
         setAgentEcocash('0780851851')
       }
       setLoading(false)
@@ -284,7 +224,6 @@ function PaymentPageContent() {
       setSuccess(true)
       setTransactionCode('')
     } catch (err: unknown) {
-      console.error('Error submitting payment:', err)
       setError('Failed to submit payment. Please try again.')
     } finally {
       setLoading(false)
@@ -295,7 +234,7 @@ function PaymentPageContent() {
   const instructions = paymentType === 'rent' ? (
     <>
       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        Your application for <strong>{application?.property?.title}</strong> has been approved! To secure your place, please send the application fee of <strong>$20.00</strong> via EcoCash to your agent's EcoCash number below.
+        Your application for <strong>{application?.property?.title}</strong> has been approved! To secure your place, please send the application fee of <strong>$15.00</strong> via EcoCash to your agent's EcoCash number below.
       </p>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
         Note: This is only an agent fee. You will pay rent directly to the landlord.
