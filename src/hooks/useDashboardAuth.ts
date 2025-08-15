@@ -4,8 +4,6 @@ import { User } from '@supabase/supabase-js'
 import { UserProfile } from '@/types/dashboard'
 import { getProfile } from '@/lib/utils/dashboard'
 import { useSupabaseClient } from './useSupabaseClient'
-import { useLoadingStateManager } from './useLoadingStateManager'
-import { LoadingPhase, ErrorType } from '@/lib/services/types'
 import { networkService } from '@/lib/services/networkService'
 
 export function useDashboardAuth() {
@@ -17,101 +15,80 @@ export function useDashboardAuth() {
   const authStateListenerRef = useRef<any>(null)
   const initializationPromiseRef = useRef<Promise<void> | null>(null)
   const isInitializingRef = useRef(false)
-  
-  // Use loading state manager for better error handling and retry capabilities
-  const {
-    loadingState,
-    isLoading,
-    hasError,
-    setPhase,
-    setError,
-    clearError,
-    executeWithRetry,
-    getLoadingMessage,
-    getErrorMessage,
-    reset
-  } = useLoadingStateManager({
-    maxRetries: 3,
-    onPhaseChange: (phase) => {
-      console.log('Auth phase changed to:', phase)
-    },
-    onError: (error, errorType) => {
-      console.error('Auth error:', error, 'Type:', errorType)
-    },
-    onRetry: (retryCount) => {
-      console.log('Auth retry attempt:', retryCount)
-    }
-  })
 
-  // Enhanced session restoration with retry capabilities
+  // Simple state management without complex loading state manager
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string>('')
+
+  // Simplified session restoration without retry wrapper
   const restoreSession = useCallback(async (): Promise<boolean> => {
-    return await executeWithRetry(
-      async () => {
-        // Use network service for Supabase operations with built-in retry
-        const result = await networkService.executeSupabaseOperation(
-          async () => {
-            const { data, error } = await supabase.auth.getSession()
-            return { data: data.session, error }
-          }
-        )
-        
-        if (result.error) {
-          throw result.error
+    try {
+      console.log('🔄 Restoring session...')
+      const { data, error } = await supabase.auth.getSession()
+
+      if (error) {
+        console.error('❌ Session restore error:', error)
+        return false
+      }
+
+      if (!data.session?.user) {
+        console.log('ℹ️ No session found')
+        // Store current path for redirect after login
+        const currentPath = window.location.pathname + window.location.search
+        if (currentPath !== '/dashboard' && !currentPath.startsWith('/auth/')) {
+          localStorage.setItem('redirect_after_auth', currentPath)
         }
+        return false
+      }
 
-        if (!result.data?.user) {
-          // Store current path for redirect after login
-          const currentPath = window.location.pathname + window.location.search
-          if (currentPath !== '/dashboard' && !currentPath.startsWith('/auth/')) {
-            localStorage.setItem('redirect_after_auth', currentPath)
-          }
-          return false
-        }
+      console.log('✅ Session restored for user:', data.session.user.id)
+      setUser(data.session.user)
+      return true
+    } catch (error) {
+      console.error('❌ Session restore failed:', error)
+      return false
+    }
+  }, [supabase])
 
-        setUser(result.data.user)
-        return true
-      },
-      LoadingPhase.AUTHENTICATING,
-      'Failed to restore session'
-    ) !== null
-  }, [supabase, executeWithRetry])
-
-  // Enhanced profile loading with retry capabilities
+  // Simplified profile loading without any complex state management
   const loadProfile = useCallback(async (user: User): Promise<boolean> => {
-    return await executeWithRetry(
-      async () => {
-        // Wrap profile loading with network retry logic
-        const profileData = await networkService.executeWithRetry(
-          () => getProfile(supabase, user),
-          { maxRetries: 2 } // Fewer retries for profile loading
-        )
+    console.log('🔄 Starting profile load for user:', user.id, user.email)
+
+    try {
+      // Direct profile fetch without any state management wrapper
+      console.log('📋 Calling getProfile function directly...')
+      const profileData = await getProfile(supabase, user, 0)
+
+      if (profileData) {
+        console.log('✅ Profile loaded successfully:', { id: profileData.id, role: profileData.role })
         setProfile(profileData)
-        return profileData
-      },
-      LoadingPhase.LOADING_PROFILE,
-      'Failed to load profile'
-    ) !== null
-  }, [supabase, executeWithRetry])
+        return true
+      } else {
+        console.error('❌ Profile data is null')
+        return false
+      }
+    } catch (error) {
+      console.error('❌ Profile load error caught:', error)
+      return false
+    }
+  }, [supabase])
 
   // Enhanced sign out with proper cleanup and retry logic
   const handleSignOut = useCallback(async () => {
     try {
-      // Use network service for sign out with retry capability
-      await networkService.executeWithRetry(
-        () => supabase.auth.signOut(),
-        { maxRetries: 1 } // Only retry once for sign out
-      )
-      
+      await supabase.auth.signOut()
+
       setUser(null)
       setProfile(null)
       initializeOnce.current = false
       isInitializingRef.current = false
       initializationPromiseRef.current = null
-      reset()
-      
+      setError('')
+      setLoading(false)
+
       // Clear any stored redirect path
       localStorage.removeItem('redirect_after_auth')
-      
+
       router.push('/')
     } catch (err) {
       console.error('Sign out error:', err)
@@ -121,19 +98,20 @@ export function useDashboardAuth() {
       initializeOnce.current = false
       isInitializingRef.current = false
       initializationPromiseRef.current = null
-      reset()
+      setError('')
+      setLoading(false)
       localStorage.removeItem('redirect_after_auth')
       router.push('/')
     }
-  }, [supabase, router, reset])
+  }, [supabase, router])
 
   // Enhanced authentication initialization with race condition prevention
   const initializeAuth = useCallback(async () => {
     // Prevent multiple simultaneous initializations
     if (initializeOnce.current || isInitializingRef.current) {
-      // If already initialized, just set to ready
+      // If already initialized, just return
       if (initializeOnce.current) {
-        setPhase(LoadingPhase.READY)
+        return
       }
       // If currently initializing, wait for the existing promise
       if (initializationPromiseRef.current) {
@@ -146,15 +124,13 @@ export function useDashboardAuth() {
     const initPromise = (async () => {
       try {
         isInitializingRef.current = true
-        setPhase(LoadingPhase.INITIALIZING)
 
         // Step 1: Restore session with enhanced error handling
         const sessionRestored = await restoreSession()
-        
+
         if (!sessionRestored) {
-          setPhase(LoadingPhase.READY)
           initializeOnce.current = true
-          
+
           // Check if we should redirect to login
           const currentPath = window.location.pathname
           if (!currentPath.startsWith('/auth/')) {
@@ -163,35 +139,25 @@ export function useDashboardAuth() {
           return
         }
 
-        // Step 2: Load profile if we have a user
-        if (user) {
-          const profileLoaded = await loadProfile(user)
-          
+        // Step 2: Load profile if we have a user from session restore
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          console.log('🔄 Loading profile during initialization for user:', session.user.id)
+          setUser(session.user)
+          const profileLoaded = await loadProfile(session.user)
+
           if (!profileLoaded) {
-            // Profile loading failed, but don't sign out - just show error
-            console.warn('Profile loading failed, but keeping user authenticated')
+            console.warn('Profile loading failed during initialization, but keeping user authenticated')
           }
         }
 
         initializeOnce.current = true
-        setPhase(LoadingPhase.READY)
       } catch (err) {
         console.error('Auth initialization error:', err)
-        
-        // Classify error and handle appropriately
-        const errorType = networkService.classifyError(err)
-        
-        if (errorType === ErrorType.AUTHENTICATION) {
-          // Authentication errors should redirect to login
-          initializeOnce.current = false // Allow retry after auth error
-          router.push('/auth/login')
-        } else if (errorType === ErrorType.NETWORK) {
-          // Network errors should be retryable
-          setError('Network error during authentication. Please check your connection.', err)
-        } else {
-          // Other errors
-          setError(err instanceof Error ? err.message : 'Failed to initialize authentication', err)
-        }
+
+        // Simple error handling
+        console.error('Auth initialization error:', err)
+        setError(err instanceof Error ? err.message : 'Failed to initialize authentication')
       } finally {
         isInitializingRef.current = false
         initializationPromiseRef.current = null
@@ -200,75 +166,85 @@ export function useDashboardAuth() {
 
     initializationPromiseRef.current = initPromise
     await initPromise
-  }, [restoreSession, loadProfile, user, router, setPhase, setError])
+  }, [restoreSession, loadProfile, user, router])
 
   // Enhanced auth state change handler with session validation
   const handleAuthStateChange = useCallback(async (event: string, session: any) => {
     console.log('Auth state change:', event, session?.user?.id)
-    
+
     if (event === 'SIGNED_OUT') {
       setUser(null)
       setProfile(null)
       initializeOnce.current = false
       isInitializingRef.current = false
       initializationPromiseRef.current = null
-      reset() // Reset loading state
-      
+      setError('')
+      setLoading(false)
+
       // Clear stored redirect path
       localStorage.removeItem('redirect_after_auth')
-      
+
       // Only redirect if not already on auth page
       const currentPath = window.location.pathname
       if (!currentPath.startsWith('/auth/')) {
         router.push('/auth/login')
       }
     } else if (event === 'SIGNED_IN' && session?.user) {
+      // Skip if already initialized to avoid conflicts
+      if (initializeOnce.current) {
+        console.log('ℹ️ Skipping SIGNED_IN event - already initialized')
+        return
+      }
+
       // Validate session before proceeding
       const now = Math.floor(Date.now() / 1000)
       const expiresAt = session.expires_at || session.user.exp
-      
+
       if (expiresAt && expiresAt <= now) {
         console.warn('Received expired session, ignoring sign in event')
         return
       }
-      
+
       setUser(session.user)
-      
+
       try {
-        await loadProfile(session.user)
-        initializeOnce.current = true
-        setPhase(LoadingPhase.READY)
-        
-        // Handle redirect after successful authentication
-        const redirectPath = localStorage.getItem('redirect_after_auth')
-        if (redirectPath && redirectPath !== window.location.pathname) {
-          localStorage.removeItem('redirect_after_auth')
-          router.push(redirectPath)
+        console.log('🔄 Loading profile after sign in for user:', session.user.id)
+        const profileLoaded = await loadProfile(session.user)
+
+        if (profileLoaded) {
+          initializeOnce.current = true
+
+          // Handle redirect after successful authentication
+          const redirectPath = localStorage.getItem('redirect_after_auth')
+          if (redirectPath && redirectPath !== window.location.pathname) {
+            localStorage.removeItem('redirect_after_auth')
+            router.push(redirectPath)
+          }
+        } else {
+          console.error('❌ Profile loading failed after sign in')
         }
       } catch (err) {
-        console.error('Profile fetch error after sign in:', err)
-        setError('Failed to load profile after sign in', err)
+        console.error('❌ Profile fetch error after sign in:', err)
+    
       }
     } else if (event === 'TOKEN_REFRESHED' && session?.user) {
       // Handle token refresh - validate new token and maintain user state
       const now = Math.floor(Date.now() / 1000)
       const expiresAt = session.expires_at || session.user.exp
-      
+
       if (expiresAt && expiresAt <= now) {
         console.warn('Received expired token during refresh, signing out')
         await handleSignOut()
         return
       }
-      
+
       setUser(session.user)
       console.log('Token refreshed successfully')
-      
-      // Ensure we're still in ready state after token refresh
-      if (initializeOnce.current && loadingState.phase !== LoadingPhase.ERROR) {
-        setPhase(LoadingPhase.READY)
-      }
+
+      // Token refreshed successfully
+      console.log('Token refreshed successfully')
     }
-  }, [loadProfile, router, reset, setPhase, setError, handleSignOut, loadingState.phase])
+  }, [loadProfile, router, handleSignOut])
 
   useEffect(() => {
     // Only initialize once to prevent session loss on navigation
@@ -276,7 +252,38 @@ export function useDashboardAuth() {
       return
     }
 
-    initializeAuth()
+    console.log('🚀 Starting one-time initialization...')
+
+    const initialize = async () => {
+      try {
+        // Simple session check
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (session?.user) {
+          console.log('✅ Found existing session for user:', session.user.id)
+          setUser(session.user)
+
+          // Load profile
+          try {
+            const profileData = await getProfile(supabase, session.user, 0)
+            if (profileData) {
+              console.log('✅ Profile loaded:', { id: profileData.id, role: profileData.role })
+              setProfile(profileData)
+            }
+          } catch (err) {
+            console.error('❌ Profile loading failed:', err)
+          }
+        }
+
+        initializeOnce.current = true
+        console.log('✅ Initialization complete')
+      } catch (err) {
+        console.error('❌ Initialization failed:', err)
+        initializeOnce.current = true // Still mark as initialized to prevent retry loop
+      }
+    }
+
+    initialize()
 
     // Set up auth state change listener only once
     if (!authStateListenerRef.current) {
@@ -289,12 +296,8 @@ export function useDashboardAuth() {
         authStateListenerRef.current.unsubscribe()
         authStateListenerRef.current = null
       }
-      
-      // Clean up initialization promise
-      initializationPromiseRef.current = null
-      isInitializingRef.current = false
     }
-  }, [initializeAuth, handleAuthStateChange, supabase])
+  }, [supabase])
 
   // Manual retry function for authentication with enhanced error recovery
   const retryAuth = useCallback(async () => {
@@ -302,28 +305,18 @@ export function useDashboardAuth() {
     initializeOnce.current = false
     isInitializingRef.current = false
     initializationPromiseRef.current = null
-    
+
     // Clear error state
-    clearError()
-    
-    // Wait for network connection if offline
-    if (!networkService.isOnline()) {
-      console.log('Waiting for network connection before retrying auth...')
-      const connectionRestored = await networkService.waitForConnection(10000)
-      if (!connectionRestored) {
-        setError('Network connection required for authentication. Please check your internet connection.', new Error('Network offline'))
-        return
-      }
-    }
-    
+    setError('')
+
     // Retry initialization
     await initializeAuth()
-  }, [clearError, initializeAuth, setError])
+  }, [initializeAuth])
 
   // Enhanced session validation function
   const validateSession = useCallback(async (): Promise<boolean> => {
     if (!user) return false
-    
+
     try {
       const result = await networkService.executeSupabaseOperation(
         async () => {
@@ -332,18 +325,18 @@ export function useDashboardAuth() {
         },
         { maxRetries: 1 }
       )
-      
+
       if (result.error || !result.data?.user) {
         console.warn('Session validation failed:', result.error)
         return false
       }
-      
+
       // Check if user ID matches
       if (result.data.user.id !== user.id) {
         console.warn('User ID mismatch during session validation')
         return false
       }
-      
+
       return true
     } catch (err) {
       console.error('Session validation error:', err)
@@ -352,7 +345,7 @@ export function useDashboardAuth() {
   }, [user, supabase])
 
   // Check if we can retry authentication
-  const canRetryAuth = hasError && loadingState.canRetry
+  const canRetryAuth = !!error
 
   // Enhanced session refresh function
   const refreshSession = useCallback(async (): Promise<boolean> => {
@@ -364,12 +357,12 @@ export function useDashboardAuth() {
         },
         { maxRetries: 2 }
       )
-      
+
       if (result.error || !result.data?.user) {
         console.warn('Session refresh failed:', result.error)
         return false
       }
-      
+
       setUser(result.data.user)
       return true
     } catch (err) {
@@ -385,30 +378,23 @@ export function useDashboardAuth() {
     user,
     profile,
     displayName,
-    
-    // Loading state (backward compatibility)
-    loading: isLoading,
-    error: hasError ? getErrorMessage() : '',
-    
-    // Enhanced loading state
-    loadingState,
-    isLoading,
-    hasError,
-    loadingMessage: getLoadingMessage(),
-    errorMessage: getErrorMessage(),
-    
+
+    // Simple loading state
+    loading,
+    error,
+
     // Retry capabilities
-    canRetryAuth,
+    canRetryAuth: !!error,
     retryAuth,
-    
+
     // Session management
     validateSession,
     refreshSession,
-    
+
     // Initialization state
     isInitialized: initializeOnce.current,
     isInitializing: isInitializingRef.current,
-    
+
     // Actions
     handleSignOut
   }

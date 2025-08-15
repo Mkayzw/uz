@@ -17,7 +17,6 @@ import SavedProperties from '@/components/dashboard/SavedProperties'
 import DashboardAccount from '@/components/dashboard/DashboardAccount'
 import CommissionTracking from '@/components/dashboard/CommissionTracking'
 import MobileBottomNav from '@/components/dashboard/MobileBottomNav'
-import { useDashboardAuth } from '@/hooks/useDashboardAuth'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useRealTimeSubscriptions } from '@/hooks/useRealTimeSubscriptions'
 import { useNavigationState, restoreNavigationState } from '@/hooks/useNavigationState'
@@ -29,16 +28,32 @@ import {
   ConfirmationModal as ConfirmationModalType, 
   ImageModal as ImageModalType, 
   ApplicationModal as ApplicationModalType,
-  Bed
+  Bed,
+  UserProfile
 } from '@/types/dashboard'
+import { User } from '@supabase/supabase-js'
 
-export default function DashboardContent() {
+interface DashboardContentProps {
+  user: User
+  profile: UserProfile
+}
+
+export default function DashboardContent({ user, profile }: DashboardContentProps) {
   const supabase = useSupabaseClient()
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // Use custom hooks for state management
-  const { user, profile, loading: authLoading, error: authError, displayName, handleSignOut } = useDashboardAuth()
+  // Auth data is now passed as props
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User'
+  
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      router.push('/')
+    } catch (err) {
+      console.error('Sign out error:', err)
+    }
+  }
   const { navigateWithHistory, isBackNavigation } = useNavigationState()
   const {
     properties,
@@ -430,8 +445,8 @@ export default function DashboardContent() {
   };
 
   // Loading and error states
-  const loading = authLoading || ((user && profile) ? dataLoading : false)
-  const error = authError || dataError
+  const loading = dataLoading
+  const error = dataError
 
   if (loading) {
     return (

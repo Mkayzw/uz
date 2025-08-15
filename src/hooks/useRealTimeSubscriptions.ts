@@ -54,6 +54,8 @@ export function useRealTimeSubscriptions({
           setProfile(updatedProfile)
         } catch (error) {
           console.error('Error updating profile:', error)
+          // Don't show toast for profile update errors in real-time subscriptions
+          // as they are background operations
         }
       })
       .subscribe()

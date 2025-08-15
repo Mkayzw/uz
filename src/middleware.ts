@@ -54,6 +54,56 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  const { pathname } = request.nextUrl
+
+  // Get session for route protection
+  const { data: { session } } = await supabase.auth.getSession()
+
+  // Handle dashboard routes - minimal session management only
+  if (pathname.startsWith('/dashboard')) {
+    // Let the client-side DashboardRouter handle all authentication logic
+    // Middleware only ensures session cookies are properly maintained
+    return response
+  }
+
+  // Handle admin routes - protect at middleware level
+  if (pathname.startsWith('/admin')) {
+    if (!session) {
+      // No session - redirect to login
+      const loginUrl = new URL('/auth/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    // Check if user has admin role
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profileError || !profile || profile.role !== 'admin') {
+        // Not an admin - redirect to home page
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+    } catch (error) {
+      console.error('Error checking admin role in middleware:', error)
+      // On error, redirect to home page for security
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    return response
+  }
+
+  // Handle auth routes - let client-side handle redirects to avoid conflicts
+  if (pathname.startsWith('/auth/')) {
+    // Don't redirect here - let the auth pages handle their own logic
+    // This prevents conflicts with the dashboard authentication flow
+    return response
+  }
+
+  // For all other routes, just ensure session is properly maintained
   await supabase.auth.getSession()
 
   return response

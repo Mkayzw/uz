@@ -22,41 +22,202 @@ function getDerivedDailyViews(id: string, createdAt: string): number {
 }
 
 
-export const getProfile = async (supabase: SupabaseClient, user: User) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+// Error types for better error handling
+export interface ProfileError extends Error {
+  type: 'network' | 'auth' | 'profile' | 'permission' | 'unknown'
+  code?: string
+  retryable: boolean
+}
 
-  if (error) {
-    // If profile doesn't exist, create one
-    if (error.code === 'PGRST116') {
-      console.log('Creating new profile for user:', user.id)
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: user.id,
-          full_name: user.user_metadata?.full_name || null,
-          role: 'tenant' as const,
-          agent_status: 'not_applicable' as const
-        }])
-        .select()
-        .single()
+// Create a custom error with type information
+const createProfileError = (message: string, type: ProfileError['type'], code?: string, retryable = false): ProfileError => {
+  const error = new Error(message) as ProfileError
+  error.type = type
+  error.code = code
+  error.retryable = retryable
+  return error
+}
 
-      if (createError) {
-        console.error('Error creating profile:', createError)
-        throw new Error('Failed to create user profile')
+// Enhanced profile loading with retry logic and better error handling
+export const getProfile = async (supabase: SupabaseClient, user: User, retryCount = 0): Promise<any> => {
+  const maxRetries = 3
+  
+  try {
+    console.log(`Attempting to load profile for user: ${user.id} (attempt ${retryCount + 1})`)
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      // Profile doesn't exist - create one
+      if (error.code === 'PGRST116') {
+        console.log('Profile not found, creating new profile for user:', user.id)
+        return await createUserProfile(supabase, user, retryCount)
       }
 
-      return newProfile
+      // Network or connection errors
+      if (error.message?.includes('fetch') || error.message?.includes('network') || error.code === 'PGRST301') {
+        if (retryCount < maxRetries) {
+          console.log(`Network error, retrying... (${retryCount + 1}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000)) // Exponential backoff
+          return await getProfile(supabase, user, retryCount + 1)
+        }
+        throw createProfileError('Network error loading profile. Please check your connection and try again.', 'network', error.code, true)
+      }
+
+      // Authentication errors
+      if (error.code === 'PGRST301' || error.message?.includes('JWT') || error.message?.includes('auth')) {
+        throw createProfileError('Authentication expired. Please sign in again.', 'auth', error.code, false)
+      }
+
+      // Permission errors
+      if (error.code === 'PGRST401' || error.message?.includes('permission')) {
+        throw createProfileError('Insufficient permissions to access profile.', 'permission', error.code, false)
+      }
+
+      // Generic database errors
+      console.error('Database error fetching profile:', error)
+      throw createProfileError('Database error loading profile. Please try again.', 'profile', error.code, true)
     }
 
-    console.error('Error fetching profile:', error)
-    throw new Error('Failed to load user profile')
-  }
+    // Validate profile data
+    if (!data) {
+      throw createProfileError('Profile data is empty. Please try again.', 'profile', undefined, true)
+    }
 
-  return data
+    // Ensure profile has required fields with defaults
+    const validatedProfile = {
+      ...data,
+      role: data.role || 'tenant',
+      agent_status: data.agent_status || 'not_applicable',
+      is_verified_agent: data.is_verified_agent ?? false
+    }
+
+    console.log('Profile loaded successfully:', { id: validatedProfile.id, role: validatedProfile.role })
+    return validatedProfile
+
+  } catch (error) {
+    // If it's already a ProfileError, re-throw it
+    if ((error as ProfileError).type) {
+      throw error
+    }
+
+    // Handle unexpected errors
+    console.error('Unexpected error in getProfile:', error)
+    if (retryCount < maxRetries) {
+      console.log(`Unexpected error, retrying... (${retryCount + 1}/${maxRetries})`)
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+      return await getProfile(supabase, user, retryCount + 1)
+    }
+
+    throw createProfileError('An unexpected error occurred loading your profile.', 'unknown', undefined, true)
+  }
+}
+
+// Helper function to check if a profile error is retryable
+export const isProfileErrorRetryable = (error: any): boolean => {
+  if ((error as ProfileError).type) {
+    return (error as ProfileError).retryable
+  }
+  return false
+}
+
+// Helper function to get user-friendly error message
+export const getProfileErrorMessage = (error: any): string => {
+  if ((error as ProfileError).type) {
+    return error.message
+  }
+  return 'An unexpected error occurred. Please try again.'
+}
+
+// Enhanced profile creation with comprehensive defaults and metadata population
+const createUserProfile = async (supabase: SupabaseClient, user: User, retryCount = 0): Promise<any> => {
+  const maxRetries = 3
+
+  try {
+    console.log('Creating new profile with user metadata:', user.user_metadata)
+
+    // Extract data from user metadata with fallbacks
+    const profileData = {
+      id: user.id,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      role: (user.user_metadata?.role as 'tenant' | 'agent' | 'admin') || 'tenant',
+      phone_number: user.user_metadata?.phone_number || user.phone || null,
+      ecocash_number: user.user_metadata?.ecocash_number || null,
+      registration_number: user.user_metadata?.registration_number || null,
+      national_id: user.user_metadata?.national_id || null,
+      gender: user.user_metadata?.gender as 'male' | 'female' | 'other' | 'prefer_not_to_say' || null,
+      agent_status: 'not_applicable' as const,
+      is_verified_agent: false
+    }
+
+    console.log('Creating profile with data:', { ...profileData, id: '[REDACTED]' })
+
+    const { data: newProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert([profileData])
+      .select()
+      .single()
+
+    if (createError) {
+      // Handle duplicate key errors (race condition)
+      if (createError.code === '23505') {
+        console.log('Profile already exists (race condition), fetching existing profile')
+        // Profile was created by another request, fetch it
+        return await getProfile(supabase, user, 0)
+      }
+
+      // Network errors during creation
+      if (createError.message?.includes('fetch') || createError.message?.includes('network')) {
+        if (retryCount < maxRetries) {
+          console.log(`Network error creating profile, retrying... (${retryCount + 1}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+          return await createUserProfile(supabase, user, retryCount + 1)
+        }
+        throw createProfileError('Network error creating profile. Please try again.', 'network', createError.code, true)
+      }
+
+      // Permission errors
+      if (createError.code === 'PGRST401' || createError.message?.includes('permission')) {
+        throw createProfileError('Insufficient permissions to create profile.', 'permission', createError.code, false)
+      }
+
+      // Validation errors
+      if (createError.code === '23514' || createError.message?.includes('check constraint')) {
+        console.error('Profile validation error:', createError)
+        throw createProfileError('Invalid profile data. Please contact support.', 'profile', createError.code, false)
+      }
+
+      console.error('Error creating profile:', createError)
+      throw createProfileError('Failed to create user profile. Please try again.', 'profile', createError.code, true)
+    }
+
+    if (!newProfile) {
+      throw createProfileError('Profile creation returned empty data.', 'profile', undefined, true)
+    }
+
+    console.log('Profile created successfully:', { id: newProfile.id, role: newProfile.role })
+    return newProfile
+
+  } catch (error) {
+    // If it's already a ProfileError, re-throw it
+    if ((error as ProfileError).type) {
+      throw error
+    }
+
+    // Handle unexpected errors during creation
+    console.error('Unexpected error creating profile:', error)
+    if (retryCount < maxRetries) {
+      console.log(`Unexpected error creating profile, retrying... (${retryCount + 1}/${maxRetries})`)
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+      return await createUserProfile(supabase, user, retryCount + 1)
+    }
+
+    throw createProfileError('An unexpected error occurred creating your profile.', 'unknown', undefined, true)
+  }
 }
 
 // Helper function to extract amenities
