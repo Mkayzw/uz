@@ -72,7 +72,36 @@ export default async function Page({ params }: { params: { id: string } }) {
 
   const image = resolveImageUrl(Array.isArray(property.images) ? property.images[0] : property.images)
   const url = `${APP_URL.replace(/\/$/, '')}/p/${params.id}`
-  const shareText = `${property.title} — ${url}`
+
+  // Build a multi-line share message similar to your example
+  const featuresList = property.amenities && typeof property.amenities === 'object'
+    ? Object.keys(property.amenities).filter((k) => Boolean((property.amenities as Record<string, any>)[k]))
+    : []
+  const featuresText = featuresList.length ? featuresList.map((f) => `• ${f}`).join('\n') : '• High-speed internet'
+
+  const shareText = [
+    'Student Accommodation Available',
+    '',
+    `Property: ${property.title}${property.city ? ` — ${property.city}` : ''}`,
+    property.address ? `Location: ${property.address}${property.city ? `, ${property.city}` : ''}` : (property.city ? `Location: ${property.city}` : ''),
+    property.description ? `\n${property.description}` : '',
+    '',
+    'Key Features:',
+    featuresText,
+    '',
+    'Platform Benefits:',
+    '• Verified property listings',
+    '• Direct landlord communication',
+    '• Precise location mapping',
+    '• Roommate matching services',
+    '',
+    `View property: ${url}`,
+    'Download TAMAI: www.tamai.co.zw',
+    '',
+    '#StudentHousing #TAMAI #UniversityAccommodation',
+  ].filter(Boolean).join('\n')
+
+  const encodedShare = encodeURIComponent(shareText)
 
   return (
     <main style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
@@ -90,38 +119,42 @@ export default async function Page({ params }: { params: { id: string } }) {
         </section>
 
         <section style={{ marginTop: 20, display: 'flex', gap: 8 }}>
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: '#25D366',
-              color: '#fff',
-              padding: '10px 14px',
-              borderRadius: 6,
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Share on WhatsApp
-          </a>
-
-          <a
-            href={url}
-            style={{
-              background: '#eef2ff',
-              color: '#3730a3',
-              padding: '10px 14px',
-              borderRadius: 6,
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Copy link
-          </a>
+          {/* client-side share actions */}
+          <ShareActions url={url} encodedShare={encodedShare} />
         </section>
 
       </article>
     </main>
+  )
+}
+
+// Client component for copying link and opening WhatsApp
+'use client'
+import React from 'react'
+
+function ShareActions({ url, encodedShare }: { url: string; encodedShare: string }) {
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url)
+      // simple feedback
+      void (window as any).alert('Link copied to clipboard')
+    } catch (e) {
+      void (window as any).prompt('Copy this link', url)
+    }
+  }
+
+  const onWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodedShare}`, '_blank')
+  }
+
+  return (
+    <>
+      <button onClick={onWhatsApp} style={{ background: '#25D366', color: '#fff', padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 600 }}>
+        Share on WhatsApp
+      </button>
+      <button onClick={onCopy} style={{ background: '#eef2ff', color: '#3730a3', padding: '10px 14px', borderRadius: 6, border: 'none', fontWeight: 600 }}>
+        Copy link
+      </button>
+    </>
   )
 }

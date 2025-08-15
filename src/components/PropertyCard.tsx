@@ -5,6 +5,7 @@ import PropertyImage from './PropertyImage'
 import ContactAgentButton from './chat/ContactAgentButton'
 import { getImageUrl } from '@/lib/utils/imageHelpers'
 import {
+  ShareIcon,
   WifiIcon,
   TruckIcon,
   HomeIcon,
@@ -142,6 +143,17 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
     property[amenity.key as keyof Property] === true
   )
 
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000');
+    const shareUrl = `${appUrl.replace(/\/$/, '')}/p/${property.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert('Link copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+    });
+  };
+
   return (
     <>
       <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
@@ -167,14 +179,23 @@ export default function PropertyCard({ property, onApply }: PropertyCardProps) {
               alt={property.title}
               className="w-full h-full object-cover pointer-events-none"
             />
+            
+            {/* Property Type Badge */}
+            {property.property_type && (
+              <span className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-blue-600 text-white px-2 py-1 rounded-md text-xs font-medium z-10">
+                {property.property_type}
+              </span>
+            )}
+
+            {/* Share Button */}
+            <button
+              onClick={handleShare}
+              className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 transition-all z-10"
+              aria-label="Share property"
+            >
+              <ShareIcon className="w-4 h-4" />
+            </button>
           </div>
-          
-          {/* Property Type Badge */}
-          {property.property_type && (
-            <span className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-blue-600 text-white px-2 py-1 rounded-md text-xs font-medium z-10">
-              {property.property_type}
-            </span>
-          )}
           
           {/* Image Navigation */}
           {allImages.length > 1 && (
