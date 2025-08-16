@@ -1,9 +1,10 @@
-import { SEOService } from '@/lib/seo/service';
+import { seoService } from '@/lib/seo/service';
 import { Location } from '@/types/seo';
 import { Metadata } from 'next';
 
 type Props = {
-  params: { city: string; area: string };
+  // Make params async to align with project-wide usage of Promise-based params
+  params: Promise<{ city: string; area: string }>;
 };
 
 // Mock data fetching function
@@ -12,28 +13,52 @@ async function getLocation(city: string, area: string): Promise<Location> {
   return {
     city,
     area,
+    country: 'Zimbabwe',
+    coordinates: [0, 0],
   };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const location = await getLocation(params.city, params.area);
-  const seoService = new SEOService();
-  const metadata = await seoService.generateLocationMetadata(location);
+  const { city, area } = await params;
+  const location = await getLocation(city, area);
+  const seoMetadata = await seoService.generateLocationMetadata(location);
 
   return {
-    title: metadata.title,
-    description: metadata.description,
-    keywords: metadata.keywords,
-    openGraph: metadata.openGraph,
-    twitter: metadata.twitter,
+    title: seoMetadata.title,
+    description: seoMetadata.description,
+    keywords: seoMetadata.keywords,
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://unistay.com'),
     alternates: {
-      canonical: metadata.canonical,
+      canonical: seoMetadata.canonical,
+    },
+    openGraph: {
+      title: seoMetadata.openGraph.title,
+      description: seoMetadata.openGraph.description,
+      url: seoMetadata.openGraph.url,
+      siteName: seoMetadata.openGraph.siteName,
+      images: [
+        {
+          url: seoMetadata.openGraph.image,
+          alt: seoMetadata.openGraph.imageAlt,
+        },
+      ],
+      locale: seoMetadata.openGraph.locale,
+      type: seoMetadata.openGraph.type as 'website' | 'article',
+    },
+    twitter: {
+      card: seoMetadata.twitter.card,
+      site: seoMetadata.twitter.site,
+      creator: seoMetadata.twitter.creator,
+      title: seoMetadata.twitter.title,
+      description: seoMetadata.twitter.description,
+      images: [seoMetadata.twitter.image],
     },
   };
 }
 
 export default async function LocationPage({ params }: Props) {
-  const location = await getLocation(params.city, params.area);
+  const { city, area } = await params;
+  const location = await getLocation(city, area);
 
   return (
     <div>

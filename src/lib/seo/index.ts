@@ -21,7 +21,7 @@ export {
 export {
   convertToNextjsMetadata,
   generateStructuredDataScript,
-  StructuredData,
+  // StructuredData component is not re-exported to avoid name clash with type StructuredData
   generateErrorPageMetadata,
   generateFallbackMetadata
 } from './nextjs';

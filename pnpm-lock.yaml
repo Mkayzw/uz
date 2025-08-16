@@ -81,6 +81,9 @@ importers:
       eslint-config-next:
         specifier: 15.3.5
         version: 15.3.5(eslint@9.33.0(jiti@2.5.1))(typescript@5.9.2)
+      schema-dts:
+        specifier: ^1.1.2
+        version: 1.1.5
       supabase:
         specifier: ^2.30.4
         version: 2.34.3
@@ -3052,6 +3055,9 @@ packages:
 
   scheduler@0.26.0:
     resolution: {integrity: sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==}
+
+  schema-dts@1.1.5:
+    resolution: {integrity: sha512-RJr9EaCmsLzBX2NDiO5Z3ux2BVosNZN5jo0gWgsyKvxKIUL5R3swNvoorulAeL9kLB0iTSX7V6aokhla2m7xbg==}
 
   semver@4.3.6:
     resolution: {integrity: sha512-IrpJ+yoG4EOH8DFWuVg+8H1kW1Oaof0Wxe7cPcXW3x9BjkN/eVo54F15LyqemnDIUYskQWr9qvl/RihmSy6+xQ==}
@@ -6858,6 +6864,8 @@ snapshots:
   safer-buffer@2.1.2: {}
 
   scheduler@0.26.0: {}
+
+  schema-dts@1.1.5: {}
 
   semver@4.3.6: {}
 

@@ -1,8 +1,7 @@
-import { Organization, WithContext, RealEstateListing, BreadcrumbList, FAQPage } from 'schema-dts';
 import { seoConfig } from './config';
-import { Property, Location } from '@/types/seo';
+import { Property, StructuredData } from '@/types/seo';
 
-export const generateOrganizationSchema = (): WithContext<Organization> => {
+export const generateOrganizationSchema = (): StructuredData => {
   const config = seoConfig.getConfig();
   return {
     '@context': 'https://schema.org',
@@ -18,7 +17,7 @@ export const generateOrganizationSchema = (): WithContext<Organization> => {
   };
 };
 
-export const generateRealEstateListingSchema = (property: Property): WithContext<RealEstateListing> => {
+export const generateRealEstateListingSchema = (property: Property): StructuredData => {
   const config = seoConfig.getConfig();
   return {
     '@context': 'https://schema.org',
@@ -48,7 +47,7 @@ export const generateRealEstateListingSchema = (property: Property): WithContext
   };
 };
 
-export const generateBreadcrumbSchema = (breadcrumbs: { name: string; item: string }[]): WithContext<BreadcrumbList> => {
+export const generateBreadcrumbSchema = (breadcrumbs: { name: string; item: string }[]): StructuredData => {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -61,7 +60,7 @@ export const generateBreadcrumbSchema = (breadcrumbs: { name: string; item: stri
   };
 };
 
-export const generateFAQSchema = (faqs: { question: string; answer: string }[]): WithContext<FAQPage> => {
+export const generateFAQSchema = (faqs: { question: string; answer: string }[]): StructuredData => {
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',

@@ -3,7 +3,7 @@ import { Property } from '@/types/seo';
 import { Metadata } from 'next';
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 // Mock data fetching function
@@ -16,18 +16,21 @@ async function getProperty(id: string): Promise<Property> {
     location: {
       city: 'Harare',
       area: 'CBD',
+      country: 'Zimbabwe',
       coordinates: [-17.8252, 31.0335],
     },
     features: ['WiFi', 'Furnished', 'Parking'],
     price: 1200,
     images: ['/images/property1.jpg', '/images/property2.jpg'],
-    lastModified: new Date(),
     slug: `modern-apartment-in-downtown-${id}`,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const property = await getProperty(params.id);
+  const { id } = await params;
+  const property = await getProperty(id);
   const seoService = new SEOService();
   const metadata = await seoService.generatePropertyMetadata(property);
 
@@ -46,7 +49,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 import Image from 'next/image';
 
 export default async function PropertyPage({ params }: Props) {
-  const property = await getProperty(params.id);
+  const { id } = await params;
+  const property = await getProperty(id);
 
   return (
     <div>

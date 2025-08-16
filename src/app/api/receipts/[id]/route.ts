@@ -197,7 +197,14 @@ export async function GET(
     
     await browser.close()
 
-    return new NextResponse(pdfBuffer, {
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(pdfBuffer))
+        controller.close()
+      }
+    })
+
+    return new NextResponse(stream, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

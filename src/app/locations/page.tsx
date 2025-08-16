@@ -119,9 +119,6 @@ export default function LocationsPage() {
                   src={city.image}
                   alt={`Student accommodation in ${city.name}`}
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/images/city-default.jpg'
-                  }}
                 />
               </div>
               <div className="p-6">
@@ -156,7 +153,7 @@ export default function LocationsPage() {
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>

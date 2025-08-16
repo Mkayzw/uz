@@ -25,6 +25,7 @@ const SUPPORTED_LOCATIONS: Record<string, { city: string; areas: string[]; count
 }
 
 interface CityPageProps {
+  // In Next.js (App Router), params can be a Promise in type checks
   params: Promise<{ city: string }>
 }
 
