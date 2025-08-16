@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import DisableConsole from "@/components/DisableConsole";
 import { seoService } from "@/lib/seo/service";
+import { Analytics } from '@vercel/analytics/next';
 
 export async function generateMetadata(): Promise<Metadata> {
   const seoMetadata = await seoService.generateMetadata('home');
@@ -68,6 +69,7 @@ export default function RootLayout({
         </ThemeProvider>
         <GoogleAnalytics gaId="YOUR_GOOGLE_ANALYTICS_ID" />
         <GoogleTagManager gtmId="GTM-T3R7C697" />
+        <Analytics />
       </body>
     </html>
   );
