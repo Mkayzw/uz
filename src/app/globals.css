@@ -100,7 +100,7 @@ a.small {
 }
 
 /* Improve form inputs on mobile */
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
   font-size: 16px; /* Prevents zoom on iOS */
